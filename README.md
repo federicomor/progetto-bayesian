@@ -10,7 +10,7 @@ BayesianPoker paper
 2. *Bayesian model to improve sports (maybe just football) betting strategies*   
 Our goal is to create a bayesian model which can adapt his strategy of betting according to the evolution of the sport championship. We chose to focus on the Serie A football championship, and so the idea is to update our prior beliefs about who will win certain matches according to the trend of the teams in the season, their football statistics, etc. (I also really like this because there is a stream of data, so we can see better the "learning" process maybe)      
 https://datahub.io/sports-data/italian-serie-a    
-https://www.degruyter.com/document/doi/10.1515/jqas-2018-0106/html?lang=en  
+https://www.degruyter.com/document/doi/10.1515/jqas-2018-0106/html?lang=en    
 https://rstudio-pubs-static.s3.amazonaws.com/338127_f85723bf6d9b4637a4c5e1ff8f838432.html ( only for the meaning of the variables)  
 
 
