@@ -7,4 +7,5 @@
 
 **Dataset:** https://zenodo.org/records/7563265
 
-Agrimonia: a dataset on livestock, meteorology and air quality in the Lombardy region, Italy
+# Notes
+- The file Agrimonia_Dataset_v_2_0_1.csv is not here on github as it is over 100Mb, so everyone should download it by him/herself.
