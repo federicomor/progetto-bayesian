@@ -1,6 +1,6 @@
 ---
 title: "R Notebook"
-output: html_notebook
+output: html_document
 ---
 
 ```{r}
@@ -9,11 +9,55 @@ library(ggplot2)
 library(dplyr)
 ```
 
+# Dataset comparison
 
 ```{r}
-df = read.csv("../data/v201/Agrimonia_Dataset_v_2_0_1.csv")
-head(df)
+df_agri = read.csv("../data/v300/Agrimonia_Dataset_v_3_0_0.csv")
+df_agc = read.csv("../data/v300/AGC_Dataset_v_3_0_0.csv")
 ```
+
+It seems that the agc one is less complete, even if it wheights more memory (as it has more lines).
+So for now df will be df_agri.
+
+```{r}
+print("df agri ##############")
+colnames(df_agri)
+dim(df_agri)
+
+print("df agc ##############")
+colnames(df_agc)
+dim(df_agc)
+
+df = df_agri
+```
+
+# First plots
+```{r}
+head(df)
+
+length(unique(df$Latitude)) # we have 141 stations
+length(unique(df$Time)) # which recorded data for 2192 days
+dim(df)[1]/2192 == 141
+```
+
+Plot the trend of PM10 measurements for the first FIRST_STAT stations
+```{r}
+FIRST_STAT = 10
+for (stat in unique(df$IDStations)[1:FIRST_STAT]) {
+	# print(stat)
+	# print(length(df[which(df$IDStations==stat),"AQ_pm10"]))
+	# print(max(na.omit(df[which(df$IDStations==stat),"AQ_pm10"])))
+	y = df[which(df$IDStations==stat),"AQ_pm10"]
+	y = na.omit(y)
+	if (length(y)>10){
+		plot(1:length(y),y,type="l")
+		title(paste("station",stat))
+	}
+	# plot(1:2192,df[which(df$IDStations==stat),"AQ_pm10"])
+}
+```
+
+
 
 ```{r}
 AQ_cols = colnames(df)[grep("AQ_",colnames(df))]
@@ -30,17 +74,12 @@ LA_idxs = grep("LA_",colnames(df))
 
 ```
 
-```{r}
-
-```
-
-
 
 ```{r}
-ggcorr(select_if(df[,AQ],is.numeric),label=TRUE,label_size = 3)
-ggcorr(select_if(df[,WE],is.numeric),label=TRUE,label_size = 3)
-ggcorr(select_if(df[,EM],is.numeric),label=TRUE,label_size = 3)
-ggcorr(select_if(df[,LI],is.numeric),label=TRUE,label_size = 3)
-ggcorr(select_if(df[,LA],is.numeric),label=TRUE,label_size = 3)
+ggcorr(select_if(df[,AQ_idxs],is.numeric),label=TRUE,label_size = 3)
+ggcorr(select_if(df[,WE_idxs],is.numeric),label=TRUE,label_size = 3)
+ggcorr(select_if(df[,EM_idxs],is.numeric),label=TRUE,label_size = 3)
+ggcorr(select_if(df[,LI_idxs],is.numeric),label=TRUE,label_size = 3)
+ggcorr(select_if(df[,LA_idxs],is.numeric),label=TRUE,label_size = 3)
 ```
 
