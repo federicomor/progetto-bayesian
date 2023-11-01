@@ -1,0 +1,46 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(GGally) #for ggcorr
+library(ggplot2)
+library(dplyr)
+```
+
+
+```{r}
+df = read.csv("../data/v201/Agrimonia_Dataset_v_2_0_1.csv")
+head(df)
+```
+
+```{r}
+AQ_cols = colnames(df)[grep("AQ_",colnames(df))]
+WE_cols = colnames(df)[grep("WE_",colnames(df))]
+EM_cols = colnames(df)[grep("EM_",colnames(df))]
+LI_cols = colnames(df)[grep("LI_",colnames(df))]
+LA_cols = colnames(df)[grep("LA_",colnames(df))]
+
+AQ_idxs = grep("AQ_",colnames(df))
+WE_idxs = grep("WE_",colnames(df))
+EM_idxs = grep("EM_",colnames(df))
+LI_idxs = grep("LI_",colnames(df))
+LA_idxs = grep("LA_",colnames(df))
+
+```
+
+```{r}
+
+```
+
+
+
+```{r}
+ggcorr(select_if(df[,AQ],is.numeric),label=TRUE,label_size = 3)
+ggcorr(select_if(df[,WE],is.numeric),label=TRUE,label_size = 3)
+ggcorr(select_if(df[,EM],is.numeric),label=TRUE,label_size = 3)
+ggcorr(select_if(df[,LI],is.numeric),label=TRUE,label_size = 3)
+ggcorr(select_if(df[,LA],is.numeric),label=TRUE,label_size = 3)
+```
+
