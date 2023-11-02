@@ -5,6 +5,16 @@
 
 
 ########################
+# loading procedure, with feedback
+########################
+library(crayon)
+load("../data/v300/df_agri.Rdata")
+cat(crayon::green("❤ Loaded agrimonia dataset. Available as df_agri.\n"))
+load("../data/v300/df_stations.Rdata")
+cat(crayon::green("❤ Loaded stations split dataset. Available as df_stations.\n"))
+
+
+########################
 # dictionary to get the variables description
 ########################
 # what_is <- new.env(hash = TRUE, parent = emptyenv(), size = NA)
