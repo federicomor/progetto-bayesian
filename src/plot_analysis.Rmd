@@ -1,0 +1,66 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+source("include.R")
+library(maps)
+library(ggplot2)
+```
+
+
+```{r}
+# Carica i confini geografici del mondo
+world_map <- map_data("world")
+
+# Filtra i dati per ottenere solo l'Italia
+italy_map <- subset(world_map, region %in% c("Italy"))
+
+# Crea il grafico utilizzando ggplot2
+ggplot(italy_map, aes(x = long, y = lat, group = group)) +
+  geom_polygon(fill = "white", color = "black") +
+  coord_fixed(ratio = 1) +
+  theme_void()
+```
+
+
+```{r}
+library(ggplot2)
+library(sf)
+library(rnaturalearth)
+
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+sites <- data.frame(
+	longitude = unique(df_agri$Longitude), 
+	latitude = unique(df_agri$Latitude))
+
+range(sites$longitude)
+range(sites$latitude)
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, 
+        shape = 23, fill = "darkred") +
+    coord_sf(xlim = c(7, 12), ylim = c(44, 47), expand = FALSE)
+```
+
+```{r}
+library(ggplot2)
+library(sf)
+
+regioni_italiane <- st_read("../italia/gadm40_ITA_1.shp")  # Sostituisci con il percorso corretto al file shapefile delle regioni italiane
+
+mappa_completa <- ggplot() +
+  geom_sf(data = regioni_italiane, fill = "lightblue", color = "black", size = 0.5)+
+	  coord_sf(xlim = range(sites$longitude)+c(-0.5,0.5), 
+	  		 ylim = range(sites$latitude)+c(-0.5,0.5),, expand = FALSE)+
+  # geom_sf(data = world) +
+  geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred")
+ 
+print(mappa_completa)
+```
+
+
+
