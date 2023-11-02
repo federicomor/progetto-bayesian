@@ -1,3 +1,9 @@
+####################################
+## Include Me in your scripts with
+## "source("include.R")
+####################################
+
+
 ########################
 # dictionary to get the variables description
 ########################
@@ -10,6 +16,7 @@ what_is = hash()
 ########################
 size = dim
 end = lenght = length
+assert = stopifnot
 
 ########################
 # function to get colors for plotting

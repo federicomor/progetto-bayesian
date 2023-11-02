@@ -1,0 +1,45 @@
+---
+title: "R Notebook"
+---
+
+```{r}
+source("include.R")
+```
+
+
+# Metadata extraction
+```{r}
+metadf = read.csv("../data/v300/Metadata_Agrimonia_v_3_0_0.csv",sep=";",head=T)
+head(metadf)
+dim(metadf)
+colnames(metadf)
+for (i in 1:54){
+	if (metadf[i,2]!=""){
+		cat(paste0('what_is[["',metadf[i,2],'"]] = "',metadf[i,"DESCRIPTION"]),"\\n["
+			,metadf[i,4],']"\n')
+	}
+}
+```
+
+
+# Stations split
+```{r}
+load("../data/v300/df_agri.Rdata")
+df = df_agri
+# head(df)
+df_stat = hash()
+stations = unique(df$IDStations)
+print(stations)
+```
+
+
+```{r}
+for (st in stations){
+	df_stat[[st]] = df[which(df$IDStations == st),]
+	assert(size(df_stat[[st]])[1] == 2192) # make sure each df_stat has all his 2192 obs
+}
+# example
+df_stat[["1264"]]
+save(df_stat,file="../data/v300/df_stations.Rdata")
+```
+
