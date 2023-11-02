@@ -7,6 +7,7 @@ output: html_notebook
 source("include.R")
 library(maps)
 library(ggplot2)
+library(sf)
 ```
 
 
@@ -26,10 +27,7 @@ ggplot(italy_map, aes(x = long, y = lat, group = group)) +
 
 
 ```{r}
-library(ggplot2)
-library(sf)
 library(rnaturalearth)
-
 
 world <- ne_countries(scale = "medium", returnclass = "sf")
 sites <- data.frame(
@@ -47,10 +45,7 @@ ggplot(data = world) +
 ```
 
 ```{r}
-library(ggplot2)
-library(sf)
-
-regioni_italiane <- st_read("../italia/gadm40_ITA_1.shp")  # Sostituisci con il percorso corretto al file shapefile delle regioni italiane
+regioni_italiane <- st_read("italia/gadm40_ITA_1.shp") 
 
 mappa_completa <- ggplot() +
   geom_sf(data = regioni_italiane, fill = "lightblue", color = "black", size = 0.5)+
