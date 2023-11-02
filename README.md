@@ -10,4 +10,4 @@
 
 
 # Notes
-- The file Agrimonia_Dataset_v_2_0_1.csv is not here on github as it is over 100Mb, so everyone should download it by him/herself.
+- The file Agrimonia_Dataset_v_2_0_1.csv is not here on github as it is over 100Mb, so everyone should download it by him/herself. *Scherzone!* Just load the `df_agri.Rdata` from the data folder.
