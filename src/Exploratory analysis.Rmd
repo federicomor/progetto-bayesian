@@ -14,6 +14,8 @@ library(dplyr)
 ```{r}
 df_agri = read.csv("../data/v300/Agrimonia_Dataset_v_3_0_0.csv")
 df_agc = read.csv("../data/v300/AGC_Dataset_v_3_0_0.csv")
+save(df_agc,file="df_agc.Rdata")
+save(df_agri,file="df_agri.Rdata")
 ```
 
 It seems that the agc one is less complete, even if it wheights more memory (as it has more lines).
