@@ -5,57 +5,92 @@ output: html_notebook
 
 ```{r}
 source("include.R")
+```
+
+# Maps plots
+```{r}
 library(maps)
 library(ggplot2)
 library(sf)
 ```
 
-
 ```{r}
-# Carica i confini geografici del mondo
-world_map <- map_data("world")
+regioni_italiane <- st_read("italia/gadm40_ITA_1.shp") 
 
-# Filtra i dati per ottenere solo l'Italia
-italy_map <- subset(world_map, region %in% c("Italy"))
-
-# Crea il grafico utilizzando ggplot2
-ggplot(italy_map, aes(x = long, y = lat, group = group)) +
-  geom_polygon(fill = "white", color = "black") +
-  coord_fixed(ratio = 1) +
-  theme_void()
-```
-
-
-```{r}
-library(rnaturalearth)
-
-world <- ne_countries(scale = "medium", returnclass = "sf")
 sites <- data.frame(
 	longitude = unique(df_agri$Longitude), 
 	latitude = unique(df_agri$Latitude))
 
-range(sites$longitude)
-range(sites$latitude)
-
-ggplot(data = world) +
-    geom_sf() +
-    geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, 
-        shape = 23, fill = "darkred") +
-    coord_sf(xlim = c(7, 12), ylim = c(44, 47), expand = FALSE)
-```
-
-```{r}
-regioni_italiane <- st_read("italia/gadm40_ITA_1.shp") 
-
+pad = 0.2*c(-1,1)
 mappa_completa <- ggplot() +
   geom_sf(data = regioni_italiane, fill = "lightblue", color = "black", size = 0.5)+
-	  coord_sf(xlim = range(sites$longitude)+c(-0.5,0.5), 
-	  		 ylim = range(sites$latitude)+c(-0.5,0.5),, expand = FALSE)+
+	  coord_sf(xlim = range(sites$longitude)+pad, 
+	  		 ylim = range(sites$latitude)+pad, expand = FALSE)+
   # geom_sf(data = world) +
   geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred")
  
 print(mappa_completa)
 ```
+
+
+
+# Trend plots
+```{r}
+stations = unique(df_agri$IDStations)
+
+
+for (st in stations[1:2]){
+	df_st = df_stat[[st]]
+	data2016 = subset(df_st,Time>="2016-01-01" & Time<="2016-12-31")
+	data2017 = subset(df_st,Time>="2017-01-01" & Time<="2017-12-31")
+	data2018 = subset(df_st,Time>="2018-01-01" & Time<="2018-12-31")
+	data2019 = subset(df_st,Time>="2019-01-01" & Time<="2019-12-31")
+	data2020 = subset(df_st,Time>="2020-01-01" & Time<="2020-12-31")
+	data2021 = subset(df_st,Time>="2021-01-01" & Time<="2021-12-31")
+	
+	cols = colora(6,35,0)
+	
+	plot(as.Date(format(data2016$Time,"%d %m"),"%d %m"),data2016$AQ_pm10 ,type="l",col=cols[1],
+		 xlab="time",ylab="PM_10 values",main=paste0("Station ",st,", all year"))
+	lines(as.Date(format(data2017$Time,"%d %m"),"%d %m"),data2017$AQ_pm10,type="l",col=cols[2])
+	lines(as.Date(format(data2018$Time,"%d %m"),"%d %m"),data2018$AQ_pm10,type="l",col=cols[3])
+	lines(as.Date(format(data2019$Time,"%d %m"),"%d %m"),data2019$AQ_pm10,type="l",col=cols[4])
+	lines(as.Date(format(data2020$Time,"%d %m"),"%d %m"),data2020$AQ_pm10,type="l",col=cols[5])
+	lines(as.Date(format(data2021$Time,"%d %m"),"%d %m"),data2021$AQ_pm10,type="l",col=cols[6])
+}
+
+
+# next: all years, all the stations by year in those 6 plots
+```
+
+
+
+```{r}
+# Crea un plot iniziale per il primo anno (2017)
+plot(data2017$Time, data2017$AQ_pm10, type = "l", xlab = "Time", ylab = "AQ_pm10", col = "blue")
+
+# Aggiungi le linee per gli altri anni
+points(data2018$Time-365, data2018$AQ_pm10, col = "red")
+```
+
+
+```{r}
+lines(data2019$Time, data2019$AQ_pm10, col = "green")
+lines(data2021$Time, data2021$AQ_pm10, col = "purple")
+
+# Opzionalmente, aggiungi una legenda
+legend("topright", legend = c("2017", "2018", "2019", "2021"), 
+       col = c("blue", "red", "green", "purple"), lty = 1)
+
+# Assicurati che la finestra grafica sia aperta per vedere i grafici
+
+```
+
+
+
+
+
+
 
 
 

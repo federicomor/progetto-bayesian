@@ -10,8 +10,10 @@
 library(crayon)
 load("../data/v300/df_agri.Rdata")
 cat(crayon::green("❤ Loaded agrimonia dataset. Available as df_agri.\n"))
-load("../data/v300/df_stations.Rdata")
-cat(crayon::green("❤ Loaded stations split dataset. Available as df_stations.\n"))
+df_agri$Time <- as.Date(df_agri$Time, "%Y-%m-%d")
+cat(crayon::green("❤ Converted df_agri$Time to Date variable type, year-month-day.\n"))
+load("../data/v300/df_stat.Rdata")
+cat(crayon::green("❤ Loaded stations split dataset. Available as df_stat.\n"))
 
 
 ########################
@@ -31,10 +33,15 @@ assert = stopifnot
 ########################
 # function to get colors for plotting
 ########################
-fun_colori = function(len=2, seed=33){
+fun_colori = function(len=2, seed=33, show=1){
 	hcols_ = hcl.pals()
 	col.ramp_ = hcl.colors(len,palette=hcols_[seed%%115+1])
+	if(show==1){
+		dati_ <- matrix(1:100, ncol = 1)
+		image(dati_, col = col.ramp_, axes = FALSE)
+	}
 	return(col.ramp_)
+	
 }
 colori_fun = colorami = colora = fun_colori # aliases
 # usage: cols = colora(7) for getting a palette with 7 colors

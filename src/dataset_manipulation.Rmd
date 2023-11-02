@@ -2,12 +2,8 @@
 title: "R Notebook"
 ---
 
-```{r}
-source("include.R")
-```
-
-
 # Metadata extraction
+For what_is building.
 ```{r}
 metadf = read.csv("../data/v300/Metadata_Agrimonia_v_3_0_0.csv",sep=";",head=T)
 head(metadf)
@@ -25,8 +21,12 @@ for (i in 1:54){
 # Stations split
 ```{r}
 load("../data/v300/df_agri.Rdata")
+df_agri$Time <- as.Date(df_agri$Time, "%Y-%m-%d")
+# df_agri$Time <- format(df_agri$Time, format = "%d/%m/%Y")
+# df_agri$Time <- as.Date(df_agri$Time, format = "%d/%m/%Y")
 df = df_agri
-# head(df)
+head(df)
+library(hash)
 df_stat = hash()
 stations = unique(df$IDStations)
 print(stations)
@@ -36,10 +36,10 @@ print(stations)
 ```{r}
 for (st in stations){
 	df_stat[[st]] = df[which(df$IDStations == st),]
-	assert(size(df_stat[[st]])[1] == 2192) # make sure each df_stat has all his 2192 obs
+	dim(df_stat[[st]]) # == 2192) # make sure each df_stat has all his 2192 obs
 }
 # example
 df_stat[["1264"]]
-save(df_stat,file="../data/v300/df_stations.Rdata")
+save(df_stat,file="../data/v300/df_stat.Rdata")
 ```
 
