@@ -1,0 +1,133 @@
+---
+title: "na exploration"
+output: html_notebook
+---
+
+Still haven't removed columns / modified / created new dataset
+Code should be robust enough to work on the merged dataset and modify that directly
+Some considerations as comments below graphs
+
+
+```{r}
+library(naniar)
+library(hash)
+library(assert)
+library(ggplot2)
+library(UpSetR)
+```
+
+Visualize dataset and summary
+```{r}
+dati = read.csv("Agrimonia_Dataset_v_3_0_0.csv")
+head(dati)
+dim(dati)
+summary(dati)
+```
+Count of na for each column
+```{r}
+sum(is.na(dati))  
+print(sapply(dati,function(x) sum(is.na(x))))
+```
+
+
+plot na for columns to see if there is any pattern
+```{r}
+x11()  #too big of a graph for the notebook
+vis_miss(dati,warn_large_data = FALSE)
+```
+#can see different patterns ->
+#blocks for some of the AQ variables  -> would remove
+#regular "stripes" on the EM variables  -> see how useful/sparse the problem is
+#stripes and then a block at the bottom for the soil use var  -> would remove
+
+
+
+Grouping by station, plot from library UpSet
+```{r}
+gg_miss_fct(x = dati,fct = IDStations)
+```
+Messy plot but plotted faster than the one before
+Stations are on the horizontal axis
+
+
+
+Try with dataset divided by station 
+```{r}
+df_stations=load("df_agri.Rdata")
+dati = df_agri
+df_stat=hash()
+stations = unique(dati$IDStations)
+print(stations)
+
+for (st in stations){
+  df_stat[[st]] = dati[which(dati$IDStations == st),]
+  assert(dim(df_stat[[st]])[1] == 2192) # make sure each df_stat has all his 2192 obs
+}
+
+```
+Visualize if all ok
+```{r}
+#example
+dati_1264=df_stat[["1264"]]
+dim(dati_1264)
+head(dati_1264)
+```
+
+Graph as before for each and all of the stations to see if any has interestingly distributed missed values
+```{r}
+df_stat=hash()
+for (st in stations){
+  df_stat[[st]] = dati[which(dati$IDStations == st),]
+  assert(dim(df_stat[[st]])[1] == 2192) # make sure each df_stat has all his 2192 obs
+  vis_miss(df_stat[[st]],warn_large_data = FALSE)  #a plot for each station
+}
+```
+#can see graphically for every variable
+#notice how for some stations EM have na only on last year or so
+#Don't think substituting with mean or median good idea in general, but we could do for EM using mean of first years of same station 
+
+
+With another plot
+```{r}
+gg_miss_var(dati,show_pct = TRUE) 
+```
+
+
+Plot to see combinations of variables with the most na
+```{r}
+gg_miss_upset(dati,nsets = 10)
+```
+
+
+
+
+
+
+
+
+
+
+To do all graphs above with a single function on the dataset
+```{r}
+inspect_df_NA <- function(df){
+  plot_list <- list() 
+  plot_list$miss_table <- vis_miss(df,warn_large_data = FALSE)    
+  plot_list$interceptions <- gg_miss_upset(df,nsets = 10)
+  plot_list$heatmap <- gg_miss_fct(x = df,fct = IDStations)
+  plot_list$percentage <- gg_miss_var(df, show_pct = TRUE) 
+  
+  return(plot_list)
+}
+```
+
+```{r}
+plots <- inspect_df_NA(dati)
+
+plots$miss_table
+plots$heatmap
+plots$interceptions
+plots$percentage
+```
+
+
+
