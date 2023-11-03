@@ -14,6 +14,13 @@ library(ggplot2)
 library(sf)
 ```
 
+Idea: plot the values for pm10 each day, like with "bubbles" of ggplot, so to get 2192 plots. And then combine all them in a single gif, which shows the evolution over time of those pm10 values.
+
+https://askubuntu.com/questions/648244/how-do-i-create-an-animated-gif-from-still-images-preferably-with-the-command-l
+
+So idea: plot bubbles with size according to the pm10 value.
+And maybe if we want use also a different color (like to separate high/medium/low values).
+
 ```{r}
 regioni_italiane <- st_read("italia/gadm40_ITA_1.shp") 
 
@@ -32,6 +39,34 @@ mappa_completa <- ggplot() +
 print(mappa_completa)
 ```
 
+
+```{r}
+sites <- data.frame(
+	longitude = unique(df_agri$Longitude), 
+	latitude = unique(df_agri$Latitude))
+
+for (data in seq.Date(from=as.Date("2016-01-01",DATE_FORMAT),
+			   to=as.Date("2016-01-11",DATE_FORMAT),by="days")){
+		
+	dt = as.Date(data,origin="1970-01-01")
+	df_date = df_agri[which(df_agri$Time == dt),]
+	print(dt)
+	
+	pad = 0.2*c(-1,1)
+	mappa_completa <- ggplot() +
+	  geom_sf(data = regioni_italiane, fill = "lightblue", color = "black", size = 0.5)+
+		  coord_sf(xlim = range(sites$longitude)+pad, 
+		  		 ylim = range(sites$latitude)+pad, expand = FALSE)+
+	  # geom_sf(data = world) +
+	  geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred")+
+		geom_point(data=df_date,aes(x=Longitude,y=Latitude),size=df_date$AQ_pm10/10,alpha=0.5)+
+		ggtitle(dt)
+	
+	print(mappa_completa)
+	ggsave(paste0("./maps_images/",dt,".jpeg"),plot=mappa_completa)
+}
+```
+```
 
 
 
