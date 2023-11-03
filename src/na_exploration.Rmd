@@ -57,7 +57,7 @@ Stations are on the horizontal axis
 
 
 
-Try with dataset divided by station 
+Try with dataset divided by station
 ```{r}
 dati = df_agri # loade on top by include.R
 df_stat=hash()
@@ -78,7 +78,7 @@ dim(dati_1264)
 head(dati_1264)
 ```
 
-Graph as before for each and all of the stations to see if any has interestingly distributed missed values
+Graph as before for each and all of the stations to see if any has interestingly distributed missing values
 ```{r}
 NSTAT = 5 # 141 if want to see them all
 
@@ -98,12 +98,12 @@ vis_miss(df_stat[["1265"]],warn_large_data = FALSE)
 
 #can see graphically for every variable
 #notice how for some stations EM have na only on last year or so
-#Don't think substituting with mean or median good idea in general, but we could do for EM using mean of first years of same station 
+#We could substitute with mean or median for EM variables using mean of first years of same station but risk losing temporal changing -> maybe not good idea (?)
 
 
 With another plot
 ```{r}
-gg_miss_var(dati,show_pct = TRUE) 
+gg_miss_var(dati,show_pct = TRUE)
 ```
 
 
@@ -124,12 +124,12 @@ gg_miss_upset(dati,nsets = 10)
 To do all graphs above with a single function on the dataset
 ```{r}
 inspect_df_NA <- function(df){
-  plot_list <- list() 
+  plot_list <- list()
   plot_list$miss_table <- vis_miss(df,warn_large_data = FALSE)    
   plot_list$interceptions <- gg_miss_upset(df,nsets = 10)
   plot_list$heatmap <- gg_miss_fct(x = df,fct = IDStations)
-  plot_list$percentage <- gg_miss_var(df, show_pct = TRUE) 
-  
+  plot_list$percentage <- gg_miss_var(df, show_pct = TRUE)
+
   return(plot_list)
 }
 ```
@@ -142,6 +142,3 @@ plots$heatmap
 plots$interceptions
 plots$percentage
 ```
-
-
-
