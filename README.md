@@ -6,7 +6,6 @@
 - ppmSuite (various models implemented, also PPMs) on https://cran.r-project.org/web/packages/ppmSuite/index.html   
 
 **Dataset:** old https://zenodo.org/records/7563265 new https://zenodo.org/records/7956006   
-**Project notes:** https://jamboard.google.com/d/112v_L8OzMyYHi5Mf7OMnct9T8407flcQdlulxVBar80
 
 
 # Notes
