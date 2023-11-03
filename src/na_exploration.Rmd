@@ -14,11 +14,15 @@ library(hash)
 library(assert)
 library(ggplot2)
 library(UpSetR)
+library(visdat)
+
+source("include.R")
 ```
 
 Visualize dataset and summary
 ```{r}
-dati = read.csv("Agrimonia_Dataset_v_3_0_0.csv")
+# dati = read.csv("Agrimonia_Dataset_v_3_0_0.csv")
+dati = df_agri
 head(dati)
 dim(dati)
 summary(dati)
@@ -26,13 +30,15 @@ summary(dati)
 Count of na for each column
 ```{r}
 sum(is.na(dati))  
-print(sapply(dati,function(x) sum(is.na(x))))
+nas = sapply(dati,function(x) sum(is.na(x)))
+barplot(nas[nas>0],las=2)
 ```
 
 
 plot na for columns to see if there is any pattern
 ```{r}
-x11()  #too big of a graph for the notebook
+# x11()  #too big of a graph for the notebook
+dev.new()
 vis_miss(dati,warn_large_data = FALSE)
 ```
 #can see different patterns ->
@@ -53,8 +59,7 @@ Stations are on the horizontal axis
 
 Try with dataset divided by station 
 ```{r}
-df_stations=load("df_agri.Rdata")
-dati = df_agri
+dati = df_agri # loade on top by include.R
 df_stat=hash()
 stations = unique(dati$IDStations)
 print(stations)
@@ -75,13 +80,22 @@ head(dati_1264)
 
 Graph as before for each and all of the stations to see if any has interestingly distributed missed values
 ```{r}
-df_stat=hash()
-for (st in stations){
-  df_stat[[st]] = dati[which(dati$IDStations == st),]
-  assert(dim(df_stat[[st]])[1] == 2192) # make sure each df_stat has all his 2192 obs
-  vis_miss(df_stat[[st]],warn_large_data = FALSE)  #a plot for each station
+NSTAT = 5 # 141 if want to see them all
+
+for (st in stations[1:NSTAT]){
+  # df_stat[[st]] = dati[which(dati$IDStations == st),]
+  # assert(dim(df_stat[[st]])[1] == 2192) # make sure each df_stat has all his 2192 obs
+  vis_miss(as.data.frame(df_stat[[st]]),warn_large_data = FALSE) #a plot for each station
 }
 ```
+
+
+```{r}
+vis_miss(df_stat[["1264"]],warn_large_data = FALSE)
+vis_miss(df_stat[["1265"]],warn_large_data = FALSE)
+# ecc
+```
+
 #can see graphically for every variable
 #notice how for some stations EM have na only on last year or so
 #Don't think substituting with mean or median good idea in general, but we could do for EM using mean of first years of same station 
