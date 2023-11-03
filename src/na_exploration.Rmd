@@ -85,16 +85,13 @@ NSTAT = 5 # 141 if want to see them all
 for (st in stations[1:NSTAT]){
   # df_stat[[st]] = dati[which(dati$IDStations == st),]
   # assert(dim(df_stat[[st]])[1] == 2192) # make sure each df_stat has all his 2192 obs
-  vis_miss(as.data.frame(df_stat[[st]]),warn_large_data = FALSE) #a plot for each station
+	
+  # sometimes it didnt work for me so i am just proving different options here
+  # plot(vis_miss(df_stat[[st]],warn_large_data = FALSE)) #a plot for each station
+  plot(vis_miss(as.data.frame(df_stat[[st]]),warn_large_data = FALSE)) #a plot for each station
 }
 ```
 
-
-```{r}
-vis_miss(df_stat[["1264"]],warn_large_data = FALSE)
-vis_miss(df_stat[["1265"]],warn_large_data = FALSE)
-# ecc
-```
 
 #can see graphically for every variable
 #notice how for some stations EM have na only on last year or so
