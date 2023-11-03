@@ -14,6 +14,13 @@ library(ggplot2)
 library(sf)
 ```
 
+Idea: plot the values for pm10 each day, like with "bubbles" of ggplot, so to get 2192 plots. And then combine all them in a single gif, which shows the evolution over time of those pm10 values.
+
+https://askubuntu.com/questions/648244/how-do-i-create-an-animated-gif-from-still-images-preferably-with-the-command-l
+
+So idea: plot bubbles with size according to the pm10 value.
+And maybe if we want use also a different color (like to separate high/medium/low values).
+
 ```{r}
 regioni_italiane <- st_read("italia/gadm40_ITA_1.shp") 
 
@@ -33,13 +40,41 @@ print(mappa_completa)
 ```
 
 
+```{r}
+sites <- data.frame(
+	longitude = unique(df_agri$Longitude), 
+	latitude = unique(df_agri$Latitude))
+
+for (data in seq.Date(from=as.Date("2016-01-01",DATE_FORMAT),
+					  to=as.Date("2016-02-01",DATE_FORMAT),by="days")){
+		
+	dt = as.Date(data,origin="1970-01-01")
+	df_date = df_agri[which(df_agri$Time == dt),]
+	print(dt)
+	
+	pad = 0.2*c(-1,1)
+	mappa_completa <- ggplot() +
+	  geom_sf(data = regioni_italiane, fill = "lightblue", color = "black", size = 0.5)+
+		  coord_sf(xlim = range(sites$longitude)+pad, 
+		  		 ylim = range(sites$latitude)+pad, expand = FALSE)+
+	  # geom_sf(data = world) +
+	  geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred")+
+		geom_point(data=df_date,aes(x=Longitude,y=Latitude),size=df_date$AQ_pm10/10,alpha=0.5)+
+		ggtitle(dt)
+	
+	# print(mappa_completa)
+	ggsave(paste0("./maps_images/",dt,".jpeg"),plot=mappa_completa,width=512,height=512,units="px")
+}
+```
+
+
 
 # Trend plots
 ```{r}
 stations = unique(df_agri$IDStations)
+cols = colora(6,97,show=1)
 
-
-for (st in stations[1:2]){
+for (st in stations[1:4]){
 	df_st = df_stat[[st]]
 	data2016 = subset(df_st,Time>="2016-01-01" & Time<="2016-12-31")
 	data2017 = subset(df_st,Time>="2017-01-01" & Time<="2017-12-31")
@@ -48,43 +83,42 @@ for (st in stations[1:2]){
 	data2020 = subset(df_st,Time>="2020-01-01" & Time<="2020-12-31")
 	data2021 = subset(df_st,Time>="2021-01-01" & Time<="2021-12-31")
 	
-	cols = colora(6,35,0)
 	
 	plot(as.Date(format(data2016$Time,"%d %m"),"%d %m"),data2016$AQ_pm10 ,type="l",col=cols[1],
-		 xlab="time",ylab="PM_10 values",main=paste0("Station ",st,", all year"))
+		 xlab="time",ylab="PM_10 values",main=paste0("Station ",st,", all years"),
+		 ylim=range(na.omit(df_st$AQ_pm10)))
 	lines(as.Date(format(data2017$Time,"%d %m"),"%d %m"),data2017$AQ_pm10,type="l",col=cols[2])
 	lines(as.Date(format(data2018$Time,"%d %m"),"%d %m"),data2018$AQ_pm10,type="l",col=cols[3])
 	lines(as.Date(format(data2019$Time,"%d %m"),"%d %m"),data2019$AQ_pm10,type="l",col=cols[4])
 	lines(as.Date(format(data2020$Time,"%d %m"),"%d %m"),data2020$AQ_pm10,type="l",col=cols[5])
 	lines(as.Date(format(data2021$Time,"%d %m"),"%d %m"),data2021$AQ_pm10,type="l",col=cols[6])
+	legend('topright', levels(as.factor(2016:2021)), fill=cols, bty='n', cex = 0.6)
+
 }
-
-
-# next: all years, all the stations by year in those 6 plots
-```
-
-
-
-```{r}
-# Crea un plot iniziale per il primo anno (2017)
-plot(data2017$Time, data2017$AQ_pm10, type = "l", xlab = "Time", ylab = "AQ_pm10", col = "blue")
-
-# Aggiungi le linee per gli altri anni
-points(data2018$Time-365, data2018$AQ_pm10, col = "red")
 ```
 
 
 ```{r}
-lines(data2019$Time, data2019$AQ_pm10, col = "green")
-lines(data2021$Time, data2021$AQ_pm10, col = "purple")
-
-# Opzionalmente, aggiungi una legenda
-legend("topright", legend = c("2017", "2018", "2019", "2021"), 
-       col = c("blue", "red", "green", "purple"), lty = 1)
-
-# Assicurati che la finestra grafica sia aperta per vedere i grafici
-
+cols = colora(10,show=0)
+for (year in 2016:2021){
+	for (i in 1:length(stations)){
+		st = stations[i]
+		df_st = df_stat[[st]]
+		df_st = df_st[df_st$Time>=as.Date(paste0(year,"-01-01"),"%Y-%m-%d") &
+					  df_st$Time<=as.Date(paste0(year,"-12-31"),"%Y-%m-%d"),]
+		if(st=="1264"){
+			plot(df_st$Time,df_st$AQ_pm10,type="l",col=cols[i%%10],
+				 ylim=range(na.omit(df_agri$AQ_pm10)),main=paste0(year," all the stations"),
+				 xlab="months",ylab="PM_10 values")
+		} else{
+			lines(df_st$Time,df_st$AQ_pm10,type="l",col=cols[i%%10])
+		}
+	}
+}
 ```
+
+
+
 
 
 
