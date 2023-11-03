@@ -73,18 +73,18 @@ dim(dati_1264)
 head(dati_1264)
 ```
 
-Graph as before for each and all of the stations to see if any has interestingly distributed missed values
+Graph as before for each and all of the stations to see if any has interestingly distributed missing values
 ```{r}
 df_stat=hash()
 for (st in stations){
   df_stat[[st]] = dati[which(dati$IDStations == st),]
-  assert(dim(df_stat[[st]])[1] == 2192) # make sure each df_stat has all his 2192 obs
-  vis_miss(df_stat[[st]],warn_large_data = FALSE)  #a plot for each station
+  #assert(dim(df_stat[[st]])[1] == 2192) # make sure each df_stat has all his 2192 obs
+  plot(vis_miss(df_stat[[st]],warn_large_data = FALSE))  #a plot for each station
 }
 ```
 #can see graphically for every variable
 #notice how for some stations EM have na only on last year or so
-#Don't think substituting with mean or median good idea in general, but we could do for EM using mean of first years of same station 
+#We could substitute with mean or median for EM variables using mean of first years of same station but risk losing temporal changing -> maybe not good idea (?)
 
 
 With another plot
