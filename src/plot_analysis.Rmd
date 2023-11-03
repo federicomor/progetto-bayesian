@@ -66,8 +66,6 @@ for (data in seq.Date(from=as.Date("2016-01-01",DATE_FORMAT),
 	ggsave(paste0("./maps_images/",dt,".jpeg"),plot=mappa_completa)
 }
 ```
-```
-
 
 
 
@@ -87,7 +85,7 @@ for (st in stations[1:4]){
 	
 	
 	plot(as.Date(format(data2016$Time,"%d %m"),"%d %m"),data2016$AQ_pm10 ,type="l",col=cols[1],
-		 xlab="time",ylab="PM_10 values",main=paste0("Station ",st,", all year"),
+		 xlab="time",ylab="PM_10 values",main=paste0("Station ",st,", all years"),
 		 ylim=range(na.omit(df_st$AQ_pm10)))
 	lines(as.Date(format(data2017$Time,"%d %m"),"%d %m"),data2017$AQ_pm10,type="l",col=cols[2])
 	lines(as.Date(format(data2018$Time,"%d %m"),"%d %m"),data2018$AQ_pm10,type="l",col=cols[3])
