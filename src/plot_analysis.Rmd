@@ -43,8 +43,8 @@ print(mappa_completa)
 # LERP function
 ```{r}
 lerp_pm10_radius <- function(val){
-	radius_0 = 0.5
-	radius_f = 5
+	radius_0 = 1
+	radius_f = 15
 	
 	min_max = range(df_agri$AQ_pm10[!is.na(df_agri$AQ_pm10)])
 	pm10_0 = min_max[1]
@@ -56,8 +56,8 @@ lerp_pm10_radius <- function(val){
 }
 
 lerp_pm10_color <- function(val) {
-  color_0 <- col2rgb("#F80000")
-  color_f <- col2rgb("#008F39")
+  color_0 <- col2rgb("#008F39")
+  color_f <- col2rgb("#F80000")
   
   min_max <- range(df_agri$AQ_pm10[!is.na(df_agri$AQ_pm10)])
   pm10_0 <- min_max[1]
@@ -119,7 +119,9 @@ for (data in seq.Date(from=as.Date("2016-01-01",DATE_FORMAT),
 	
 	# print(mappa_completa)
 	#ggsave(paste0("./maps_images/",dt,".jpeg"),plot=mappa_completa,width=512,height=512,units="px")
-	ggsave(paste0("./maps_images_temp/",dt,".jpeg"),plot=mappa_completa,width=512,height=512,units="px")
+	ggsave(paste0("./maps_images_temp/", dt, ".jpeg"), plot = mappa_completa, width = 1024, height = 1024, units = "px")
+
+
 }
 ```
 
