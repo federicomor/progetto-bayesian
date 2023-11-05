@@ -43,8 +43,8 @@ print(mappa_completa)
 # LERP function
 ```{r}
 lerp_pm10_radius <- function(val){
-	radius_0 = 0
-	radius_f = 10
+	radius_0 = 0.5
+	radius_f = 5
 	
 	min_max = range(df_agri$AQ_pm10[!is.na(df_agri$AQ_pm10)])
 	pm10_0 = min_max[1]
@@ -56,8 +56,8 @@ lerp_pm10_radius <- function(val){
 }
 
 lerp_pm10_color <- function(val) {
-  color_0 <- col2rgb("#FF5733")
-  color_f <- col2rgb("#33FF57")
+  color_0 <- col2rgb("#F80000")
+  color_f <- col2rgb("#008F39")
   
   min_max <- range(df_agri$AQ_pm10[!is.na(df_agri$AQ_pm10)])
   pm10_0 <- min_max[1]
@@ -121,6 +121,38 @@ for (data in seq.Date(from=as.Date("2016-01-01",DATE_FORMAT),
 	#ggsave(paste0("./maps_images/",dt,".jpeg"),plot=mappa_completa,width=512,height=512,units="px")
 	ggsave(paste0("./maps_images_temp/",dt,".jpeg"),plot=mappa_completa,width=512,height=512,units="px")
 }
+```
+
+# create gif and video
+```{r}
+library(magick)
+path_to_folder <- "./maps_images_temp/"
+image_files <- list(list.files(path_to_folder, pattern = "*.jpeg", full.names = TRUE) )
+images <- lapply(image_files, image_read)
+output_gif <- image_animate(images[[1]], fps = 10)  # Adjust the 'fps' as needed
+
+file_name = "map_gif"
+output_file <- paste0("./gifs/",file_name,".gif")
+image_write(output_gif, path = output_file)
+```
+
+# create video
+```{r}
+library(imager)
+library(av)
+
+# Set up the video writer
+
+path_to_folder <- "./maps_images_temp/"
+image_files <- list.files(path_to_folder, pattern = "*.jpeg", full.names = TRUE) 
+images <- lapply(image_files, imager::load.image)
+
+file_name <- "map_video"
+output_file <- paste0("./gifs/",file_name,".mp4")
+
+
+av::av_encode_video(image_files, framerate = 5,
+                    output = output_file,codec ="libx264" )
 ```
 
 
