@@ -32,7 +32,7 @@ stations = unique(df$IDStations)
 print(stations)
 ```
 
-
+# data saving
 ```{r}
 for (st in stations){
 	df_stat[[st]] = df[which(df$IDStations == st),]
@@ -41,5 +41,28 @@ for (st in stations){
 # example
 df_stat[["1264"]]
 save(df_stat,file="../data/v300/df_stat.Rdata")
+```
+
+# week division
+```{r}
+library(dplyr)
+library(lubridate)
+
+
+add_week_column <- function(data) {
+  data <- data %>%
+    mutate(Time = ymd(Time),  # Convert the date column to a date object
+           week = week(Time))  # Extract the week number
+  
+  return(data)
+}
+
+example = df_stat[["1264"]]
+
+# Add the week column
+example <- add_week_column(example)
+example=example %>% relocate(week, .after = Time)
+head(example)
+range(example$week)
 ```
 
