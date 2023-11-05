@@ -14,9 +14,10 @@ library(ggplot2)
 library(sf)
 ```
 
+# displaying pm10 levels
 Idea: plot the values for pm10 each day, like with "bubbles" of ggplot, so to get 2192 plots. And then combine all them in a single gif, which shows the evolution over time of those pm10 values.
 
-https://askubuntu.com/questions/648244/how-do-i-create-an-animated-gif-from-still-images-preferably-with-the-command-l
+<https://askubuntu.com/questions/648244/how-do-i-create-an-animated-gif-from-still-images-preferably-with-the-command-l>
 
 So idea: plot bubbles with size according to the pm10 value.
 And maybe if we want use also a different color (like to separate high/medium/low values).
@@ -39,6 +40,53 @@ mappa_completa <- ggplot() +
 print(mappa_completa)
 ```
 
+# LERP function
+```{r}
+lerp_pm10_radius <- function(val){
+	radius_0 = 0.5
+	radius_f = 5
+	
+	min_max = range(df_agri$AQ_pm10[!is.na(df_agri$AQ_pm10)])
+	pm10_0 = min_max[1]
+	pm10_f = min_max[2]
+
+	# linear, you can use any function!
+	return_val = radius_0 + (radius_f - radius_0) * ((val - pm10_0) / (pm10_f - pm10_0))
+	return(return_val) 
+}
+
+lerp_pm10_color <- function(val) {
+  color_0 <- col2rgb("#F80000")
+  color_f <- col2rgb("#008F39")
+  
+  min_max <- range(df_agri$AQ_pm10[!is.na(df_agri$AQ_pm10)])
+  pm10_0 <- min_max[1]
+  pm10_f <- min_max[2]
+  
+  return_vals <- vector("list", length = length(val))
+  
+  for (i in seq_along(val)) {
+    if (!is.nan(val[i])) {
+      return_val <- color_0 + (color_f - color_0) * ((val[i] - pm10_0) / (pm10_f - pm10_0))
+      return_vals[[i]] <- return_val
+    } else {
+      return_vals[[i]] <- rep(255, 3)  # Set RGB values to 255 (white)
+    }
+  }
+  
+  # Convert RGB components to color strings
+  colors <- lapply(return_vals, function(rgb_vec) {
+    rgb_string <- rgb(rgb_vec[1], rgb_vec[2], rgb_vec[3], maxColorValue = 255)
+    return(rgb_string)
+  })
+  
+  return(colors) 
+}
+
+```
+
+
+# creating images for the gif
 
 ```{r}
 sites <- data.frame(
@@ -58,13 +106,53 @@ for (data in seq.Date(from=as.Date("2016-01-01",DATE_FORMAT),
 		  coord_sf(xlim = range(sites$longitude)+pad, 
 		  		 ylim = range(sites$latitude)+pad, expand = FALSE)+
 	  # geom_sf(data = world) +
+		
+		# fede version
+	 # geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred")+
+	#	geom_point(data=df_date,aes(x=Longitude,y=Latitude),size=df_date$AQ_pm10/10,alpha=0.5)+
+	#	ggtitle(dt)
+	
 	  geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred")+
-		geom_point(data=df_date,aes(x=Longitude,y=Latitude),size=df_date$AQ_pm10/10,alpha=0.5)+
+		geom_point(data=df_date,aes(x=Longitude,y=Latitude),
+				   size=lerp_pm10_radius(df_date$AQ_pm10),color = lerp_pm10_color(df_date$AQ_pm10), alpha=0.5)+
 		ggtitle(dt)
 	
 	# print(mappa_completa)
-	ggsave(paste0("./maps_images/",dt,".jpeg"),plot=mappa_completa,width=512,height=512,units="px")
+	#ggsave(paste0("./maps_images/",dt,".jpeg"),plot=mappa_completa,width=512,height=512,units="px")
+	ggsave(paste0("./maps_images_temp/",dt,".jpeg"),plot=mappa_completa,width=512,height=512,units="px")
 }
+```
+
+# create gif and video
+```{r}
+library(magick)
+path_to_folder <- "./maps_images_temp/"
+image_files <- list(list.files(path_to_folder, pattern = "*.jpeg", full.names = TRUE) )
+images <- lapply(image_files, image_read)
+output_gif <- image_animate(images[[1]], fps = 10)  # Adjust the 'fps' as needed
+
+file_name = "map_gif"
+output_file <- paste0("./gifs/",file_name,".gif")
+image_write(output_gif, path = output_file)
+```
+
+# create video
+```{r}
+library(imager)
+library(av)
+
+# Set up the video writer
+
+path_to_folder <- "./maps_images_temp/"
+image_files <- list.files(path_to_folder, pattern = "*.jpeg", full.names = TRUE) 
+images <- lapply(image_files, imager::load.image)
+
+file_name <- "map_video"
+output_file <- paste0("./gifs/",file_name,".mp4")
+
+
+av::av_encode_video(image_files, framerate = 5,
+                    output = output_file,codec ="libx264" )
 ```
 
 
