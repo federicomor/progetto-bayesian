@@ -118,76 +118,48 @@ lerp_pm10_color <- function(val) {
 
 # creating images for the gif
 
+devtools::install_github("dgrtwo/gganimate")
+
 ```{r}
+library(gganimate)
+theme_set(theme_bw())
+
 sites <- data.frame(
 	longitude = unique(df_agri$Longitude), 
 	latitude = unique(df_agri$Latitude))
 
-for (data in seq.Date(from=as.Date("2016-01-01",DATE_FORMAT),
-					  to=as.Date("2016-02-01",DATE_FORMAT),by="days")){
+
+date_time = seq.Date(from=as.Date("2016-01-01",DATE_FORMAT),
+					  to=as.Date("2016-02-01",DATE_FORMAT),by="days")
+date_time = as.Date(date_time)
 		
-	dt = as.Date(data,origin="1970-01-01")
-	df_date = df_agri[which(df_agri$Time == dt),]
-	print(dt)
-	
-	pad = 0.2*c(-1,1)
-	mappa_completa <- ggplot() +
-	  geom_sf(data = regioni_italiane, fill = "lightblue", color = "black", size = 0.5)+
-		  coord_sf(xlim = range(sites$longitude)+pad, 
-		  		 ylim = range(sites$latitude)+pad, expand = FALSE)+
-	  # geom_sf(data = world) +
-		
-		# fede version
-	 # geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred")+
-	#	geom_point(data=df_date,aes(x=Longitude,y=Latitude),size=df_date$AQ_pm10/10,alpha=0.5)+
-	#	ggtitle(dt)
-	
-	  geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred")+
-		geom_point(data=df_date,aes(x=Longitude,y=Latitude),
-				   size=lerp_pm10_radius(df_date$AQ_pm10),color = lerp_pm10_color(df_date$AQ_pm10), alpha=0.5)+
-		ggtitle(dt)
-	
-	# print(mappa_completa)
-	#ggsave(paste0("./maps_images/",dt,".jpeg"),plot=mappa_completa,width=512,height=512,units="px")
-	ggsave(paste0("./maps_images_temp/", dt, ".jpeg"), plot = mappa_completa, width = 1024, height = 1024, units = "px")
+df_date = df_agri[which(df_agri$Time %in% date_time),]
 
 
-}
-```
-
-# create gif and video
-```{r}
-library(magick)
-path_to_folder <- "./maps_images_temp/"
-image_files <- list(list.files(path_to_folder, pattern = "*.jpeg", full.names = TRUE) )
-images <- lapply(image_files, image_read)
-output_gif <- image_animate(images[[1]], fps = 10)  # Adjust the 'fps' as needed
+pad = 0.2*c(-1,1)
+mappa_completa <- ggplot() +
+  geom_sf(data = regioni_italiane, fill = "lightblue", color = "black", size = 0.5)+
+	  coord_sf(xlim = range(sites$longitude)+pad, 
+	  		 ylim = range(sites$latitude)+pad, expand = FALSE)+
+  geom_point(data = sites, aes(x = longitude, y = latitude), 
+  		   size = 1, shape = 23, fill = "darkred")+
+  geom_point(data=df_date,aes(x=Longitude,y=Latitude),
+			   size=lerp_pm10_radius(df_date$AQ_pm10),
+			   color = lerp_pm10_color(df_date$AQ_pm10), alpha=0.5)+
+  ggtitle(dt)+
+  transition_time(Time)+
+  labs(title = "Day: {frame_time}")
 
 file_name = "map_gif"
+# gif
 output_file <- paste0("./gifs/",file_name,".gif")
-image_write(output_gif, path = output_file)
+anim_save(output_file,mappa_completa)
+
+#video ??
 ```
+
 
 # create video
-```{r}
-library(imager)
-library(av)
-
-# Set up the video writer
-
-path_to_folder <- "./maps_images_temp/"
-image_files <- list.files(path_to_folder, pattern = "*.jpeg", full.names = TRUE) 
-images <- lapply(image_files, imager::load.image)
-
-file_name <- "map_video"
-output_file <- paste0("./gifs/",file_name,".mp4")
-
-
-av::av_encode_video(image_files, framerate = 5,
-                    output = output_file,codec ="libx264" )
-```
-
-
 
 # Trend plots
 ```{r}
@@ -216,6 +188,48 @@ for (st in stations[1:4]){
 
 }
 ```
+```{r}
+library(lubridate)
+
+stations = unique(df_agri$IDStations)
+cols = colora(6,970,show=)
+
+# for semplicity let's do one station for now, can be expanded with a simple for loop
+st = stations[1]
+df_st = df_stat[[st]]
+
+data2016 = subset(df_st,Time>="2016-01-01" & Time<="2016-12-31")
+data2017 = subset(df_st,Time>="2017-01-01" & Time<="2017-12-31")
+data2018 = subset(df_st,Time>="2018-01-01" & Time<="2018-12-31")
+data2019 = subset(df_st,Time>="2019-01-01" & Time<="2019-12-31")
+data2020 = subset(df_st,Time>="2020-01-01" & Time<="2020-12-31")
+data2021 = subset(df_st,Time>="2021-01-01" & Time<="2021-12-31")
+
+data_16_to_21 = rbind(data2016,data2017,data2018,data2019,data2020,data2021)
+time_trend <- ggplot()
+
+# Converti la colonna Time in formato Date
+data_16_to_21$Time <- as.Date(data_16_to_21$Time, format =  "%y %d %m")
+
+# Crea il grafico ggplot
+time_trend <- ggplot(data_16_to_21, aes(x = Time, y = AQ_pm10, color = as.factor(year(Time)))) +
+  geom_line() +
+  labs(x = "Time", y = "PM_10 values", title = paste0("Station ", st, ", all years")) +
+  ylim(range(na.omit(data_16_to_21$AQ_pm10))) +
+  scale_color_manual(values = cols)+
+  geom_point() +
+  transition_reveal(Time)
+
+# Aggiungi la legenda
+time_trend <- time_trend + theme(legend.position = "top")
+
+file_name = "trend_gif"
+# gif
+output_file <- paste0("./gifs/",file_name,".gif")
+anim_save(output_file,time_trend)
+
+```
+
 
 
 ```{r}
