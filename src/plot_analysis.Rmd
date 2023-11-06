@@ -1,6 +1,5 @@
 ---
 title: "R Notebook"
-output: html_notebook
 ---
 
 ```{r}
@@ -22,9 +21,13 @@ nas = matrix(as.integer(!is.na(nas)),nrow = 2192,ncol=141)
 rownames(nas)=1:nrow(nas)
 colnames(nas) = stations
 head(nas)
-pdf("na_time_series.pdf")
+```
+
+
+```{r}
+pdf("na_time_series.pdf",width=8,height=8)
 heatmap(t(nas),Colv=NA, Rowv=NA,col = c("white", "darkred"), scale='column',xlab="days",ylab="stations",
-		 margins = c(3, 3))
+		 margins = c(3, 3),main="NA time series (white are NAs)")
 dev.off()
 
 ```
@@ -185,7 +188,7 @@ av::av_encode_video(image_files, framerate = 5,
 # Trend plots
 ```{r}
 stations = unique(df_agri$IDStations)
-cols = colora(6,97,show=1)
+cols = colora(6,970,show=)
 
 for (st in stations[1:4]){
 	df_st = df_stat[[st]]
@@ -212,7 +215,7 @@ for (st in stations[1:4]){
 
 
 ```{r}
-cols = colora(10,show=0)
+cols = colora(10,970,show=1)
 for (year in 2016:2021){
 	for (i in 1:length(stations)){
 		st = stations[i]
