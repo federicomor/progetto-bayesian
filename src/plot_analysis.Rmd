@@ -5,14 +5,37 @@ output: html_notebook
 
 ```{r}
 source("include.R")
-```
-
-# Maps plots
-```{r}
 library(maps)
 library(ggplot2)
 library(sf)
 ```
+
+# "veloce" na check
+```{r}
+colnames(df_agri)
+stations = unique(df_agri$IDStations)
+nas = as.data.frame(matrix(nrow=2192,ncol=141))
+for (j in 1:141 ){
+	nas[,j] = df_stat[[stations[j]]]$AQ_pm10
+}
+nas = matrix(as.integer(!is.na(nas)),nrow = 2192,ncol=141)
+rownames(nas)=1:nrow(nas)
+colnames(nas) = stations
+head(nas)
+pdf("na_time_series.pdf")
+heatmap(t(nas),Colv=NA, Rowv=NA,col = c("white", "darkred"), scale='column',xlab="days",ylab="stations",
+		 margins = c(3, 3))
+dev.off()
+
+```
+
+
+
+
+
+
+# Maps plots
+
 
 # displaying pm10 levels
 Idea: plot the values for pm10 each day, like with "bubbles" of ggplot, so to get 2192 plots. And then combine all them in a single gif, which shows the evolution over time of those pm10 values.
