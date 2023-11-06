@@ -1,0 +1,15 @@
+Package: drpm
+Type: Package
+Title: Dependent Random Partition Model
+Version: 0.1.0
+Authors@R: person(given = "Garritt", family = "L. Page", email = "page@stat.byu.edu", role = c("aut", "cre", "cph"))
+Maintainer: Garritt L. Page <page@stat.byu.edu>
+Description: Provides an R-wrapper function that access C-code that fits models that employ a 
+              dependent random partition model as detailed in Page et al. <arXiv:1912.11542>.
+              All the models detailed in the paper are available as special cases. 
+License: GPL
+Encoding: UTF-8
+LazyData: true
+NeedsCompilation: yes
+Packaged: 2021-04-21 21:23:36 UTC; gpage
+Author: Garritt L. Page [aut, cre, cph]

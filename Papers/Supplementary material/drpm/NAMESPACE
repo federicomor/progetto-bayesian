@@ -1,0 +1,7 @@
+useDynLib(drpm, .registration = TRUE)
+
+export(drpm_fit)
+export(weightedDDP)
+export(linearDDP)
+export(gaussian_crp)
+export(gaussian_dp)

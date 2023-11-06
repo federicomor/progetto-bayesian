@@ -11,7 +11,7 @@ library(sf)
 
 # "veloce" na check
 ```{r}
-colnames(df_agri)
+# colnames(df_agri)
 stations = unique(df_agri$IDStations)
 nas = as.data.frame(matrix(nrow=2192,ncol=141))
 for (j in 1:141 ){
@@ -20,13 +20,10 @@ for (j in 1:141 ){
 nas = matrix(as.integer(!is.na(nas)),nrow = 2192,ncol=141)
 rownames(nas)=1:nrow(nas)
 colnames(nas) = stations
-head(nas)
-```
+# head(nas)
 
-
-```{r}
 pdf("na_time_series.pdf",width=8,height=8)
-heatmap(t(nas),Colv=NA, Rowv=NA,col = c("white", "darkred"), scale='column',xlab="days",ylab="stations",
+heatmap(t(nas),Colv=NA, Rowv=NA,col = c("white", "darkred"), scale='none',xlab="days",ylab="stations",
 		 margins = c(3, 3),main="NA time series (white are NAs)")
 dev.off()
 
