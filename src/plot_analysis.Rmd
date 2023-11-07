@@ -155,13 +155,12 @@ file_name = "map_gif"
 output_file <- paste0("./gifs/",file_name,".gif")
 anim_save(output_file,mappa_completa)
 
-#video ??
 ```
 
 
 # create video
 
-# Trend plots
+# Trend plots - normal plots
 ```{r}
 stations = unique(df_agri$IDStations)
 cols = colora(6,970,show=)
@@ -188,70 +187,110 @@ for (st in stations[1:4]){
 
 }
 ```
+
+# Trend plots
+## 1 station - multiple years
 ```{r}
 library(lubridate)
 
+
 stations = unique(df_agri$IDStations)
-cols = colora(6,970,show=)
+cols = colora(6,970,show=F)
 
 # for semplicity let's do one station for now, can be expanded with a simple for loop
 st = stations[1]
 df_st = df_stat[[st]]
 
-data2016 = subset(df_st,Time>="2016-01-01" & Time<="2016-12-31")
-data2017 = subset(df_st,Time>="2017-01-01" & Time<="2017-12-31")
-data2018 = subset(df_st,Time>="2018-01-01" & Time<="2018-12-31")
-data2019 = subset(df_st,Time>="2019-01-01" & Time<="2019-12-31")
-data2020 = subset(df_st,Time>="2020-01-01" & Time<="2020-12-31")
-data2021 = subset(df_st,Time>="2021-01-01" & Time<="2021-12-31")
+data_16_to_21 = subset(df_st,Time>="2016-01-01" & Time<="2021-12-31")
+data_16_to_21$month_day =paste0("1990-",substr(data_16_to_21$Time,6,10))
 
-data_16_to_21 = rbind(data2016,data2017,data2018,data2019,data2020,data2021)
-time_trend <- ggplot()
 
-# Converti la colonna Time in formato Date
-data_16_to_21$Time <- as.Date(data_16_to_21$Time, format =  "%y %d %m")
+data_16_to_21$month_day = as.Date(data_16_to_21$month_day)
+data_16_to_21$t = format(data_16_to_21$Time,"%j")
 
 # Crea il grafico ggplot
-time_trend <- ggplot(data_16_to_21, aes(x = Time, y = AQ_pm10, color = as.factor(year(Time)))) +
+time_trend <- ggplot(data_16_to_21,aes(x = month_day, 
+  			     y = AQ_pm10,
+  			     group=year(Time), 
+			     color = as.factor(year(Time)))) +
+	
   geom_line() +
-  labs(x = "Time", y = "PM_10 values", title = paste0("Station ", st, ", all years")) +
+	
+  labs(x = "Year", y = "PM_10 values", title = paste0("Station ", st, ", all years")) +
   ylim(range(na.omit(data_16_to_21$AQ_pm10))) +
-  scale_color_manual(values = cols)+
-  geom_point() +
-  transition_reveal(Time)
+  scale_x_date(date_labels = "%b",date_breaks = "1 month")+
 
-# Aggiungi la legenda
-time_trend <- time_trend + theme(legend.position = "top")
+  scale_color_manual(values = cols) +
+  theme(legend.position = "top")+
+  theme(panel.grid = element_blank()) 
 
-file_name = "trend_gif"
-# gif
-output_file <- paste0("./gifs/",file_name,".gif")
-anim_save(output_file,time_trend)
-
+print(time_trend)
 ```
 
-
-
+### animation
 ```{r}
-cols = colora(10,970,show=1)
-for (year in 2016:2021){
-	for (i in 1:length(stations)){
-		st = stations[i]
-		df_st = df_stat[[st]]
-		df_st = df_st[df_st$Time>=as.Date(paste0(year,"-01-01"),"%Y-%m-%d") &
-					  df_st$Time<=as.Date(paste0(year,"-12-31"),"%Y-%m-%d"),]
-		if(st=="1264"){
-			plot(df_st$Time,df_st$AQ_pm10,type="l",col=cols[i%%10],
-				 ylim=range(na.omit(df_agri$AQ_pm10)),main=paste0(year," all the stations"),
-				 xlab="months",ylab="PM_10 values")
-		} else{
-			lines(df_st$Time,df_st$AQ_pm10,type="l",col=cols[i%%10])
-		}
-	}
-}
+time_trend <- time_trend + transition_reveal(as.numeric(t)) + geom_point() + view_follow(fixed_x = T,fixed_y = T)
+
+
+b <- animate(time_trend, duration = 20, fps = 20, renderer = av_renderer())
+
+
+file_name = "time_trend"
+output_file <- paste0("./gifs/",file_name,".mp4")
+anim_save(output_file,b)
+
 ```
 
 
+## 1 year - multiple stations
+```{r}
+cols = colora(10,970,show=0)
+
+stations = unique(df_agri$IDStations)
+
+# for semplicity let's do one year for now, can be expanded with a simple for loop
+year = 2016
+# and also a subset of stations
+st = stations[1:4]
+
+data_year<-df_agri %>% subset(IDStations %in% st)
+
+data_year = data_year[data_year$Time>=as.Date(paste0(year,"-01-01"),"%Y-%m-%d") &
+					  data_year$Time<=as.Date(paste0(year,"-12-31"),"%Y-%m-%d"),]
+
+# Crea il grafico ggplot
+station_trend <- ggplot(data_year,aes(x = Time, 
+  			     y = AQ_pm10,
+  			     group=IDStations, 
+			     color = as.factor(IDStations))) +
+	
+  geom_line() +
+  labs(x = "Stations", y = "PM_10 values", title = paste0("Year: ",year, ", all stations")) +
+  ylim(range(na.omit(data_16_to_21$AQ_pm10))) +
+  scale_color_manual(values = cols) +
+  theme(legend.position = "top")+
+  scale_x_date(date_labels = "%b",date_breaks = "1 month")+
+  theme(panel.grid = element_blank()) 
+
+
+station_trend
+```
+
+
+
+### animation
+```{r}
+station_trend <- station_trend + transition_reveal(Time) + geom_point() + view_follow(fixed_x = T,fixed_y = T)
+
+
+b <- animate(station_trend, duration = 20, fps = 20, renderer = av_renderer())
+
+
+file_name = "station_trend"
+output_file <- paste0("./gifs/",file_name,".mp4")
+anim_save(output_file,b)
+
+```
 
 
 
