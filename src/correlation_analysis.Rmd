@@ -28,6 +28,7 @@ cat(crayon::cyan("❤ Loaded stations split dataset. Available as df_stat.\n"))
 library(roahd)
 library(rlist)
 library(corrplot)
+# library(ggplot2)
 ```
 
 Plot colnames dataset
@@ -58,7 +59,7 @@ dim(mat_pm10)
 Computing correlation as functional data of AQ covariates
 
 ```{r}
-AQ_fts = c("AQ_pm10",
+AQ_names = c("AQ_pm10",
 		   "AQ_pm25",
 		   "AQ_co",
 		   "AQ_nh3",
@@ -68,14 +69,14 @@ AQ_fts = c("AQ_pm10",
 
 
 list_fdata = list()
-for(ft in AQ_fts){
+for(ft in AQ_names){
 	f_data = fData(1:365,
 				   do.call(rbind, lapply(df_stat, function(x) subset(x,Time>="2017-01-01" & Time<="2017-12-31")[[ft]])))
 	
 	
 	list_fdata = list.append(list_fdata, f_data)
 }
-names(list_fdata) = AQ_fts
+names(list_fdata) = AQ_names
 
 
 mf_data <- as.mfData(list_fdata)
@@ -86,8 +87,8 @@ plot(mf_data)
 
 ```{r functional_Spearman_correlation}
 cor_AQ = cor_spearman(mf_data, ordering='MHI')
-rownames(cor_AQ) = AQ_fts
-colnames(cor_AQ) = AQ_fts
+rownames(cor_AQ) = AQ_names
+colnames(cor_AQ) = AQ_names
 
 cor_AQ
 corrplot(cor_AQ, method = 'color' ,type="upper", sig.level = 0.01, insig = "blank")
@@ -95,6 +96,50 @@ corrplot.mixed(cor_AQ, insig = "blank")
 ```
 
 
+pm10 vs WE
 
+
+```{r}
+fts_names = colnames(df_agri)[6:35]
+
+list_fdata = list()
+
+
+for(ft in fts_names){
+	f_data = fData(1:365,
+				   do.call(rbind, lapply(df_stat, function(x) subset(x,Time>="2017-01-01" & Time<="2017-12-31")[[ft]])))
+	
+	
+	list_fdata = list.append(list_fdata, f_data)
+}
+names(list_fdata) = fts_names
+
+
+mf_data <- as.mfData(list_fdata)
+# plot(mf_data)
+
+
+```
+
+
+```{r}
+cor_fts = cor_spearman(mf_data, ordering='MHI')
+rownames(cor_fts) = fts_names
+colnames(cor_fts) = fts_names
+
+cor_fts
+corrplot(cor_fts, method = 'color' ,type="upper", sig.level = 0.01, insig = "blank")
+corrplot.mixed(cor_fts, insig = "blank")
+```
+```{r}
+cor_fts[1,]
+
+plot(cor_fts[1,], ylim = c(-1,1), 
+	 main = "Correlation wrt pm10 2017")
+
+### We can do a better plot
+###
+
+```
 
 
