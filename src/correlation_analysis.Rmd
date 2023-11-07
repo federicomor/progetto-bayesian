@@ -1,0 +1,100 @@
+---
+title: "depth based correletion"
+output: html_notebook
+---
+
+Analysis correlation year 2017
+
+
+
+
+```{r uploading data}
+# source("include.R")
+
+library(crayon)
+load("../data/v300/df_agri.Rdata")
+cat(crayon::cyan("❤ Loaded agrimonia dataset. Available as df_agri.\n"))
+df_agri$Time <- as.Date(df_agri$Time, "%Y-%m-%d")
+cat(crayon::green("❤ Converted df_agri$Time to Date variable type, year-month-day.\n"))
+DATE_FORMAT = "%Y-%m-%d"
+cat(crayon::green("❤ Created DATE_FORMAT variable for date comparisons.\n"))
+# cat(crayon::green('❤ Usage: ...Time >= as.Date(paste0(year,"-01-01"),DATE_FORMAT).\n'))
+load("../data/v300/df_stat.Rdata")
+cat(crayon::cyan("❤ Loaded stations split dataset. Available as df_stat.\n"))
+
+```
+
+```{r import_libraries}
+library(roahd)
+library(rlist)
+library(corrplot)
+```
+
+Plot colnames dataset
+```{r}
+colnames(df_agri)
+```
+
+
+```{r}
+mat_pm10 = do.call(rbind, 
+			lapply(df_stat, function(x) subset(x,Time>="2017-01-01" & Time<="2017-12-31")$AQ_pm10)
+			)
+
+dim(mat_pm10)
+
+# #plot pm10 2017
+# fdata_pm10 <- fData(1:365, mat_pm10)
+# plot(fdata_pm10)
+# 
+# 
+# #same plot + median
+# median_curve <- median_fData(fData = fdata_pm10, type = "MBD")
+# plot(fdata_pm10)
+# lines(1:365,median_curve$values)
+```
+
+
+Computing correlation as functional data of AQ covariates
+
+```{r}
+AQ_fts = c("AQ_pm10",
+		   "AQ_pm25",
+		   "AQ_co",
+		   "AQ_nh3",
+		   "AQ_nox",
+		   "AQ_no2",
+		   "AQ_so2")
+
+
+list_fdata = list()
+for(ft in AQ_fts){
+	f_data = fData(1:365,
+				   do.call(rbind, lapply(df_stat, function(x) subset(x,Time>="2017-01-01" & Time<="2017-12-31")[[ft]])))
+	
+	
+	list_fdata = list.append(list_fdata, f_data)
+}
+names(list_fdata) = AQ_fts
+
+
+mf_data <- as.mfData(list_fdata)
+plot(mf_data)
+
+```
+
+
+```{r functional_Spearman_correlation}
+cor_AQ = cor_spearman(mf_data, ordering='MHI')
+rownames(cor_AQ) = AQ_fts
+colnames(cor_AQ) = AQ_fts
+
+cor_AQ
+corrplot(cor_AQ, method = 'color' ,type="upper", sig.level = 0.01, insig = "blank")
+corrplot.mixed(cor_AQ, insig = "blank")
+```
+
+
+
+
+
