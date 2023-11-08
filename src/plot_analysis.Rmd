@@ -90,7 +90,7 @@ sites <- data.frame(
 
 pad <- 0.2 * c(-1, 1)
 
-ombardia <- regioni_italiane[regioni_italiane$NAME_1 == "Lombardia",]
+lombardia <- regioni_italiane[regioni_italiane$NAME_1 == "Lombardia",]
 
 # Check if a station is inside each subregion
 regioni_italiane$station_inside <- sapply(regioni_italiane$geometry, function(x) any(st_intersects(st_as_sf(sites, coords = c("longitude", "latitude")), x)))
@@ -101,8 +101,8 @@ regioni_italiane$station_inside <- sapply(regioni_italiane$geometry, function(x)
 # crea mappa lombardia
 mappa_migliorata <- ggplot() +
   geom_sf(data = regioni_italiane,aes(fill = station_inside), color = "lightgreen", size = 1) +
-  geom_sf(data = regioni_italiane[regioni_italiane$NAME_1 == "Lombardia",], fill = NA, color = "red", size = 1) +
-	scale_fill_manual(values = c("white", "darkgreen")) +  # Define colors for inside/outside stations
+  geom_sf(data = lombardia,fill=NA, color = "red", size = 1) +
+	scale_fill_manual(values = c("gold", "white")) +  # Define colors for inside/outside stations
   coord_sf(xlim = range(sites$longitude) + pad, ylim = range(sites$latitude) + pad, expand = FALSE)+
 	theme(legend.position = "none")
 # aggiungi stazioni
