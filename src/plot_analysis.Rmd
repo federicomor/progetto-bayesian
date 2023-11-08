@@ -8,7 +8,7 @@ library(maps)
 library(ggplot2)
 library(sf)
 
-#load("../data/v300/data_agc_lomb.Rdata")
+load("../data/v300/data_agc_lomb.Rdata")
 ```
 
 
@@ -77,7 +77,7 @@ detach(data_2016_lomb)
 So idea: plot bubbles with size according to the pm10 value.
 And maybe if we want use also a different color (like to separate high/medium/low values).
 
-```{r}
+```{r,warning=FALSE}
 details <- 3
 extension <- ".shp"
 
@@ -90,11 +90,21 @@ sites <- data.frame(
 
 pad <- 0.2 * c(-1, 1)
 
+ombardia <- regioni_italiane[regioni_italiane$NAME_1 == "Lombardia",]
+
+# Check if a station is inside each subregion
+regioni_italiane$station_inside <- sapply(regioni_italiane$geometry, function(x) any(st_intersects(st_as_sf(sites, coords = c("longitude", "latitude")), x)))
+```
+
+
+```{r}
 # crea mappa lombardia
 mappa_migliorata <- ggplot() +
-  geom_sf(data = regioni_italiane, fill = "lightgreen", color = "lightgreen", size = 1) +
+  geom_sf(data = regioni_italiane,aes(fill = station_inside), color = "lightgreen", size = 1) +
   geom_sf(data = regioni_italiane[regioni_italiane$NAME_1 == "Lombardia",], fill = NA, color = "red", size = 1) +
-  coord_sf(xlim = range(sites$longitude) + pad, ylim = range(sites$latitude) + pad, expand = FALSE) 
+	scale_fill_manual(values = c("white", "darkgreen")) +  # Define colors for inside/outside stations
+  coord_sf(xlim = range(sites$longitude) + pad, ylim = range(sites$latitude) + pad, expand = FALSE)+
+	theme(legend.position = "none")
 # aggiungi stazioni
 mappa_migliorata <- mappa_migliorata + geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred") 
 
@@ -106,8 +116,8 @@ mappa_migliorata <- mappa_migliorata +
 
 # Aggiungi griglia colorata per altitudine
 mappa_migliorata <- mappa_migliorata +
-  geom_tile(data_2016_lomb = df_altitude, aes(x = Longitude, y = Latitude, fill = Altitude), width = 1, height = 1) +
-  scale_fill_gradient(low = "lightblue", high = "darkblue") +
+  geom_tile(data = data_2016_lomb, aes(x = Longitude, y = Latitude, fill = Altitude), width = 1, height = 1) +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") 
 
 print(mappa_migliorata)
 
