@@ -1,0 +1,13 @@
+---
+title: "Comment about papers"
+output: html_notebook
+---
+I write the summary here in a Rmd file as it can be rendered with html for better reading, and here i can include sections of code, math latex stuff, ecc.
+
+# Paper 4
+Not very useful, funny model on graphs, but it does not involve the use of covariates.
+
+# Paper 5
+Seems better for now. Still reading it.
+(´。＿。｀)
+
