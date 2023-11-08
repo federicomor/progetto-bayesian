@@ -9,7 +9,7 @@ library(ggplot2)
 library(sf)
 ```
 
-# "veloce" na check
+# "quick" na time seried check
 ```{r}
 # colnames(df_agri)
 stations = unique(df_agri$IDStations)
@@ -41,10 +41,7 @@ heatmap(t(nas[,95:141]),Colv=NA, Rowv=NA,col = c("white", "darkred"), scale='non
 
 
 
-# Maps plots
-
-
-# displaying pm10 levels
+# initial test, displaying stations
 Idea: plot the values for pm10 each day, like with "bubbles" of ggplot, so to get 2192 plots. And then combine all them in a single gif, which shows the evolution over time of those pm10 values.
 
 <https://askubuntu.com/questions/648244/how-do-i-create-an-animated-gif-from-still-images-preferably-with-the-command-l>
@@ -70,7 +67,125 @@ mappa_completa <- ggplot() +
 print(mappa_completa)
 ```
 
-# LERP function
+## WIND plot
+### old code with the for
+```{r}
+cardinal_to_degree <- function(cardinal) {
+  cardinal_degrees <- c(N = 0, NNE = 22.5, NE = 45, ENE = 67.5, E = 90,
+  					  ESE = 112.5, SE = 135, SSE = 157.5,
+  					  S = 180, SSW = 202.5, SW = 225, WSW = 247.5,
+  					  W = 270, WNW = 292.5, NW = 315, NNW = 337.5)
+  return(cardinal_degrees[cardinal])
+}
+
+sites <- data.frame(
+	longitude = unique(df_agri$Longitude), 
+	latitude = unique(df_agri$Latitude))
+
+for (data in seq.Date(from=as.Date("2016-01-01",DATE_FORMAT),
+					  to=as.Date("2016-01-02",DATE_FORMAT),by="days")){
+		
+	dt = as.Date(data,origin="1970-01-01")
+	df_date = df_agri[which(df_agri$Time == dt),]
+	print(dt)
+	df_date$end_longitude <- df_date$Longitude + sin(cardinal_to_degree(df_date$WE_mode_wind_direction_10m)) * 
+		df_date$WE_wind_speed_10m_mean
+	df_date$end_latitude <- df_date$Latitude + cos(cardinal_to_degree(df_date$WE_mode_wind_direction_10m)) *
+		df_date$WE_wind_speed_10m_mean
+
+	
+	pad = 0.2*c(-1,1)
+	mappa_completa <- ggplot() +
+	  geom_sf(data = regioni_italiane, fill = "lightblue", color = "black", size = 0.5)+
+		  coord_sf(xlim = range(sites$longitude)+pad, 
+		  		 ylim = range(sites$latitude)+pad, expand = FALSE)+
+	  # geom_sf(data = world) +
+		
+		# fede version
+	 # geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred")+
+	#	geom_point(data=df_date,aes(x=Longitude,y=Latitude),size=df_date$AQ_pm10/10,alpha=0.5)+
+	#	ggtitle(dt)
+	
+		
+		
+	  geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred")+
+		geom_point(data=df_date,aes(x=Longitude,y=Latitude),
+				   size=lerp_pm10_radius(df_date$AQ_pm10),
+				   color = df_date$AQ_pm10/10, alpha=0.5)+
+		geom_segment(data = df_date,
+			 aes(x = Longitude, y = Latitude, xend = end_longitude, yend = end_latitude),
+			 arrow = arrow(type = "open", length = unit(0.2, "inches"), ends = "last"),
+			 lineend = "round", size = 0.2)+
+		ggtitle(dt)
+	
+	print(mappa_completa)
+	#ggsave(paste0("./maps_images/",dt,".jpeg"),plot=mappa_completa,width=512,height=512,units="px")
+	# ggsave(paste0("./maps_images_temp/",dt,".jpeg"),plot=mappa_completa,width=512,height=512,units="px")
+}
+```
+
+
+
+
+### new code with gganimate
+```{r}
+cardinal_to_degree <- function(cardinal) {
+  cardinal_degrees <- c(N = 0, NNE = 22.5, NE = 45, ENE = 67.5, E = 90,
+  					  ESE = 112.5, SE = 135, SSE = 157.5,
+  					  S = 180, SSW = 202.5, SW = 225, WSW = 247.5,
+  					  W = 270, WNW = 292.5, NW = 315, NNW = 337.5)
+  return(cardinal_degrees[cardinal])
+}
+
+library(gganimate)
+theme_set(theme_bw())
+
+wind_arrows <- data.frame(
+  longitude = df_agri$Longitude,
+  latitude = df_agri$Latitude,
+  direction = cardinal_to_degree(df_agri$WE_mode_wind_direction_10m),
+  intensity = df_agri$WE_wind_speed_10m_mean
+)
+# Calcola le coordinate di fine delle frecce in base alla direzione e all'intensità
+wind_arrows$end_longitude <- wind_arrows$longitude + sin(wind_arrows$direction) * wind_arrows$intensity
+wind_arrows$end_latitude <- wind_arrows$latitude + cos(wind_arrows$direction) * wind_arrows$intensity
+
+date_time = seq.Date(from=as.Date("2016-01-01",DATE_FORMAT),
+					  to=as.Date("2016-01-03",DATE_FORMAT),by="days")
+date_time = as.Date(date_time)
+df_date = df_agri[which(df_agri$Time %in% date_time),]
+wind_arrows = wind_arrows[which(df_agri$Time %in% date_time),]
+
+pad = 0.2*c(-1,1)
+mappa_completa <- ggplot() +
+  geom_sf(data = regioni_italiane, fill = "lightblue", color = "black", size = 0.5)+
+	  coord_sf(xlim = range(na.omit(wind_arrows$longitude))+pad,
+	  		 ylim = range(na.omit(wind_arrows$latitude))+pad, expand = FALSE)+
+  geom_point(data = sites, aes(x = longitude, y = latitude), 
+  		   size = 1, shape = 23, fill = "darkred")+
+#   geom_point(data=df_date,aes(x=Longitude,y=Latitude),
+# 			   size=lerp_pm10_radius(df_date$AQ_pm10),
+# 			   color = lerp_pm10_color(df_date$AQ_pm10), alpha=0.5)+
+geom_segment(data = wind_arrows,
+			 aes(x = longitude, y = latitude, xend = end_longitude, yend = end_latitude),
+			 arrow = arrow(type = "closed", length = unit(0.2, "inches"), ends = "last"),
+			 lineend = "round", size = 0.5)+
+  ggtitle(dt)+
+  transition_time(Time)+
+  labs(title = "Day: {frame_time}")
+
+file_name = "wind_gif"
+# gif
+output_file <- paste0("./gifs/",file_name,".gif")
+anim_save(output_file,mappa_completa)
+
+#video ??
+
+
+```
+
+# MAPS plot again
+## LERP function
 ```{r}
 lerp_pm10_radius <- function(val){
 	radius_0 = 1
@@ -116,7 +231,7 @@ lerp_pm10_color <- function(val) {
 ```
 
 
-# creating images for the gif
+## creating images for the gif
 
 devtools::install_github("dgrtwo/gganimate")
 
@@ -130,7 +245,7 @@ sites <- data.frame(
 
 
 date_time = seq.Date(from=as.Date("2016-01-01",DATE_FORMAT),
-					  to=as.Date("2016-02-01",DATE_FORMAT),by="days")
+					  to=as.Date("2016-01-14",DATE_FORMAT),by="days")
 date_time = as.Date(date_time)
 		
 df_date = df_agri[which(df_agri$Time %in% date_time),]
@@ -159,9 +274,9 @@ anim_save(output_file,mappa_completa)
 ```
 
 
-# create video
+## create video
 
-# Trend plots
+# TREND plots
 ```{r}
 stations = unique(df_agri$IDStations)
 cols = colora(6,970,show=)
@@ -188,6 +303,8 @@ for (st in stations[1:4]){
 
 }
 ```
+
+
 ```{r}
 library(lubridate)
 
