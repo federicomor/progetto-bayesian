@@ -469,7 +469,7 @@ head(df_agri)
 ```
 
 
-	# TO DO LIST:
+# TO DO LIST:
 - add legends to ggplots
 - color points of map depending on altitude
 - divide map into regions and add a method to color them depending on certain values
