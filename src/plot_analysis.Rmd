@@ -7,7 +7,12 @@ source("include.R")
 library(maps)
 library(ggplot2)
 library(sf)
+
+#load("../data/v300/data_agc_lomb.Rdata")
 ```
+
+
+
 
 # "veloce" na check
 ```{r}
@@ -43,6 +48,27 @@ heatmap(t(nas[,95:141]),Colv=NA, Rowv=NA,col = c("white", "darkred"), scale='non
 
 # Maps plots
 
+## exploring the dataset with uniform measurments
+
+```{r}
+head(data_agc_lomb)
+colnames(data_agc_lomb)
+dim(data_agc_lomb)
+attach(data_agc_lomb)
+Time = as.Date(Time)
+data_2016_lomb = data_agc_lomb[which(Time=="2016-01-01"),] 
+detach(data_agc_lomb)
+```
+```{r}
+attach(data_2016_lomb)
+head(data_2016_lomb)
+unique(Latitude)
+unique(Longitude)
+unique(Altitude)
+
+
+detach(data_2016_lomb)
+```
 
 # displaying pm10 levels
 Idea: plot the values for pm10 each day, like with "bubbles" of ggplot, so to get 2192 plots. And then combine all them in a single gif, which shows the evolution over time of those pm10 values.
@@ -53,21 +79,40 @@ So idea: plot bubbles with size according to the pm10 value.
 And maybe if we want use also a different color (like to separate high/medium/low values).
 
 ```{r}
-regioni_italiane <- st_read("italia/gadm40_ITA_1.shp") 
+details <- 3
+extension <- ".shp"
 
+regioni_italiane <- st_read(paste0("italia/gadm40_ITA_",details,extension))
+#regioni_italiane = data.frame(regioni_italiane)
 sites <- data.frame(
-	longitude = unique(df_agri$Longitude), 
-	latitude = unique(df_agri$Latitude))
+    longitude = unique(df_agri$Longitude), 
+    latitude = unique(df_agri$Latitude)
+)
 
-pad = 0.2*c(-1,1)
-mappa_completa <- ggplot() +
-  geom_sf(data = regioni_italiane, fill = "lightblue", color = "black", size = 0.5)+
-	  coord_sf(xlim = range(sites$longitude)+pad, 
-	  		 ylim = range(sites$latitude)+pad, expand = FALSE)+
-  # geom_sf(data = world) +
-  geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred")
- 
-print(mappa_completa)
+pad <- 0.2 * c(-1, 1)
+
+# crea mappa lombardia
+mappa_migliorata <- ggplot() +
+  geom_sf(data = regioni_italiane, fill = "lightgreen", color = "lightgreen", size = 1) +
+  geom_sf(data = regioni_italiane[regioni_italiane$NAME_1 == "Lombardia",], fill = NA, color = "red", size = 1) +
+  coord_sf(xlim = range(sites$longitude) + pad, ylim = range(sites$latitude) + pad, expand = FALSE) 
+# aggiungi stazioni
+mappa_migliorata <- mappa_migliorata + geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred") 
+
+# aggiungi grid for long and lat
+mappa_migliorata <- mappa_migliorata +
+	geom_hline( yintercept = data_2016_lomb$Latitude, color = "blue", size = 0.1) +  # Linee orizzontali
+    geom_vline(xintercept = data_2016_lomb$Longitude, color = "blue", size = 0.1) +  # Linee verticali
+    theme_classic()
+
+# Aggiungi griglia colorata per altitudine
+mappa_migliorata <- mappa_migliorata +
+  geom_tile(data_2016_lomb = df_altitude, aes(x = Longitude, y = Latitude, fill = Altitude), width = 1, height = 1) +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") +
+
+print(mappa_migliorata)
+
+
 ```
 
 # LERP function
@@ -132,33 +177,26 @@ sites <- data.frame(
 date_time = seq.Date(from=as.Date("2016-01-01",DATE_FORMAT),
 					  to=as.Date("2016-02-01",DATE_FORMAT),by="days")
 date_time = as.Date(date_time)
-		
+	
 df_date = df_agri[which(df_agri$Time %in% date_time),]
 
 
 pad = 0.2*c(-1,1)
-mappa_completa <- ggplot() +
-  geom_sf(data = regioni_italiane, fill = "lightblue", color = "black", size = 0.5)+
-	  coord_sf(xlim = range(sites$longitude)+pad, 
-	  		 ylim = range(sites$latitude)+pad, expand = FALSE)+
-  geom_point(data = sites, aes(x = longitude, y = latitude), 
-  		   size = 1, shape = 23, fill = "darkred")+
+mappa_completa <- mappa_migliorata +
   geom_point(data=df_date,aes(x=Longitude,y=Latitude),
 			   size=lerp_pm10_radius(df_date$AQ_pm10),
 			   color = lerp_pm10_color(df_date$AQ_pm10), alpha=0.5)+
   ggtitle(dt)+
-  transition_time(Time)+
-  labs(title = "Day: {frame_time}")
+  transition_time(Time)+labs(title = "Day: {frame_time}")
+
 
 file_name = "map_gif"
 # gif
 output_file <- paste0("./gifs/",file_name,".gif")
 anim_save(output_file,mappa_completa)
-
 ```
 
 
-# create video
 
 # Trend plots - normal plots
 ```{r}
@@ -222,7 +260,7 @@ time_trend <- ggplot(data_16_to_21,aes(x = month_day,
 
   scale_color_manual(values = cols) +
   theme(legend.position = "top")+
-  theme(panel.grid = element_blank()) 
+  theme_classic() 
 
 print(time_trend)
 ```
@@ -292,9 +330,18 @@ anim_save(output_file,b)
 
 ```
 
+```{r}
+head(df_agri)
+```
 
 
+# TO DO LIST:
+- add legends to ggplots
+- color points of map depending on altitude
+- divide map into regions and add a method to color them depending on certain values
+- vector map of wind ?
 
+- multi year plots?
 
 
 
