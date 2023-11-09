@@ -10,65 +10,18 @@ library(sf)
 
 load("../data/v300/data_agc_lomb.Rdata")
 ```
-
-
-# "quick" na time seried check
-
-```{r}
-# colnames(df_agri)
-stations = unique(df_agri$IDStations)
-nas = as.data.frame(matrix(nrow=2192,ncol=141))
-for (j in 1:141 ){
-	nas[,j] = df_stat[[stations[j]]]$AQ_pm10
-}
-nas = matrix(as.integer(!is.na(nas)),nrow = 2192,ncol=141)
-rownames(nas)=1:nrow(nas)
-colnames(nas) = stations
-# head(nas)
-
-# pdf("na_time_series.pdf",width=10,height=9)
-heatmap(t(nas[,1:70]),Colv=NA, Rowv=NA,col = c("white", "darkred"), scale='none',xlab="days",ylab="stations",
-		 margins = c(3, 3),main="NA time series (white are NAs) all data")
-
-heatmap(t(nas[,1:47]),Colv=NA, Rowv=NA,col = c("white", "darkred"), scale='none',xlab="days",ylab="stations",
-		 margins = c(3, 3),main="NA time series (white are NAs) zoom 1 of 3",cexRow=0.5)
-heatmap(t(nas[,48:94]),Colv=NA, Rowv=NA,col = c("white", "darkred"),scale='none',xlab="days",ylab="stations",
-		 margins = c(3, 3),main="NA time series (white are NAs) zoom 2 of 3",cexRow=0.5)
-heatmap(t(nas[,95:141]),Colv=NA, Rowv=NA,col = c("white", "darkred"), scale='none',xlab="days",ylab="stations",
-		margins = c(3, 4.8),main="NA time series (white are NAs) zoom 3 of 3",cexRow=0.5)
-# dev.off()
-
-```
-
-
-
-
-
-
-
 # Maps plots
 
 ## exploring the dataset with uniform measurments
 
 ```{r}
-head(data_agc_lomb)
-colnames(data_agc_lomb)
-dim(data_agc_lomb)
 attach(data_agc_lomb)
 Time = as.Date(Time)
 data_2016_lomb = data_agc_lomb[which(Time=="2016-01-01"),] 
 detach(data_agc_lomb)
-```
-```{r}
-attach(data_2016_lomb)
-head(data_2016_lomb)
-unique(Latitude)
-unique(Longitude)
-unique(Altitude)
 
-
-detach(data_2016_lomb)
 ```
+
 
 # initial test, displaying stations
 
@@ -78,113 +31,68 @@ So idea: plot bubbles with size according to the pm10 value.
 And maybe if we want use also a different color (like to separate high/medium/low values).
 
 ```{r,warning=FALSE}
-details <- 3
-extension <- ".shp"
-
-regioni_italiane <- st_read(paste0("italia/gadm40_ITA_",details,extension))
-#regioni_italiane = data.frame(regioni_italiane)
 sites <- data.frame(
     longitude = unique(df_agri$Longitude), 
     latitude = unique(df_agri$Latitude)
 )
 
-pad <- 0.2 * c(-1, 1)
+
+details <- 3
+details_altre_regioni <- 2
+extension <- ".shp"
+confini  <- c("Emilia-Romagna","Piemonte","Lombardia","Trentino-Alto Adige","Veneto")
+
+regioni_italiane <- st_read(paste0("italia/gadm40_ITA_",details,extension))
+regioni_italiane_2 <- st_read(paste0("italia/gadm40_ITA_",details_altre_regioni,extension))
 
 lombardia <- regioni_italiane[regioni_italiane$NAME_1 == "Lombardia",]
+altre_regioni <- regioni_italiane_2[regioni_italiane_2$NAME_1 %in% confini,]
 
 # Check if a station is inside each subregion
-regioni_italiane$station_inside <- sapply(regioni_italiane$geometry, function(x) any(st_intersects(st_as_sf(sites, coords = c("longitude", "latitude")), x)))
+lombardia$station_inside <- sapply(lombardia$geometry, function(x) any(st_intersects(st_as_sf(sites, coords = c("longitude", "latitude")), x)))
+
+altre_regioni$station_inside <- sapply(altre_regioni$geometry, function(x) any(st_intersects(st_as_sf(sites, coords = c("longitude", "latitude")), x)))
 ```
 
 
 ```{r}
+pad <- 0.2 * c(-1, 1)
 # crea mappa lombardia
 mappa_migliorata <- ggplot() +
-  geom_sf(data = regioni_italiane,aes(fill = station_inside), color = "lightgreen", size = 1) +
-  geom_sf(data = lombardia,fill=NA, color = "red", size = 1) +
-	scale_fill_manual(values = c("gold", "white")) +  # Define colors for inside/outside stations
+	
+  # l'ordine è importante!
+  geom_sf(data = altre_regioni,aes(fill = station_inside),fill = NA, color = "lightgreen", size = 1) +
+  geom_sf(data = lombardia,aes(fill = station_inside), color = "red", size = 1) +
+	
+  scale_fill_manual(values = c("gold", "white")) +  # Define colors for inside/outside stations
   coord_sf(xlim = range(sites$longitude) + pad, ylim = range(sites$latitude) + pad, expand = FALSE)+
-	theme(legend.position = "none")
+	theme(legend.position = "none")+
+	theme_bw()+
+	theme(panel.grid = element_blank()) 
+
 # aggiungi stazioni
 mappa_migliorata <- mappa_migliorata + geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred") 
 
 # aggiungi grid for long and lat
-mappa_migliorata <- mappa_migliorata +
+inutile <- mappa_migliorata +
 	geom_hline( yintercept = data_2016_lomb$Latitude, color = "blue", size = 0.1) +  # Linee orizzontali
-    geom_vline(xintercept = data_2016_lomb$Longitude, color = "blue", size = 0.1) +  # Linee verticali
-    theme_classic()
-
+    geom_vline(xintercept = data_2016_lomb$Longitude, color = "blue", size = 0.1)  # Linee verticali
+    
+	
 # Aggiungi griglia colorata per altitudine
-mappa_migliorata <- mappa_migliorata +
-  geom_tile(data = data_2016_lomb, aes(x = Longitude, y = Latitude, fill = Altitude), width = 1, height = 1) +
-  scale_fill_gradient(low = "lightblue", high = "darkblue") 
+gradient_map <- 
+	mappa_migliorata +
+  geom_tile(data = data_2016_lomb, aes(x = Longitude, y = Latitude, fill = Altitude), colour = "grey50",width = 1, height = 1,alpha = 0.2) +
+  scale_fill_gradient(low = "lightgreen", high = "brown",breaks = c(min(data_2016_lomb$Altitude),max(data_2016_lomb$Altitude))) 
 
+print(gradient_map)
 print(mappa_migliorata)
 
 
 ```
 
 ## WIND plot
-### old code with the for
-```{r}
-cardinal_to_degree <- function(cardinal) {
-  cardinal_degrees <- c(N = 0, NNE = 22.5, NE = 45, ENE = 67.5, E = 90,
-  					  ESE = 112.5, SE = 135, SSE = 157.5,
-  					  S = 180, SSW = 202.5, SW = 225, WSW = 247.5,
-  					  W = 270, WNW = 292.5, NW = 315, NNW = 337.5)
-  return(cardinal_degrees[cardinal])
-}
 
-sites <- data.frame(
-	longitude = unique(df_agri$Longitude), 
-	latitude = unique(df_agri$Latitude))
-
-for (data in seq.Date(from=as.Date("2016-01-01",DATE_FORMAT),
-					  to=as.Date("2016-01-02",DATE_FORMAT),by="days")){
-		
-	dt = as.Date(data,origin="1970-01-01")
-	df_date = df_agri[which(df_agri$Time == dt),]
-	print(dt)
-	df_date$end_longitude <- df_date$Longitude + sin(cardinal_to_degree(df_date$WE_mode_wind_direction_10m)) * 
-		df_date$WE_wind_speed_10m_mean
-	df_date$end_latitude <- df_date$Latitude + cos(cardinal_to_degree(df_date$WE_mode_wind_direction_10m)) *
-		df_date$WE_wind_speed_10m_mean
-
-	
-	pad = 0.2*c(-1,1)
-	mappa_completa <- ggplot() +
-	  geom_sf(data = regioni_italiane, fill = "lightblue", color = "black", size = 0.5)+
-		  coord_sf(xlim = range(sites$longitude)+pad, 
-		  		 ylim = range(sites$latitude)+pad, expand = FALSE)+
-	  # geom_sf(data = world) +
-		
-		# fede version
-	 # geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred")+
-	#	geom_point(data=df_date,aes(x=Longitude,y=Latitude),size=df_date$AQ_pm10/10,alpha=0.5)+
-	#	ggtitle(dt)
-	
-		
-		
-	  geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred")+
-		geom_point(data=df_date,aes(x=Longitude,y=Latitude),
-				   size=lerp_pm10_radius(df_date$AQ_pm10),
-				   color = df_date$AQ_pm10/10, alpha=0.5)+
-		geom_segment(data = df_date,
-			 aes(x = Longitude, y = Latitude, xend = end_longitude, yend = end_latitude),
-			 arrow = arrow(type = "open", length = unit(0.2, "inches"), ends = "last"),
-			 lineend = "round", size = 0.2)+
-		ggtitle(dt)
-	
-	print(mappa_completa)
-	#ggsave(paste0("./maps_images/",dt,".jpeg"),plot=mappa_completa,width=512,height=512,units="px")
-	# ggsave(paste0("./maps_images_temp/",dt,".jpeg"),plot=mappa_completa,width=512,height=512,units="px")
-}
-```
-
-
-
-
-### new code with gganimate
 ```{r}
 cardinal_to_degree <- function(cardinal) {
   cardinal_degrees <- c(N = 0, NNE = 22.5, NE = 45, ENE = 67.5, E = 90,
@@ -196,49 +104,61 @@ cardinal_to_degree <- function(cardinal) {
 
 library(gganimate)
 theme_set(theme_bw())
+shp_map <- st_read(paste0("italia/gadm40_ITA_",1,extension))
+
+df_chosen = data_2016_lomb
+df_chosen = data_agc_lomb
 
 wind_arrows <- data.frame(
-  longitude = df_agri$Longitude,
-  latitude = df_agri$Latitude,
-  direction = cardinal_to_degree(df_agri$WE_mode_wind_direction_10m),
-  intensity = df_agri$WE_wind_speed_10m_mean
+  longitude = df_chosen$Longitude,
+  latitude = df_chosen$Latitude,
+  direction = cardinal_to_degree(df_chosen$WE_mode_wind_direction_10m),
+  intensity = as.numeric(df_chosen$WE_wind_speed_10m_mean)
 )
-# Calcola le coordinate di fine delle frecce in base alla direzione e all'intensità
-wind_arrows$end_longitude <- wind_arrows$longitude + sin(wind_arrows$direction) * wind_arrows$intensity
-wind_arrows$end_latitude <- wind_arrows$latitude + cos(wind_arrows$direction) * wind_arrows$intensity
 
+  # Calcola le coordinate di fine delle frecce in base alla direzione 
+  # l'intensità verra colorata invece di cambiare in lunghezza
+wind_arrows$end_longitude =( wind_arrows$longitude + sin(wind_arrows$direction)/10)
+wind_arrows$end_latitude = ( wind_arrows$latitude + cos(wind_arrows$direction)/10)
+# put a 0 in the NA
+wind_arrows[is.na(wind_arrows)] <- 0
+#wind_arrows = wind_arrows[1,]
+
+# only if you animate!
 date_time = seq.Date(from=as.Date("2016-01-01",DATE_FORMAT),
-					  to=as.Date("2016-01-03",DATE_FORMAT),by="days")
+				  to=as.Date("2016-01-15",DATE_FORMAT),by="days")
 date_time = as.Date(date_time)
-df_date = df_agri[which(df_agri$Time %in% date_time),]
-wind_arrows = wind_arrows[which(df_agri$Time %in% date_time),]
+wind_arrows = wind_arrows[which(df_chosen$Time %in% date_time),]
+#
 
-pad = 0.2*c(-1,1)
-mappa_completa <- ggplot() +
-  geom_sf(data = regioni_italiane, fill = "lightblue", color = "black", size = 0.5)+
-	  coord_sf(xlim = range(na.omit(wind_arrows$longitude))+pad,
+mappa_wind <- ggplot() +
+	geom_sf(data = shp_map, fill = "lightgreen", color = "black", size = 0.5)+
+	coord_sf(xlim = range(na.omit(wind_arrows$longitude))+pad,
 	  		 ylim = range(na.omit(wind_arrows$latitude))+pad, expand = FALSE)+
-  geom_point(data = sites, aes(x = longitude, y = latitude), 
-  		   size = 1, shape = 23, fill = "darkred")+
-#   geom_point(data=df_date,aes(x=Longitude,y=Latitude),
-# 			   size=lerp_pm10_radius(df_date$AQ_pm10),
-# 			   color = lerp_pm10_color(df_date$AQ_pm10), alpha=0.5)+
-geom_segment(data = wind_arrows,
-			 aes(x = longitude, y = latitude, xend = end_longitude, yend = end_latitude),
-			 arrow = arrow(type = "closed", length = unit(0.2, "inches"), ends = "last"),
-			 lineend = "round", size = 0.5)+
-  ggtitle(dt)+
-  transition_time(Time)+
-  labs(title = "Day: {frame_time}")
+
+    geom_segment(data = wind_arrows,
+			 aes(x = longitude, y = latitude, xend = end_longitude, yend = end_latitude,
+			 	color = intensity),
+			 arrow = arrow(type = "closed", length = unit(0.08, "inches"), ends = "last"),
+			 lineend = "round", size = 0.3)
+
+
+
+print(mappa_wind)
+```
+
+
+```{r}
+mappa_animata <- mappa_wind +  
+	ggtitle(dt) +
+	transition_time(Time)+
+	labs(title = "Day: {frame_time}")
+
 
 file_name = "wind_gif"
 # gif
 output_file <- paste0("./gifs/",file_name,".gif")
-anim_save(output_file,mappa_completa)
-
-#video ??
-
-
+anim_save(output_file,mappa_animata)
 ```
 
 # MAPS plot again
@@ -470,12 +390,11 @@ head(df_agri)
 
 
 # TO DO LIST:
+- aggiungere anche la svizzera?
 - add legends to ggplots
-- color points of map depending on altitude
-- divide map into regions and add a method to color them depending on certain values
-- vector map of wind ?
+- vector map of wind - update on the grid map
 
-- multi year plots?
+- multi year plots
 
 
 
