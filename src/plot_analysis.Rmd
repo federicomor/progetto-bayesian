@@ -58,7 +58,12 @@ attach(data_agc_lomb)
 Time = as.Date(Time)
 data_2016_lomb = data_agc_lomb[which(Time=="2016-01-01"),] 
 detach(data_agc_lomb)
+
 ```
+```{r}
+spiega("temp")
+```
+
 ```{r}
 attach(data_2016_lomb)
 head(data_2016_lomb)
@@ -470,12 +475,11 @@ head(df_agri)
 
 
 # TO DO LIST:
+- aggiungere anche la svizzera?
 - add legends to ggplots
-- color points of map depending on altitude
-- divide map into regions and add a method to color them depending on certain values
-- vector map of wind ?
+- vector map of wind - update on the grid map
 
-- multi year plots?
+- multi year plots
 
 
 
