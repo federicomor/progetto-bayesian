@@ -28,7 +28,8 @@ colnames(nas) = stations
 
 # pdf("na_time_series.pdf",width=10,height=9)
 heatmap(t(nas[,1:70]),Colv=NA, Rowv=NA,col = c("white", "darkred"), scale='none',xlab="days",ylab="stations",
-		 margins = c(3, 3),main="NA time series (white are NAs) all data")
+		 margins = c(3, 3),main="NA time series (white are NAs) all data",
+		add.expr = abline(v=c(366,731,1096,1461,1827),col="orange",lwd=2))
 
 heatmap(t(nas[,1:47]),Colv=NA, Rowv=NA,col = c("white", "darkred"), scale='none',xlab="days",ylab="stations",
 		 margins = c(3, 3),main="NA time series (white are NAs) zoom 1 of 3",cexRow=0.5)
