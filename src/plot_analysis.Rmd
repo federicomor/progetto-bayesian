@@ -18,6 +18,8 @@ load("../data/v300/data_agc_lomb.Rdata")
 attach(data_agc_lomb)
 Time = as.Date(Time)
 data_2016_lomb = data_agc_lomb[which(Time=="2016-01-01"),] 
+data_2016_lomb$Altitude <- as.numeric(data_2016_lomb$Altitude)
+data_2016_lomb$Altitude[is.na(data_2016_lomb$Altitude)] <- 0
 detach(data_agc_lomb)
 
 ```
@@ -59,19 +61,19 @@ altre_regioni$station_inside <- sapply(altre_regioni$geometry, function(x) any(s
 pad <- 0.2 * c(-1, 1)
 # crea mappa lombardia
 mappa_migliorata <- ggplot() +
-	
   # l'ordine è importante!
-  geom_sf(data = altre_regioni,aes(fill = station_inside),fill = NA, color = "lightgreen", size = 1) +
-  geom_sf(data = lombardia,aes(fill = station_inside), color = "red", size = 1) +
+	geom_sf(data = altre_regioni,aes(fill = station_inside),fill = "white", color = "lightgreen", size = 1) +
+	geom_sf(data = lombardia,aes(fill = station_inside), color = "red", size = 1) +
 	
-  scale_fill_manual(values = c("gold", "white")) +  # Define colors for inside/outside stations
-  coord_sf(xlim = range(sites$longitude) + pad, ylim = range(sites$latitude) + pad, expand = FALSE)+
+	scale_fill_manual(values = c("gold", "white")) +  # Define colors for inside/outside stations
+	coord_sf(xlim = range(sites$longitude) + pad, ylim = range(sites$latitude) + pad, expand = FALSE)+
 	theme(legend.position = "none")+
-	theme_bw()+
-	theme(panel.grid = element_blank()) 
+	theme(panel.grid = element_blank())
+	theme_bw()
 
 # aggiungi stazioni
-mappa_migliorata <- mappa_migliorata + geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred") 
+mappa_migliorata <- mappa_migliorata + 
+	geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred") 
 
 # aggiungi grid for long and lat
 inutile <- mappa_migliorata +
@@ -81,17 +83,17 @@ inutile <- mappa_migliorata +
 	
 # Aggiungi griglia colorata per altitudine
 gradient_map <- 
-	mappa_migliorata +
+	ggplot() +
   geom_tile(data = data_2016_lomb, aes(x = Longitude, y = Latitude, fill = Altitude), colour = "grey50",width = 1, height = 1,alpha = 0.2) +
-  scale_fill_gradient(low = "lightgreen", high = "brown",breaks = c(min(data_2016_lomb$Altitude),max(data_2016_lomb$Altitude))) 
+  scale_fill_gradient(low = "lightgreen", high = "brown",na.value = "gray", breaks=c(0, 400, 800, 1200,1800,2000,2500,3000)) 
 
 print(gradient_map)
-print(mappa_migliorata)
+
 
 
 ```
 
-## WIND plot
+# WIND plot
 
 ```{r}
 cardinal_to_degree <- function(cardinal) {
@@ -106,7 +108,7 @@ library(gganimate)
 theme_set(theme_bw())
 shp_map <- st_read(paste0("italia/gadm40_ITA_",1,extension))
 
-df_chosen = data_2016_lomb
+#df_chosen = data_2016_lomb
 df_chosen = data_agc_lomb
 
 wind_arrows <- data.frame(
@@ -116,43 +118,59 @@ wind_arrows <- data.frame(
   intensity = as.numeric(df_chosen$WE_wind_speed_10m_mean)
 )
 
-  # Calcola le coordinate di fine delle frecce in base alla direzione 
-  # l'intensità verra colorata invece di cambiare in lunghezza
+# Calcola le coordinate di fine delle frecce in base alla direzione 
+# l'intensità verra colorata invece di cambiare in lunghezza
 wind_arrows$end_longitude =( wind_arrows$longitude + sin(wind_arrows$direction)/10)
 wind_arrows$end_latitude = ( wind_arrows$latitude + cos(wind_arrows$direction)/10)
+
 # put a 0 in the NA
 wind_arrows[is.na(wind_arrows)] <- 0
-#wind_arrows = wind_arrows[1,]
+
 
 # only if you animate!
 date_time = seq.Date(from=as.Date("2016-01-01",DATE_FORMAT),
-				  to=as.Date("2016-01-15",DATE_FORMAT),by="days")
+				  to=as.Date("2020-12-01",DATE_FORMAT),by="month")
 date_time = as.Date(date_time)
-wind_arrows = wind_arrows[which(df_chosen$Time %in% date_time),]
-#
 
-mappa_wind <- ggplot() +
+wind_arrows = wind_arrows[which(as.Date(df_chosen$Time) %in% date_time),]
+
+
+time_vect = c()
+for(i in 1:1053) {
+	time_vect <- c(time_vect,seq(1,length(date_time)))
+}
+wind_arrows$t = time_vect
+```
+
+
+```{r}
+# debugging, one time frame
+data_wind = wind_arrows[seq(1,1053*12*5,12*5),]
+data_wind = wind_arrows
+
+mappa_wind <- ggplot(data = data_wind) +
 	geom_sf(data = shp_map, fill = "lightgreen", color = "black", size = 0.5)+
-	coord_sf(xlim = range(na.omit(wind_arrows$longitude))+pad,
-	  		 ylim = range(na.omit(wind_arrows$latitude))+pad, expand = FALSE)+
+	coord_sf(xlim = range(na.omit(data_wind$longitude))+pad,
+	  		 ylim = range(na.omit(data_wind$latitude))+pad, expand = FALSE)+
 
-    geom_segment(data = wind_arrows,
+    geom_segment(data = data_wind,
 			 aes(x = longitude, y = latitude, xend = end_longitude, yend = end_latitude,
 			 	color = intensity),
 			 arrow = arrow(type = "closed", length = unit(0.08, "inches"), ends = "last"),
-			 lineend = "round", size = 0.3)
+			 lineend = "round", size = 0.3,alpha=0.9 )
 
 
 
-print(mappa_wind)
+
+#print(mappa_wind)
 ```
 
 
 ```{r}
 mappa_animata <- mappa_wind +  
-	ggtitle(dt) +
-	transition_time(Time)+
-	labs(title = "Day: {frame_time}")
+	ggtitle(data_wind$t) +
+	transition_time(data_wind$t)+
+	labs(title = "Month: {frame_time}")
 
 
 file_name = "wind_gif"
@@ -208,7 +226,6 @@ lerp_pm10_color <- function(val) {
 ```
 
 
-## creating images for the gif
 
 devtools::install_github("dgrtwo/gganimate")
 
@@ -243,40 +260,6 @@ output_file <- paste0("./gifs/",file_name,".gif")
 anim_save(output_file,mappa_completa)
 ```
 
-
-
-# Trend plots - normal plots
-
-## create video
-
-# TREND plots
-
-```{r}
-stations = unique(df_agri$IDStations)
-cols = colora(6,970,show=)
-
-for (st in stations[1:4]){
-	df_st = df_stat[[st]]
-	data2016 = subset(df_st,Time>="2016-01-01" & Time<="2016-12-31")
-	data2017 = subset(df_st,Time>="2017-01-01" & Time<="2017-12-31")
-	data2018 = subset(df_st,Time>="2018-01-01" & Time<="2018-12-31")
-	data2019 = subset(df_st,Time>="2019-01-01" & Time<="2019-12-31")
-	data2020 = subset(df_st,Time>="2020-01-01" & Time<="2020-12-31")
-	data2021 = subset(df_st,Time>="2021-01-01" & Time<="2021-12-31")
-	
-	
-	plot(as.Date(format(data2016$Time,"%d %m"),"%d %m"),data2016$AQ_pm10 ,type="l",col=cols[1],
-		 xlab="time",ylab="PM_10 values",main=paste0("Station ",st,", all years"),
-		 ylim=range(na.omit(df_st$AQ_pm10)))
-	lines(as.Date(format(data2017$Time,"%d %m"),"%d %m"),data2017$AQ_pm10,type="l",col=cols[2])
-	lines(as.Date(format(data2018$Time,"%d %m"),"%d %m"),data2018$AQ_pm10,type="l",col=cols[3])
-	lines(as.Date(format(data2019$Time,"%d %m"),"%d %m"),data2019$AQ_pm10,type="l",col=cols[4])
-	lines(as.Date(format(data2020$Time,"%d %m"),"%d %m"),data2020$AQ_pm10,type="l",col=cols[5])
-	lines(as.Date(format(data2021$Time,"%d %m"),"%d %m"),data2021$AQ_pm10,type="l",col=cols[6])
-	legend('topright', levels(as.factor(2016:2021)), fill=cols, bty='n', cex = 0.6)
-
-}
-```
 
 
 # Trend plots
