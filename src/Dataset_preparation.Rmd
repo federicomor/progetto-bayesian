@@ -1,0 +1,93 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(naniar)
+library(hash)
+library(assert)
+library(ggplot2)
+library(UpSetR)
+```
+
+
+```{r}
+data = read.csv("Agrimonia_Dataset_v_3_0_0.csv")
+head(data)
+dim(data)
+summary(data)
+```
+
+Dataset divided by station 
+```{r}
+df_stations=load("df_agri.Rdata")
+dati = df_agri[,c(1,6)]
+df_stat=hash()
+stations = unique(dati$IDStations)
+print(stations)
+
+for (st in stations){
+  df_stat[[st]] = dati[which(dati$IDStations == st),]
+  assert(dim(df_stat[[st]])[1] == 2192) # make sure each df_stat has all his 2192 obs
+}
+```
+
+
+
+Choose which stations to exclude and save them in a list 
+We can change threshold 
+Problem is some station lack only some measurements
+  threshold = 2000 -> only remove stations with no pm_10 measurements
+  threshold < 2000 -> based on our tolerance, may depend on year chosen 
+```{r}
+df_stat=hash()
+stat_to_exclude=0
+for (st in stations){
+  df_stat[[st]] = dati[which(dati$IDStations == st),]
+  
+  #print(sapply(df_stat[[st]],function(x) sum(is.na(x))))
+  
+  if(sapply(df_stat[[st]],function(x) sum(is.na(x)))[2]>1000){
+    stat_to_exclude=append(stat_to_exclude,st)
+  }
+}
+stat_to_exclude=stat_to_exclude[-1]
+print(stat_to_exclude)
+```
+
+Removing selected stations
+```{r}
+new_dataset=data[which(!(data$IDStations %in% stat_to_exclude)),]
+```
+
+Count of na for each column
+```{r}
+print(sapply(new_dataset,function(x) sum(is.na(x))))
+```
+
+
+Removing AQ_columns (too many na)
+```{r}
+new_dataset=subset(new_dataset,select=-c(AQ_pm25,AQ_co,AQ_nh3,AQ_nox,AQ_no2,AQ_so2,LA_soil_use))
+```
+Only remaining columns with less than 40000 nas
+
+```{r}
+print(sapply(new_dataset,function(x) sum(is.na(x))))
+```
+
+Still some nas given by columns and stations with partial masurements
+Maybe better to remove them after selecting the year
+Can use timeseries
+
+
+Save the dataset
+```{r}
+write.csv(new_dataset,file="reduced_dataset.csv")
+```
+
+
+
+
