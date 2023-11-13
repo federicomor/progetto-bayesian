@@ -68,9 +68,9 @@ print(mappa_migliorata)
 # Grid map with chosen variable 
 ```{r}
 initial_date = "2016-01-01"
-final_date = "2016-05-01"
+final_date = "2018-01-01"
 every = "month"
-file_name = "grid_map"
+file_name = "grid_map_WE_temp_2m"
 facetted = 1
 chosen_variable = data_agc_lomb$WE_temp_2m
 color_low =  "lightgreen"
@@ -83,8 +83,6 @@ data_from_to_lomb = data_agc_lomb[which(as.Date(data_agc_lomb$Time) %in% date_ti
 
 chosen_variable = chosen_variable[which(as.Date(data_agc_lomb$Time) %in% date_time)]
 
-
-
 # aggiungi grid for long and lat
 grid <- ggplot() +
 	geom_hline( yintercept = data_from_to_lomb$Latitude, color = "blue", size = 0.1) +  # Linee orizzontali
@@ -95,8 +93,9 @@ grid <- ggplot() +
 
 gradient_map <- 
 	grid+
-  geom_tile(data = data_from_to_lomb, aes(x = Longitude, y = Latitude, fill = chosen_variable), colour = "grey50",width = 1, height = 1,alpha = 0.2) +
-  scale_fill_gradient(low = color_low, high = color_high,na.value = "gray") 
+	geom_tile(data = data_from_to_lomb, aes(x = Longitude, y = Latitude, fill = chosen_variable), 
+			  colour = "grey50",width = 1, height = 1,alpha = 0.2) +
+	scale_fill_gradient(low = color_low, high = color_high,na.value = "gray") 
 
 
 if (facetted){
@@ -104,16 +103,13 @@ if (facetted){
 	print(gradient_map)
 } else {
 	gradient_map <- gradient_map +  
-	ggtitle(gradient_map$Time) +
-	transition_time(gradient_map$Time)+
-	labs(title = paste0(every,": {frame_time}"))
+		ggtitle(data_from_to_lomb$Time) +
+		transition_time(data_from_to_lomb$Time)+
+		labs(title = paste0(every,": {frame_time}"))
 	# gif
 	output_file <- paste0("./gifs/",file_name,".gif")
-	anim_save(output_file,mappa_animata)
+	anim_save(output_file,gradient_map)
 }
-
-
-
 
 ```
 
@@ -213,7 +209,7 @@ lerp_pm10_color <- function(val) {
   color_0 <- col2rgb("#008F39")
   color_f <- col2rgb("#F80000")
   
-  min_max <- range(variable[!is.na(val)])
+  min_max <- range(val[!is.na(val)])
   min_val <- min_max[1]
   max_val <- min_max[2]
   
@@ -239,16 +235,11 @@ lerp_pm10_color <- function(val) {
 
 ```
 
-
-
-
-
-
-## actual map
+## actual map PROBLEMS
 ```{r}
 chosen_var = "AQ_pm10" 
 initial_date = "2016-01-01"
-final_date = "2016-01-05"
+final_date = "2016-01-10"
 every = "days"
 
 date_time = as.Date(seq.Date(from=as.Date(initial_date,DATE_FORMAT),
@@ -270,7 +261,7 @@ mappa_expanding <- ggplot(data=df_date) +
 	geom_point(data =df_date, aes(x=Longitude,y=Latitude),
 			   size=lerp_pm10_radius(df_date$AQ_pm10),
 			   color = lerp_pm10_color(df_date$AQ_pm10), alpha=0.5)+
-	#facet_wrap(~df_date$Time)+
+	facet_wrap(~Time)+
 	theme(legend.position = "none")+
 	theme(panel.grid = element_blank())+
 	theme_bw()
@@ -278,7 +269,7 @@ print(mappa_expanding)
   
 ```
 
-
+### animation
 ```{r}
 mappa_animata <- ggtitle(dt) + transition_time(Time)+labs(title = "Day: {frame_time}")
 file_name = "map_gif"
@@ -374,8 +365,7 @@ station_trend <- ggplot(data_year,aes(x = Time,
   scale_x_date(date_labels = "%b",date_breaks = "1 month")+
   theme(panel.grid = element_blank()) 
 
-
-station_trend
+print(station_trend)
 ```
 
 
@@ -384,9 +374,7 @@ station_trend
 ```{r}
 station_trend <- station_trend + transition_reveal(Time) + geom_point() + view_follow(fixed_x = T,fixed_y = T)
 
-
 b <- animate(station_trend, duration = duration_par, fps = fps_par, renderer = av_renderer())
-
 
 file_name = "station_trend"
 output_file <- paste0("./gifs/",file_name,".mp4")
@@ -394,16 +382,12 @@ anim_save(output_file,b)
 
 ```
 
-```{r}
-head(df_agri)
-```
 
 
 # TO DO LIST:
 - aggiungere anche la svizzera?
-- add legends to ggplots
+- add legends 
 
-- multi year plots
 
 
 
