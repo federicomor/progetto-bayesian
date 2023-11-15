@@ -26,6 +26,7 @@
 
 \graphicspath{{Images/}{./}} % Specifies where to look for included images (trailing slash required)
 
+\usepackage{lmodern}
 \usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule for better rules in tables
 
 %----------------------------------------------------------------------------------------
@@ -154,23 +155,31 @@
 %	PRESENTATION INFORMATION
 %----------------------------------------------------------------------------------------
 
-\title[Short Title]{Full Presentation Title} % The short title in the optional parameter appears at the bottom of every slide, the full title in the main parameter is only on the title page
+\title[A2 project]{First Meeting Presentation} % The short title in the optional parameter appears at the bottom of every slide, the full title in the main parameter is only on the title page
 
-\subtitle{Optional Subtitle} % Presentation subtitle, remove this command if a subtitle isn't required
+\subtitle{Project A2} % Presentation subtitle, remove this command if a subtitle isn't required
 
 \author[]{Giulia Mezzadri \and Ettore Modina \and Oswaldo Jesus
 	Morales Lopez \and Federico Angelo Mor \and Abylaikhan Orynbassar \and Federica Rena} % Presenter name(s), the optional parameter can contain a shortened version to appear on the bottom of every slide, while the main parameter will appear on the title slide
 
-\institute[polimi]{
-	Politecnico of Milano\\Bayesian Statistics% \smallskip 
+\institute[]{
+	Politecnico of Milano\\Bayesian Statistics course% \smallskip 
 	%\textit{james@LaTeXTemplates.com}
 } % Your institution, the optional parameter can be used for the institution shorthand and will appear on the bottom of every slide after author names, while the required parameter is used on the title slide and can include your email address or additional information on separate lines
 
-\date[\today]{
-	Project revision %of \\ \today
+\date[]{
+	Project revision of \\
+	November 23, 2023
 } % Presentation date or conference/meeting name, the optional parameter can contain a shortened version to appear on the bottom of every slide, while the required parameter value is output to the title slide
 
 %----------------------------------------------------------------------------------------
+
+\usepackage{bm}
+\renewcommand{\vec}{\boldsymbol}
+%\newcommand{\diag}{\text{diag}}
+\DeclareMathOperator{\diag}{diag}
+\newcommand{\simind}{\ensuremath{\overset{\text{ind}}{\sim}}}
+\newcommand{\simiid}{\ensuremath{\overset{\text{idd}}{\sim}}}
 
 \begin{document}
 
@@ -189,7 +198,9 @@
 % The table of contents outputs the sections and subsections that appear in your presentation, specified with the standard \section and \subsection commands. You may either display all sections and subsections on one slide with \tableofcontents, or display each section at a time on subsequent slides with \tableofcontents[pausesections]. The latter is useful if you want to step through each section and mention what you will discuss.
 
 \begin{frame}
-	\frametitle{Presentation Overview} % Slide title, remove this command for no title
+	\frametitle{Presentation Flow}
+	%Overview Outline Summary, choose a synonym}
+	% Slide title, remove this command for no title
 	
 	\tableofcontents % Output the table of contents (all sections on one slide)
 	%\tableofcontents[pausesections] % Output the table of contents (break sections up across separate slides)
@@ -199,15 +210,79 @@
 %	PRESENTATION BODY SLIDES
 %----------------------------------------------------------------------------------------
 
+\section{Project Overview}
+\subsection{Goal and Definition}
 \begin{frame}
-	\frametitle[Project definition]{Project definition}
+	\frametitle{Goal and Definition}
 	
-	\textbf{Goal:} Clustering weekly data of one year of PM10 (plus covariates - see AGRIMONIA project)\\
+	\textbf{Goal:} \alert{Clustering} weekly data of one year of PM10 (plus covariates)\\
 	
-	\textbf{Models and R packages:} drpm (Page, Quintana, Dahl (2022) "Dependent Modeling of Temporal Sequences of Random Partitions", JCGS, R-package on Github), ppmSuite (various models implemented, also PPMs) on \href{https://cran.r-project.org/web/packages/ppmSuite/index.html}{\texttt{https://cran.r-project.org/web/packages/ppmSuite/index.html}}\\
+%	\textbf{Models and R packages:} drpm (Page, Quintana, Dahl (2022) "Dependent Modeling of Temporal Sequences of Random Partitions", JCGS, R-package on Github), ppmSuite (various models implemented, also PPMs) on \href{https://cran.r-project.org/web/packages/ppmSuite/index.html}{\texttt{https://cran.r-project.org/web/packages/ppmSuite/index.html}}\\
 	   
-	\textbf{Dataset:} \href{https://zenodo.org/records/7563265   }{\texttt{https://zenodo.org/records/7563265}}
+	\textbf{Dataset:} AGRIMONIA project, at \href{https://zenodo.org/records/7563265   }{\texttt{https://zenodo.org/records/7563265}}
 \end{frame}
+
+\subsection{Data Exploration}
+\begin{frame}
+	\frametitle{Data Exploration}
+	
+\end{frame}
+
+
+\section{Models}
+\begin{frame} % Use [allowframebreaks] to allow automatic splitting across slides if the content is too long
+	\frametitle{Model 1}
+	
+	\begin{thebibliography}{}
+		\footnotesize % Reduce the font size in the bibliography
+		\bibitem[Mozdzene et al., 2022]{p1}
+		Mozdzen A., Cremaschi A., Cadonna A., Guglielmi A., Kastner G. (2022)
+%Alexander Mozdzen, Andrea Cremaschi, Annalisa Cadonna, Alessandra Guglielmi, Gregor Kastner (2022)
+		\newblock Bayesian modeling and clustering for spatio-temporal areal data: An application to Italian unemployment 
+%		\newblock
+%		\emph{Spatial Statistics} 52, 100715.
+%		\tiny\url{https://doi.org/10.1016/j.spasta.2022.100715}
+	\end{thebibliography}
+
+\vspace{20pt}
+
+\begin{align*}
+%	\label{model1-paper5}
+	Y_{it} |& \vec{x}_{it},\vec{\beta}^\star_{s_i},w_{it},\sigma^2,s_i \simind
+\mathcal{N}(\vec{x}_{it}^T\vec{\beta}^\star_{s_i}+w_{it},\sigma^2)\\
+\vec{w}_t |& \vec{w}_{t-1},\vec{\xi}^\star_{\vec{s}},\vec{s},\tau^2,\rho, W \sim \mathcal{N}_I(\diag(\vec{\xi}^\star_{\vec{s}})\vec{w}_{t-1},\tau^2Q(\rho,W)^{-1})
+\end{align*}
+
+\end{frame}
+
+
+\begin{frame} % Use [allowframebreaks] to allow automatic splitting across slides if the content is too long
+	\frametitle{Model 2}
+	
+	\begin{thebibliography}{}
+		\footnotesize % Reduce the font size in the bibliography
+		\bibitem[Teixeira et al., 2019]{p1}
+		Leonardo V. Teixeira, Renato M. Assun{\c{c}}{{\~a}}o, Rosangela H. Loschi (2019)
+		\newblock Bayesian Space-Time Partitioning by Sampling and Pruning Spanning Trees 
+%		\newblock
+%		\emph{Journal of Machine Learning Research} 20, 85, 1--35.
+%		\tiny\url{http://jmlr.org/papers/v20/16-615.html}
+
+	\end{thebibliography}
+
+\vspace{20pt}
+
+The model is ecc
+
+\end{frame}
+
+
+
+
+
+
+
+
 
 
 
@@ -504,5 +579,6 @@
 \end{frame}
 
 %----------------------------------------------------------------------------------------
+%%%%%%%% end Model slides %%%%%%%%
 
 \end{document} 
