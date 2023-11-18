@@ -7,3 +7,6 @@ Papers/Supplementary material/PM10_ALL_SpCo_4_rev.RData
 data/v300/df_agc.Rdata
 src/.Rhistory
 *.md
+data/data_agc_lomb.Rdata
+data/Agrimonia_Dataset_v_3_0_0.csv
+data/AGC_Dataset_v_3_0_0.csv
