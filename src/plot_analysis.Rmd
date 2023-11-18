@@ -148,6 +148,11 @@ trendYearStation_plot <- trendYearStation(initial_date,final_date,chosen_station
 - test all plots
 - xyplot remove legend when not needed
 - higher video quality mp4 av_renderer?
+	for this maybe we just need to use the device parameter, and set it to "svg" as svg does
+	not compress images. This is the device help of the animate package:
+	The device to use for rendering the single frames.
+	Possible values are 'png', 'ragg_png' (requires the ragg package), 'jpeg',
+	'tiff', 'bmp', 'svg', and 'svglite' (requires the svglite package). (default 'png')
 
 - crea grafici carini
 

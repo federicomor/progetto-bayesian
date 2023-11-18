@@ -8,14 +8,14 @@
 # loading procedure, with feedback
 ########################
 library(crayon)
-load("../data/v300/df_agri.Rdata")
+load("../data/df_agri.Rdata")
 cat(crayon::cyan("❤ Loaded agrimonia dataset. Available as df_agri.\n"))
 df_agri$Time <- as.Date(df_agri$Time, "%Y-%m-%d")
 cat(crayon::green("❤ Converted df_agri$Time to Date variable type, year-month-day.\n"))
 DATE_FORMAT = "%Y-%m-%d"
 cat(crayon::green("❤ Created DATE_FORMAT variable for date comparisons.\n"))
 # cat(crayon::green('❤ Usage: ...Time >= as.Date(paste0(year,"-01-01"),DATE_FORMAT).\n'))
-load("../data/v300/df_stat.Rdata")
+load("../data/df_stat.Rdata")
 cat(crayon::cyan("❤ Loaded stations split dataset. Available as df_stat.\n"))
 
 
