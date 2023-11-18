@@ -32,6 +32,7 @@ what_is = hash()
 size = dim
 end = lenght = length
 assert = stopifnot
+ln = log
 
 ########################
 # function to get colors for plotting
@@ -42,6 +43,7 @@ fun_colori = function(len=2, seed=33, show=1){
 	if(show==1){
 		dati_ <- matrix(1:100, ncol = 1)
 		image(dati_, col = col.ramp_, axes = FALSE)
+		title(main=seed)
 	}
 	return(col.ramp_)
 	

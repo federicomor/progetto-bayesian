@@ -10,6 +10,18 @@ source("include.R")
 source("plot functions/plot_functions.R")
 ```
 
+# Istogram Y and ln(Y)
+
+```{r}
+cols = colora(2,15)
+pm10 = df_agri$AQ_pm10
+par(mfrow=c(1,2),mar=c(2,2,2,2))
+hist(pm10,col=cols[1],probability = T)
+hist(log(pm10),col=cols[2],probability = T,xlim=c(-1,6))
+```
+
+
+
 
 # Mappa stazioni: REMOVE LEGEND
 ```{r}
@@ -30,8 +42,9 @@ every = "month"
 # if you change the file_name from None it will create a mp4 video
 file_name = "None"
 
-# chosen_variable_name = "WE_wind_speed_10m_max"
-chosen_variable_name = "Altitude"
+data_agc_lomb$WE_wind_speed_10m_max = as.numeric(data_agc_lomb$WE_wind_speed_10m_max)
+chosen_variable_name = "WE_wind_speed_10m_max"
+# chosen_variable_name = "Altitude"
 color_low =  "yellow"
 color_high = "blue"
 
