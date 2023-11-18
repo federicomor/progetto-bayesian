@@ -243,20 +243,20 @@ xyPlot <- function(initial_date,final_date,every,file_name,var1_name,var2_name,s
 	
 	#data_from_to$Time = as.Date(data_from_to$Time )
 	
-	var1 = data_from_to[,var1_name]
-	var2 = data_from_to[,var2_name]
+	var1 = as.numeric(data_from_to[,var1_name])
+	var2 = as.numeric(data_from_to[,var2_name])
 	if(class(size_name)!="numeric"){
-		size = data_from_to[,size_name]	
+		size = as.numeric(data_from_to[,size_name])
 	}else{
 		size = size_name
 	}
-	colors_factor = data_from_to[,colors_factor_name]
+	colors_factor = as.factor(data_from_to[,colors_factor_name])
 	
 	if(class(size_name)!="numeric"){
 		p <- ggplot(
 			data_from_to, 
 			aes(x = var1, y=var2, size = size, colour = colors_factor)) +
-			geom_point(alpha = 0.7) +
+			geom_point(alpha = 1) +
 			scale_color_viridis_d() +
 			scale_size(range = c(2, 12)) +
 			labs(x = var1_name, y =var2_name)+
@@ -266,7 +266,7 @@ xyPlot <- function(initial_date,final_date,every,file_name,var1_name,var2_name,s
 		p <- ggplot(
 			data_from_to, 
 			aes(x = var1, y=var2, size = size, colour = colors_factor)) +
-			geom_point(alpha = 0.7,show.legend = FALSE) +
+			geom_point(alpha = 1,show.legend = FALSE) +
 			scale_color_viridis_d() +
 			scale_size(range = c(2, 12)) +
 			labs(x = var1_name, y =var2_name)+
