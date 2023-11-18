@@ -7,7 +7,14 @@ library(gganimate)
 library(av)
 library(ggpubr)
 library(jpeg)
-load("../data/data_agc_lomb.Rdata")
+
+##### OLD
+# load("../data/data_agc_lomb.Rdata")
+##### NEW
+load("../data/data_agc_lomb_part1.RData")
+load("../data/data_agc_lomb_part2.RData")
+AGC_Dataset = rbind(parte1, parte2)
+
 head(AGC_Dataset)
 data_agc_lomb=AGC_Dataset
 data_agc_lomb$Time = as.Date(data_agc_lomb$Time)
