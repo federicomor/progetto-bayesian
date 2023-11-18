@@ -21,6 +21,24 @@ hist(log(pm10),col=cols[2],probability = T,xlim=c(-1,6))
 ```
 
 
+```{r}
+# Istogramma della variabile originale
+hist_original <- ggplot(data = data.frame(Y = Y), aes(x = Y)) +
+  geom_histogram(binwidth = 7, fill = cols[1], color = "black", alpha = 0.7) +
+  labs(title = "values of pm10", x = "", y = "") +
+  theme_minimal()
+
+# Istogramma del logaritmo della variabile
+hist_log <- ggplot(data = data.frame(log_Y = log(Y)), aes(x = log_Y)) +
+  geom_histogram(binwidth = 0.25, fill = cols[2], color = "black", alpha = 0.7) +
+  labs(title = "values of ln(pm10)", x = "", y = "") +
+  theme_minimal()+
+  coord_cartesian(xlim = c(-0.5,6))
+
+# Affiancamento dei due grafici
+grid.arrange(hist_original, hist_log, ncol = 2)
+```
+
 
 
 # Mappa stazioni: REMOVE LEGEND
