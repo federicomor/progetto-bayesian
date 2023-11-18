@@ -124,7 +124,7 @@ gridMap <- function(initial_date,final_date,every,file_name,color_low,color_high
 	len_time = filter_date_list[[2]]
 
 	
-	chosen_variable = data_from_to[,chosen_variable_name]
+	chosen_variable = as.numeric(data_from_to[,chosen_variable_name])
 	
 	# aggiungi grid for long and lat
 	grid <- ggplot() +
@@ -276,8 +276,6 @@ xyPlot <- function(initial_date,final_date,every,file_name,var1_name,var2_name,s
 			labs(x = var1_name, y =var2_name)+
 			theme_bw()
 	}
-}
-	
 	
 	if (file_name == "None"){
 		p <- p +facet_wrap(~Time)
@@ -293,6 +291,8 @@ xyPlot <- function(initial_date,final_date,every,file_name,var1_name,var2_name,s
 		anim_save(output_file,mappa_animata,duration = len_time,fps = 10, renderer = av_renderer())
 	}
 }
+	
+
 
 ##########################################################################
 #########################   TREND PLOTS-stations  ########################
