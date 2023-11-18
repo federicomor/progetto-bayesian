@@ -20,6 +20,7 @@ sites <- data.frame(
 stations = unique(df_agri$IDStations)
 cols = colora(6,970,show=F)
 pad <- 0.2 * c(-1, 1)
+DATE_FORMAT = "%Y-%m-%d"
 ########################
 
 # carica file shp
@@ -99,33 +100,33 @@ filter_date <- function(dataframe,initial_date,final_date,every){
 								 to=as.Date(final_date,DATE_FORMAT),by=every))
 	filtered_dataset = dataframe[which(as.Date(dataframe$Time) %in% date_time),]
 
-	return(filtered_dataset)
+	return(list(filtered_dataset,length(date_time)))
 	
 }
 #######################################################################
 #########################   GRID MAP ##################################
 #######################################################################
-gridMap <- function(initial_date,final_date,every,file_name,color_low,color_high){
+gridMap <- function(initial_date,final_date,every,file_name,color_low,color_high,chosen_variable_name){
 	
-	date_time = as.Date(seq.Date(from=as.Date(initial_date,DATE_FORMAT),
-								 to=as.Date(final_date,DATE_FORMAT),by=every))
+	filter_date_list = filter_date(data_agc_lomb,initial_date,final_date,every)
+	data_from_to = filter_date_list[[1]]
+	len_time = filter_date_list[[2]]
+
 	
-	data_from_to_lomb = data_agc_lomb[which(as.Date(data_agc_lomb$Time) %in% date_time),]
-	
-	chosen_variable = chosen_variable[which(as.Date(data_agc_lomb$Time) %in% date_time)]
+	chosen_variable = data_from_to[,chosen_variable_name]
 	
 	# aggiungi grid for long and lat
 	grid <- ggplot() +
-		geom_hline( yintercept = data_from_to_lomb$Latitude, color = "blue", size = 0.1) +  # Linee orizzontali
-		geom_vline(xintercept = data_from_to_lomb$Longitude, color = "blue", size = 0.1)  # Linee verticali
+		geom_hline( yintercept = data_from_to$Latitude, color = "black", size = 0.1) +  # Linee orizzontali
+		geom_vline(xintercept = data_from_to$Longitude, color = "black", size = 0.1)  # Linee verticali
 	
 	
 	# Aggiungi griglia colorata per altitudine
 	
 	gradient_map <- 
 		grid+
-		geom_tile(data = data_from_to_lomb, aes(x = Longitude, y = Latitude, fill = chosen_variable), 
-				  colour = "grey50",width = 1, height = 1,alpha = 0.2) +
+		geom_tile(data = data_from_to, aes(x = Longitude, y = Latitude, fill = chosen_variable), 
+				  colour = "grey50",width = 1, height = 1,alpha = 1) +
 		scale_fill_gradient(low = color_low, high = color_high,na.value = "gray") 
 	
 	
@@ -135,12 +136,12 @@ gridMap <- function(initial_date,final_date,every,file_name,color_low,color_high
 		return(gradient_map)
 	} else {
 		gradient_map <- gradient_map +  
-			ggtitle(data_from_to_lomb$Time) +
-			transition_time(data_from_to_lomb$Time)+
+			ggtitle(data_from_to$Time) +
+			transition_time(data_from_to$Time)+
 			labs(title = paste0(every,": {frame_time}"))
 		
 		output_file <- paste0("./gifs/",file_name,".mp4")
-		anim_save(output_file,gradient_map,duration = length(date_time),fps = 10, renderer = av_renderer())
+		anim_save(output_file,gradient_map,duration = len_time,fps = 10, renderer = av_renderer())
 	}
 
 }
@@ -174,14 +175,15 @@ stationPlot <- function(){
 
 windPlot <- function(initial_date,final_date,every,file_name){
 	
-	data_agc_lomb = filter_date(data_agc_lomb,initial_date,final_date,every)
-	
-	
+	filter_date_list = filter_date(data_agc_lomb,initial_date,final_date,every)
+	data_from_to = filter_date_list[[1]]
+	len_time = filter_date_list[[2]]
+
 	wind_arrows <- data.frame(
-		longitude = data_agc_lomb$Longitude,
-		latitude = data_agc_lomb$Latitude,
-		direction = cardinal_to_degree(data_agc_lomb$WE_mode_wind_direction_10m),
-		intensity = as.numeric(data_agc_lomb$WE_wind_speed_10m_mean)
+		longitude = data_from_to$Longitude,
+		latitude = data_from_to$Latitude,
+		direction = cardinal_to_degree(data_from_to$WE_mode_wind_direction_10m),
+		intensity = as.numeric(data_from_to$WE_wind_speed_10m_mean)
 	)
 	
 	# Calcola le coordinate di fine delle frecce in base alla direzione 
@@ -193,7 +195,7 @@ windPlot <- function(initial_date,final_date,every,file_name){
 	
 	time_vect = c()
 	for(i in 1:1053) {
-		time_vect <- c(time_vect,seq(1,length(date_time)))
+		time_vect <- c(time_vect,seq(1,len_time))
 	}
 	wind_arrows$t = time_vect
 	
@@ -220,7 +222,7 @@ windPlot <- function(initial_date,final_date,every,file_name){
 			labs(title = paste0(every,": {frame_time}"))
 		
 		output_file <- paste0("./gifs/",file_name,".mp4")
-		anim_save(output_file,mappa_animata,duration = length(date_time),fps = 10, renderer = av_renderer())
+		anim_save(output_file,mappa_animata,duration = len_time,fps = 10, renderer = av_renderer(), width = 1280, height = 720)
 	}
 }
 ##########################################################################
@@ -228,28 +230,33 @@ windPlot <- function(initial_date,final_date,every,file_name){
 ##########################################################################
 xyPlot <- function(initial_date,final_date,every,file_name,var1_name,var2_name,size_name,colors_factor_name){
 
-	df_agri_time = filter_date(df_agri,initial_date,final_date,every)
-	#df_agri_time$Time = as.Date(df_agri_time$Time )
+	filter_date_list = filter_date(df_agri,initial_date,final_date,every)
+	data_from_to = filter_date_list[[1]]
+	len_time = filter_date_list[[2]]
 	
-	var1 = df_agri_time[,var1_name]
-	var2 = df_agri_time[,var2_name]
+	#data_from_to$Time = as.Date(data_from_to$Time )
+	
+	var1 = data_from_to[,var1_name]
+	var2 = data_from_to[,var2_name]
 	if(class(size_name)!="numeric"){
-		size = df_agri_time[,size_name]	
+		size = data_from_to[,size_name]	
 	}else{
 		size = size_name
 	}
-	colors_factor = df_agri_time[,colors_factor_name]
+	colors_factor = data_from_to[,colors_factor_name]
 	
 	p <- ggplot(
-		df_agri_time, 
+		data_from_to, 
 		aes(x = var1, y=var2, size = size, colour = colors_factor)) +
 		
-		geom_point(alpha = 0.7) +
-		guides(size = guide_legend(), color = "none")+
+		geom_point(alpha = 0.7,show.legend = FALSE) +
 		scale_color_viridis_d() +
 		scale_size(range = c(2, 12)) +
 		labs(x = var1_name, y =var2_name)+
 		theme_bw()
+	if(class(size_name)!="numeric"){
+		p+guides(size = guide_legend(title = size_name), color = "none")
+	}
 	
 	
 	if (file_name == "None"){
@@ -257,13 +264,13 @@ xyPlot <- function(initial_date,final_date,every,file_name,var1_name,var2_name,s
 		print(p)
 		return(p)
 	} else {
-		mappa_animata <- p+ transition_time(Time) +
-			ggtitle(Time) +
+		mappa_animata <- p+ transition_time(data_from_to$Time) +
+			ggtitle(data_from_to$Time) +
 			labs(paste0(every,": {frame_time}"))+
 			shadow_wake(wake_length = 0.1, alpha = FALSE)
 		
 		output_file <- paste0("./gifs/",file_name,".mp4")
-		anim_save(output_file,mappa_animata,duration = length(date_time),fps = 10, renderer = av_renderer())
+		anim_save(output_file,mappa_animata,duration = len_time,fps = 10, renderer = av_renderer())
 	}
 }
 
@@ -277,14 +284,17 @@ trendStationYear <- function(chosen_station,initial_date,final_date,file_name,ch
 	stations = unique(df_agri$IDStations)
 	cols = colora(6,970,show=F)
 	
-	data_form_to = filter_date(df_st,initial_date,final_date,every)
+	filter_date_list = filter_date(df_st,initial_date,final_date,every)
+	data_from_to = filter_date_list[[1]]
+	len_time = filter_date_list[[2]]
 
-	data_form_to$month_day = as.Date(paste0("1990-",substr(data_form_to$Time,6,10)))
-	data_form_to$t = format(data_form_to$Time,"%j")
-	chosen_variable = data_form_to[,chosen_variable_name]
+
+	data_from_to$month_day = as.Date(paste0("1990-",substr(data_from_to$Time,6,10)))
+	data_from_to$t = format(data_from_to$Time,"%j")
+	chosen_variable = data_from_to[,chosen_variable_name]
 	
 	# Crea il grafico ggplot
-	time_trend <- ggplot(data_form_to,aes(x = month_day, 
+	time_trend <- ggplot(data_from_to,aes(x = month_day, 
 										  y = chosen_variable,
 										  group=year(Time), 
 										  color = as.factor(year(Time)))) +
@@ -304,9 +314,10 @@ trendStationYear <- function(chosen_station,initial_date,final_date,file_name,ch
 	print(time_trend)
 	
 	if(file_name!="None"){
-		trend_animate <- time_trend + transition_reveal(as.numeric(t))+ ggtitle(as.numeric(t)) + geom_point() 
+	#	trend_animate <- time_trend + transition_reveal(as.numeric(t))+ ggtitle(as.numeric(t)) + geom_point() 
+		trend_animate <- time_trend + transition_reveal(data_from_to$Time)+ ggtitle(data_from_to$Time) + geom_point()
 		output_file <- paste0("./gifs/",file_name,".mp4")
-		anim_save(output_file,trend_animate,duration = length(date_time),fps = 10, renderer = av_renderer())
+		anim_save(output_file,trend_animate,duration = len_time,fps = 10, renderer = av_renderer())
 	}
 	
 	return(time_trend)
@@ -320,19 +331,23 @@ trendYearStation <- function(initial_date,final_date,chosen_stations,file_name,c
 	
 	st = stations[chosen_stations]
 	data_year<-df_agri %>% subset(IDStations %in% st)
-	data_year_filter = filter_date(data_year,initial_date,final_date,every)
+	
+	filter_date_list = filter_date(data_year,initial_date,final_date,every)
+	data_from_to = filter_date_list[[1]]
+	len_time = filter_date_list[[2]]
+	
 
-	chosen_variable = data_year_filter[,chosen_variable_name]
+	chosen_variable = data_from_to[,chosen_variable_name]
 	
 	
 	# Crea il grafico ggplot
-	station_trend <- ggplot(data_year_filter,aes(x = Time, 
+	station_trend <- ggplot(data_from_to,aes(x = Time, 
 												 y = chosen_variable,
 												 group=IDStations, 
 												 color = as.factor(IDStations))) +
 		
 		geom_line() +
-		labs(x = "Stations", y = chosen_variable_name, title = paste0("Year: ",year, ", all stations")) +
+		labs(x = "Stations", y = chosen_variable_name, title = paste0("Year: ",year(initial_date), ", all stations")) +
 		ylim(range(na.omit(chosen_variable))) +
 		scale_color_manual(values = cols) +
 		theme(legend.position = "top")+
@@ -344,9 +359,9 @@ trendYearStation <- function(initial_date,final_date,chosen_stations,file_name,c
 	print(station_trend)
 	
 	if(file_name!="None"){
-		station_trend_animate <- station_trend + transition_reveal(Time)+ ggtitle(Time) + geom_point() 
+		station_trend_animate <- station_trend + transition_reveal(data_from_to$Time)+ ggtitle(data_from_to$Time) + geom_point() 
 		output_file <- paste0("./gifs/",file_name,".mp4")
-		anim_save(output_file,station_trend_animate,duration = length(date_time),fps = 10, renderer = av_renderer())
+		anim_save(output_file,station_trend_animate,duration = len_time,fps = 10, renderer = av_renderer())
 	}
 	
 	return(station_trend)

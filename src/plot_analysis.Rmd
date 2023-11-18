@@ -3,16 +3,34 @@ title: "R Notebook"
 ---
 
 ```{r,warning=FALSE}
-source("plot functions/plot_functions.R")
 source("include.R")
 ```
 
-# Mappa stazioni
+```{r,warning=FALSE}
+source("plot functions/plot_functions.R")
+```
+
+
+# Mappa stazioni: REMOVE LEGEND
 ```{r}
-stationPlot()
+stationPlot <- stationPlot()
 ```
 
 # Parameters shared
+```{r}
+initial_date = "2016-01-01"
+final_date = "2017-01-01"
+every = "month"
+
+# if you change the file_name from None it will create a mp4 video
+file_name = "xy plot prova"
+```
+
+```{r}
+head(data_agc_lomb)
+```
+
+# Grid map with chosen variable 
 ```{r}
 initial_date = "2016-01-01"
 final_date = "2016-01-01"
@@ -20,27 +38,31 @@ every = "month"
 
 # if you change the file_name from None it will create a mp4 video
 file_name = "None"
-```
 
-
-# Grid map with chosen variable 
-```{r}
-chosen_variable = data_agc_lomb$WE_temp_2m
+chosen_variable_name = "WE_wind_speed_10m_max"
 color_low =  "yellow"
 color_high = "blue"
 
-map = gridMap(initial_date,final_date,every,file_name,color_low,color_high)
+map = gridMap(initial_date,final_date,every,file_name,color_low,color_high,chosen_variable_name)
 ```
 
 
 #  Map expanding radius: togliere la legenda
 
 ```{r}
+initial_date = "2016-01-01"
+final_date = "2017-01-01"
+every = "month"
+
+# if you change the file_name from None it will create a mp4 video
+file_name = "map circles prova"
+
 chosen_var = "AQ_pm10" 
 
-date_time = as.Date(seq.Date(from=as.Date(initial_date,DATE_FORMAT),
-					  to=as.Date(final_date,DATE_FORMAT),by=every))
-df_date = df_agri[which(df_agri$Time %in% date_time),]
+
+filter_date_list = filter_date(df_agri,initial_date,final_date,every)
+data_form_to = filter_date_list[[1]]
+len_time = filter_date_list[[2]]
 
 chosen_var = df_date[,chosen_var]
 
@@ -48,8 +70,8 @@ chosen_var = df_date[,chosen_var]
 
 mappa_expanding <- mappa_migliorata+
 	geom_point(data =df_date, aes(x=Longitude,y=Latitude),
-			   size=lerp_pm10_radius(df_date$AQ_pm10),
-			   color = lerp_pm10_color(df_date$AQ_pm10), alpha=0.6)+
+			   size=lerp_pm10_radius(chosen_var),
+			   color = lerp_pm10_color(chosen_var), alpha=0.6)+
 	theme(legend.position = "none")+
 	theme(panel.grid = element_blank())+
 	theme_bw()
@@ -73,6 +95,12 @@ if (file_name == "None"){
 # WIND  
 
 ```{r}
+initial_date = "2016-01-01"
+final_date = "2017-01-01"
+every = "month"
+
+# if you change the file_name from None it will create a mp4 video
+file_name = "wind plot 2016"
 wind = windPlot(initial_date,final_date,every,file_name)
 ```
 
@@ -80,9 +108,9 @@ wind = windPlot(initial_date,final_date,every,file_name)
 # xy color+size in time
 ```{r}
 var1_name = "AQ_no2"
-var2_name = "AQ_nox"
+var2_name = "WE_wind_speed_100m_mean"
 # you can change size to refer to a particular variable
-size_name = 3
+size_name = "LI_bovine"
 colors_factor_name = "IDStations"
 
 xyplot <- xyPlot(initial_date,final_date,every,file_name,var1_name,var2_name,size_name,colors_factor_name)
@@ -107,7 +135,7 @@ trendStationYear_plot = trendStationYear(chosen_station,initial_date,final_date,
 initial_date = "2016-01-01"
 final_date = "2016-12-31"
 chosen_stations = 1:4
-file_name = "station_trend"
+file_name = "prova trend year"
 chosen_variable_name = "AQ_pm10"
 
 trendYearStation_plot <- trendYearStation(initial_date,final_date,chosen_stations,file_name,chosen_variable_name)
@@ -117,6 +145,10 @@ trendYearStation_plot <- trendYearStation(initial_date,final_date,chosen_station
 # TO DO LIST:
 - check trend plot animation (Time vs t)
 - Map expanding radius bugs
+- test all plots
+- xyplot remove legend when not needed
+- higher video quality mp4 av_renderer?
+
 - crea grafici carini
 
 
