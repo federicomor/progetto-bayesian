@@ -2,391 +2,122 @@
 title: "R Notebook"
 ---
 
-```{r}
-source("include.R")
-library(maps)
-library(ggplot2)
-library(sf)
-library(lubridate)
-#devtools::install_github("dgrtwo/gganimate")
-library(gganimate)
-
-load("../data/data_agc_lomb.Rdata")
-head(AGC_Dataset)
-data_agc_lomb=AGC_Dataset
-data_agc_lomb$Time = as.Date(data_agc_lomb$Time)
-df_agri$Time = as.Date(df_agri$Time)
-
-sites <- data.frame(
-	longitude = unique(df_agri$Longitude), 
-	latitude = unique(df_agri$Latitude))
-
-stations = unique(df_agri$IDStations)
-cols = colora(6,970,show=F)
-pad <- 0.2 * c(-1, 1)
-```
-
-# carica file shp
 ```{r,warning=FALSE}
-details <- 3
-details_altre_regioni <- 2
-
-confini  <- c("Emilia-Romagna","Piemonte","Lombardia","Trentino-Alto Adige","Veneto")
-regioni_italiane <- st_read(paste0("italia/gadm40_ITA_",details,".shp"))
-regioni_italiane_2 <- st_read(paste0("italia/gadm40_ITA_",details_altre_regioni,".shp"))
-
-lombardia <- regioni_italiane[regioni_italiane$NAME_1 == "Lombardia",]
-altre_regioni <- regioni_italiane_2[regioni_italiane_2$NAME_1 %in% confini,]
-
-# Check if a station is inside each subregion
-lombardia$station_inside <- sapply(lombardia$geometry, function(x) any(st_intersects(st_as_sf(sites, coords = c("longitude", "latitude")), x)))
-
-altre_regioni$station_inside <- sapply(altre_regioni$geometry, function(x) any(st_intersects(st_as_sf(sites, coords = c("longitude", "latitude")), x)))
+source("plot functions/plot_functions.R")
+source("include.R")
 ```
 
 # Mappa stazioni
 ```{r}
-# crea mappa lombardia
-mappa_migliorata <- ggplot() +
-  # l'ordine è importante!
-	geom_sf(data = altre_regioni,aes(fill = station_inside), color = "lightgreen", size = 1) +
-	scale_fill_manual(values = c("gold", "white"),na.value = "white") +  # Define colors for inside/outside stations
-	geom_sf(data = lombardia,aes(fill = station_inside), color = "red", size = 1) +
-	scale_fill_manual(values = c("yellow", "white"),na.value = "lightblue") +  # Define colors for inside/outside stations
-	coord_sf(xlim = range(sites$longitude) + pad, ylim = range(sites$latitude) + pad, expand = FALSE)+
-	theme(legend.position = "none")+
-	theme(panel.grid = element_blank())
-	theme_bw()
-
-# aggiungi stazioni
-mappa_migliorata <- mappa_migliorata + 
-	geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred") 
-
-print(mappa_migliorata)
+stationPlot()
 ```
+
+# Parameters shared
+```{r}
+initial_date = "2016-01-01"
+final_date = "2016-01-01"
+every = "month"
+
+# if you change the file_name from None it will create a mp4 video
+file_name = "None"
+```
+
 
 # Grid map with chosen variable 
 ```{r}
-initial_date = "2016-01-01"
-final_date = "2018-01-01"
-every = "month"
-file_name = "grid_map_WE_temp_2m"
-facetted = 1
 chosen_variable = data_agc_lomb$WE_temp_2m
-color_low =  "lightgreen"
-color_high = "brown"
+color_low =  "yellow"
+color_high = "blue"
 
-date_time = as.Date(seq.Date(from=as.Date(initial_date,DATE_FORMAT),
-				  to=as.Date(final_date,DATE_FORMAT),by=every))
-
-data_from_to_lomb = data_agc_lomb[which(as.Date(data_agc_lomb$Time) %in% date_time),]
-
-chosen_variable = chosen_variable[which(as.Date(data_agc_lomb$Time) %in% date_time)]
-
-# aggiungi grid for long and lat
-grid <- ggplot() +
-	geom_hline( yintercept = data_from_to_lomb$Latitude, color = "blue", size = 0.1) +  # Linee orizzontali
-    geom_vline(xintercept = data_from_to_lomb$Longitude, color = "blue", size = 0.1)  # Linee verticali
-    
-	
-# Aggiungi griglia colorata per altitudine
-
-gradient_map <- 
-	grid+
-	geom_tile(data = data_from_to_lomb, aes(x = Longitude, y = Latitude, fill = chosen_variable), 
-			  colour = "grey50",width = 1, height = 1,alpha = 0.2) +
-	scale_fill_gradient(low = color_low, high = color_high,na.value = "gray") 
-
-
-if (facetted){
-	gradient_map <- gradient_map +facet_wrap(~Time)
-	print(gradient_map)
-} else {
-	gradient_map <- gradient_map +  
-		ggtitle(data_from_to_lomb$Time) +
-		transition_time(data_from_to_lomb$Time)+
-		labs(title = paste0(every,": {frame_time}"))
-	# gif
-	output_file <- paste0("./gifs/",file_name,".gif")
-	anim_save(output_file,gradient_map)
-}
-
+map = gridMap(initial_date,final_date,every,file_name,color_low,color_high)
 ```
 
 
-# WIND plot 
+#  Map expanding radius: togliere la legenda
 
-```{r}
-initial_date = "2016-01-01"
-final_date = "2016-02-01"
-every = "month"
-facetted=1
-file_name = "wind_gif"
-
-cardinal_to_degree <- function(cardinal) {
-  cardinal_degrees <- c(N = 0, NNE = 22.5, NE = 45, ENE = 67.5, E = 90,
-  					  ESE = 112.5, SE = 135, SSE = 157.5,
-  					  S = 180, SSW = 202.5, SW = 225, WSW = 247.5,
-  					  W = 270, WNW = 292.5, NW = 315, NNW = 337.5)
-  return(cardinal_degrees[cardinal])
-}
-
-shp_map <- st_read(paste0("italia/gadm40_ITA_",1,".shp"))
-
-date_time = as.Date(seq.Date(from=as.Date(initial_date,DATE_FORMAT),
-				  to=as.Date(final_date,DATE_FORMAT),by=every))
-
-data_agc_lomb = data_agc_lomb[which(as.Date(data_agc_lomb$Time) %in% date_time),]
-
-
-wind_arrows <- data.frame(
-  longitude = data_agc_lomb$Longitude,
-  latitude = data_agc_lomb$Latitude,
-  direction = cardinal_to_degree(data_agc_lomb$WE_mode_wind_direction_10m),
-  intensity = as.numeric(data_agc_lomb$WE_wind_speed_10m_mean)
-)
-
-# Calcola le coordinate di fine delle frecce in base alla direzione 
-# l'intensità verra colorata invece di cambiare in lunghezza
-wind_arrows$end_longitude =( wind_arrows$longitude + sin(wind_arrows$direction)/10)
-wind_arrows$end_latitude = ( wind_arrows$latitude + cos(wind_arrows$direction)/10)
-# put a 0 in the NA
-wind_arrows[is.na(wind_arrows)] <- 0
-
-time_vect = c()
-for(i in 1:1053) {
-	time_vect <- c(time_vect,seq(1,length(date_time)))
-}
-wind_arrows$t = time_vect
-
-
-mappa_wind <- ggplot(data = wind_arrows) +
-	geom_sf(data = shp_map, fill = "lightgreen", color = "black", size = 0.5)+
-	coord_sf(xlim = range(na.omit(wind_arrows$longitude))+pad,
-	  		 ylim = range(na.omit(wind_arrows$latitude))+pad, expand = FALSE)+
-
-    geom_segment(data = wind_arrows,
-			 aes(x = longitude, y = latitude, xend = end_longitude, yend = end_latitude,
-			 	color = intensity),
-			 arrow = arrow(type = "closed", length = unit(0.08, "inches"), ends = "last"),
-			 lineend = "round", size = 0.3,alpha=0.9 )
-
-if (facetted){
-	mappa_wind <- mappa_wind +facet_wrap(~t)
-	print(mappa_wind)
-} else {
-	mappa_animata <- mappa_wind +  
-	ggtitle(wind_arrows$t) +
-	transition_time(wind_arrows$t)+
-	labs(title = paste0(every,": {frame_time}"))
-	# gif
-	output_file <- paste0("./gifs/",file_name,".gif")
-	anim_save(output_file,mappa_animata)
-}
-
-
-
-```
-
-
-#  Map expanding radius
-## LERP function
-```{r}
-lerp_pm10_radius <- function(val){
-	radius_0 = 1
-	radius_f = 15
-	
-	min_max = range(variable[!is.na(val)])
-	min_val = min_max[1]
-	max_val = min_max[2]
-
-	# linear, you can use any function!
-	return_val = radius_0 + (radius_f - radius_0) * ((val - min_val) / (max_val - min_val))
-	return(return_val) 
-}
-
-lerp_pm10_color <- function(val) {
-  color_0 <- col2rgb("#008F39")
-  color_f <- col2rgb("#F80000")
-  
-  min_max <- range(val[!is.na(val)])
-  min_val <- min_max[1]
-  max_val <- min_max[2]
-  
-  return_vals <- vector("list", length = length(val))
-  
-  for (i in seq_along(val)) {
-    if (!is.nan(val[i])) {
-      return_val <- color_0 + (color_f - color_0) * ((val[i] - min_val) / (max_val - min_val))
-      return_vals[[i]] <- return_val
-    } else {
-      return_vals[[i]] <- rep(255, 3)  # Set RGB values to 255 (white)
-    }
-  }
-  
-  # Convert RGB components to color strings
-  colors <- lapply(return_vals, function(rgb_vec) {
-    rgb_string <- rgb(rgb_vec[1], rgb_vec[2], rgb_vec[3], maxColorValue = 255)
-    return(rgb_string)
-  })
-  
-  return(colors) 
-}
-
-```
-
-## actual map PROBLEMS
 ```{r}
 chosen_var = "AQ_pm10" 
-initial_date = "2016-01-01"
-final_date = "2016-01-10"
-every = "days"
 
 date_time = as.Date(seq.Date(from=as.Date(initial_date,DATE_FORMAT),
 					  to=as.Date(final_date,DATE_FORMAT),by=every))
 df_date = df_agri[which(df_agri$Time %in% date_time),]
 
+chosen_var = df_date[,chosen_var]
 
-###
-mappa_expanding <- ggplot(data=df_date) +
-	geom_sf(data = altre_regioni,aes(fill = station_inside), color = "lightgreen", size = 1) +
-	scale_fill_manual(values = c("gold", "white"),na.value = "white") + 
-	geom_sf(data = lombardia,aes(fill = station_inside), color = "red", size = 1) +
-	scale_fill_manual(values = c("yellow", "white"),na.value = "lightblue") +  
-	coord_sf(xlim = range(sites$longitude) + pad, ylim = range(sites$latitude) + pad, expand = FALSE)+
-	theme(legend.position = "none")+
-	
-	geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = "darkred") +
-	
+
+
+mappa_expanding <- mappa_migliorata+
 	geom_point(data =df_date, aes(x=Longitude,y=Latitude),
 			   size=lerp_pm10_radius(df_date$AQ_pm10),
-			   color = lerp_pm10_color(df_date$AQ_pm10), alpha=0.5)+
-	facet_wrap(~Time)+
+			   color = lerp_pm10_color(df_date$AQ_pm10), alpha=0.6)+
 	theme(legend.position = "none")+
 	theme(panel.grid = element_blank())+
 	theme_bw()
-print(mappa_expanding)
+
+if (file_name == "None"){
+	mappa_expanding <- mappa_expanding +facet_wrap(~Time)
+	print(mappa_expanding)
+} else {
+	mappa_animata <- mappa_expanding +  
+	ggtitle(df_date$Time) +
+	transition_time(df_date$Time)+
+	labs(title = paste0(every,": {frame_time}"))
+	output_file <- paste0("./gifs/",file_name,".mp4")
+	anim_save(output_file,mappa_animata,duration = length(date_time),fps = 10, renderer = av_renderer())
+}
+
   
 ```
 
-### animation
-```{r}
-mappa_animata <- ggtitle(dt) + transition_time(Time)+labs(title = "Day: {frame_time}")
-file_name = "map_gif"
 
-output_file <- paste0("./gifs/",file_name,".gif")
-anim_save(output_file,mappa_animata)
+# WIND  
+
+```{r}
+wind = windPlot(initial_date,final_date,every,file_name)
 ```
 
 
+# xy color+size in time
+```{r}
+var1_name = "AQ_no2"
+var2_name = "AQ_nox"
+# you can change size to refer to a particular variable
+size_name = 3
+colors_factor_name = "IDStations"
 
+xyplot <- xyPlot(initial_date,final_date,every,file_name,var1_name,var2_name,size_name,colors_factor_name)
+
+```
 # Trend plots
 ## 1 station - multiple years
 
 ```{r}
 chosen_station = 1
-initial_date = "2016-01-01"
 final_date = "2021-12-31"
-duration_par  = 20
-fps_par = 20
-
-
-st = stations[chosen_station]
-df_st = df_stat[[st]]
-stations = unique(df_agri$IDStations)
-cols = colora(6,970,show=F)
-
-
-data_form_to = subset(df_st,Time>=initial_date & Time<=final_date)
-data_form_to$month_day =paste0("1990-",substr(data_form_to$Time,6,10))
-
-
-data_form_to$month_day = as.Date(data_form_to$month_day)
-data_form_to$t = format(data_form_to$Time,"%j")
-
-# Crea il grafico ggplot
-time_trend <- ggplot(data_form_to,aes(x = month_day, 
-  			     y = AQ_pm10,
-  			     group=year(Time), 
-			     color = as.factor(year(Time)))) +
-	
-  geom_line() +
-	
-  labs(x = "Year", y = "PM_10 values", title = paste0("Station ", st, ", all years")) +
-  ylim(range(na.omit(data_form_to$AQ_pm10))) +
-  scale_x_date(date_labels = "%b",date_breaks = "1 month")+
-
-  scale_color_manual(values = cols) +
-  theme(legend.position = "top")+
-  theme_classic() 
-
-print(time_trend)
-```
-
-### animation
-```{r}
-time_trend <- time_trend + transition_reveal(as.numeric(t)) + geom_point() + view_follow(fixed_x = T,fixed_y = T)
-
-b <- animate(time_trend, duration = duration_par, fps = fps_par, renderer = av_renderer())
-
 file_name = "time_trend"
-output_file <- paste0("./gifs/",file_name,".mp4")
-anim_save(output_file,b)
+chosen_variable_name = "AQ_pm10"
 
+trendStationYear_plot = trendStationYear(chosen_station,initial_date,final_date,file_name,chosen_variable_name)
 ```
+
 
 
 ## 1 year - multiple stations
 ```{r}
-year = 2016
+initial_date = "2016-01-01"
+final_date = "2016-12-31"
 chosen_stations = 1:4
-duration_par  = 20
-fps_par = 20
-
-
-st = stations[chosen_stations]
-
-data_year<-df_agri %>% subset(IDStations %in% st)
-
-data_year = data_year[data_year$Time>=as.Date(paste0(year,"-01-01"),"%Y-%m-%d") &
-					  data_year$Time<=as.Date(paste0(year,"-12-31"),"%Y-%m-%d"),]
-
-# Crea il grafico ggplot
-station_trend <- ggplot(data_year,aes(x = Time, 
-  			     y = AQ_pm10,
-  			     group=IDStations, 
-			     color = as.factor(IDStations))) +
-	
-  geom_line() +
-  labs(x = "Stations", y = "PM_10 values", title = paste0("Year: ",year, ", all stations")) +
-  ylim(range(na.omit(data_year$AQ_pm10))) +
-  scale_color_manual(values = cols) +
-  theme(legend.position = "top")+
-  scale_x_date(date_labels = "%b",date_breaks = "1 month")+
-  theme(panel.grid = element_blank()) 
-
-print(station_trend)
-```
-
-
-
-### animation
-```{r}
-station_trend <- station_trend + transition_reveal(Time) + geom_point() + view_follow(fixed_x = T,fixed_y = T)
-
-b <- animate(station_trend, duration = duration_par, fps = fps_par, renderer = av_renderer())
-
 file_name = "station_trend"
-output_file <- paste0("./gifs/",file_name,".mp4")
-anim_save(output_file,b)
+chosen_variable_name = "AQ_pm10"
 
+trendYearStation_plot <- trendYearStation(initial_date,final_date,chosen_stations,file_name,chosen_variable_name)
 ```
-
 
 
 # TO DO LIST:
-- aggiungere anche la svizzera?
-- add legends 
+- check trend plot animation (Time vs t)
+- Map expanding radius bugs
+- crea grafici carini
 
 
 
