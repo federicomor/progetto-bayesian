@@ -153,12 +153,11 @@ stationPlot <- function(){
 	mappa_migliorata <- ggplot() +
 		# background_image(img)+
 		# l'ordine è importante!
-		geom_sf(data = altre_regioni, fill = "white" ,color = "lightgreen", size = 1) +
-		#scale_fill_manual(values = c("gold", "white"),na.value = "white") +  # Define colors for inside/outside stations
-		geom_sf(data = lombardia,aes(fill = station_inside), color = "red", size = 1) +
+		geom_sf(data = altre_regioni, fill = "white" ,color = "lightgreen", size = 1, show.legend = FALSE) +
+		scale_fill_manual(values = c("orange", "white"),na.value = "white") +  # Define colors for inside/outside stations
+		geom_sf(data = lombardia,aes(fill = station_inside), color = "red", size = 1, show.legend = FALSE) +
 		scale_fill_manual(values = c("yellow", "white"),na.value = "lightblue") +  # Define colors for inside/outside stations
 		coord_sf(xlim = range(sites$longitude) + pad, ylim = range(sites$latitude) + pad, expand = FALSE)+
-		theme(legend.position = "none")+
 		theme(panel.grid = element_blank())+
 		theme_bw()
 	
@@ -169,6 +168,7 @@ stationPlot <- function(){
 	print(mappa_migliorata)
 	return(mappa_migliorata)
 }
+
 #######################################################################
 #########################   WIND MAP  #################################
 #######################################################################
@@ -245,18 +245,27 @@ xyPlot <- function(initial_date,final_date,every,file_name,var1_name,var2_name,s
 	}
 	colors_factor = data_from_to[,colors_factor_name]
 	
-	p <- ggplot(
-		data_from_to, 
-		aes(x = var1, y=var2, size = size, colour = colors_factor)) +
-		
-		geom_point(alpha = 0.7,show.legend = FALSE) +
-		scale_color_viridis_d() +
-		scale_size(range = c(2, 12)) +
-		labs(x = var1_name, y =var2_name)+
-		theme_bw()
 	if(class(size_name)!="numeric"){
-		p+guides(size = guide_legend(title = size_name), color = "none")
+		p <- ggplot(
+			data_from_to, 
+			aes(x = var1, y=var2, size = size, colour = colors_factor)) +
+			geom_point(alpha = 0.7) +
+			scale_color_viridis_d() +
+			scale_size(range = c(2, 12)) +
+			labs(x = var1_name, y =var2_name)+
+			guides(size = guide_legend(title = size_name), color = "none")+
+			theme_bw()
+	}else{
+		p <- ggplot(
+			data_from_to, 
+			aes(x = var1, y=var2, size = size, colour = colors_factor)) +
+			geom_point(alpha = 0.7,show.legend = FALSE) +
+			scale_color_viridis_d() +
+			scale_size(range = c(2, 12)) +
+			labs(x = var1_name, y =var2_name)+
+			theme_bw()
 	}
+}
 	
 	
 	if (file_name == "None"){

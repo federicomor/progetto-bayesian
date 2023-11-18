@@ -16,15 +16,6 @@ source("plot functions/plot_functions.R")
 stationPlot <- stationPlot()
 ```
 
-# Parameters shared
-```{r}
-initial_date = "2016-01-01"
-final_date = "2017-01-01"
-every = "month"
-
-# if you change the file_name from None it will create a mp4 video
-file_name = "xy plot prova"
-```
 
 ```{r}
 head(data_agc_lomb)
@@ -111,6 +102,7 @@ var1_name = "AQ_no2"
 var2_name = "WE_wind_speed_100m_mean"
 # you can change size to refer to a particular variable
 size_name = "LI_bovine"
+size_name = 3
 colors_factor_name = "IDStations"
 
 xyplot <- xyPlot(initial_date,final_date,every,file_name,var1_name,var2_name,size_name,colors_factor_name)
