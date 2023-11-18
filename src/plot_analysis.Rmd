@@ -42,44 +42,15 @@ map = gridMap(initial_date,final_date,every,file_name,color_low,color_high,chose
 
 ```{r}
 initial_date = "2016-01-01"
-final_date = "2017-01-01"
+final_date = "2016-12-01"
 every = "month"
 
 # if you change the file_name from None it will create a mp4 video
-file_name = "map circles prova"
+file_name = "prova expanding circles"
 
-chosen_var = "AQ_pm10" 
+chosen_var_name = "AQ_pm10" 
 
-
-filter_date_list = filter_date(df_agri,initial_date,final_date,every)
-data_form_to = filter_date_list[[1]]
-len_time = filter_date_list[[2]]
-
-chosen_var = df_date[,chosen_var]
-
-
-
-mappa_expanding <- mappa_migliorata+
-	geom_point(data =df_date, aes(x=Longitude,y=Latitude),
-			   size=lerp_pm10_radius(chosen_var),
-			   color = lerp_pm10_color(chosen_var), alpha=0.6)+
-	theme(legend.position = "none")+
-	theme(panel.grid = element_blank())+
-	theme_bw()
-
-if (file_name == "None"){
-	mappa_expanding <- mappa_expanding +facet_wrap(~Time)
-	print(mappa_expanding)
-} else {
-	mappa_animata <- mappa_expanding +  
-	ggtitle(df_date$Time) +
-	transition_time(df_date$Time)+
-	labs(title = paste0(every,": {frame_time}"))
-	output_file <- paste0("./gifs/",file_name,".mp4")
-	anim_save(output_file,mappa_animata,duration = length(date_time),fps = 10, renderer = av_renderer())
-}
-
-  
+circles_plot <- circlesPlot(initial_date,final_date,every,file_name,chosen_var_name)
 ```
 
 
@@ -136,9 +107,7 @@ trendYearStation_plot <- trendYearStation(initial_date,final_date,chosen_station
 
 # TO DO LIST:
 - check trend plot animation (Time vs t)
-- Map expanding radius bugs
-- test all plots
-- xyplot remove legend when not needed
+
 - higher video quality mp4 av_renderer?
 	for this maybe we just need to use the device parameter, and set it to "svg" as svg does
 	not compress images. This is the device help of the animate package:

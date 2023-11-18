@@ -389,6 +389,36 @@ trendYearStation <- function(initial_date,final_date,chosen_stations,file_name,c
 #########################   CIRCLES MAP  #################################
 ##########################################################################
 
+circlesPlot <- function(initial_date,final_date,every,file_name,chosen_var_name){
+	filter_date_list = filter_date(df_agri,initial_date,final_date,every)
+	data_form_to = filter_date_list[[1]]
+	len_time = filter_date_list[[2]]
+	
+	chosen_var = data_form_to[,chosen_var_name]
+	
+	
+	
+	mappa_expanding <- stationPlot+
+		geom_point(data =data_form_to, aes(x=Longitude,y=Latitude),
+				   size=lerp_pm10_radius(chosen_var),
+				   color = lerp_pm10_color(chosen_var), alpha=0.6)+
+		theme(legend.position = "none")+
+		theme(panel.grid = element_blank())+
+		theme_bw()
+	
+	if (file_name == "None"){
+		mappa_expanding <- mappa_expanding +facet_wrap(~Time)
+		print(mappa_expanding)
+	} else {
+		mappa_animata <- mappa_expanding +  
+			ggtitle(data_form_to$Time) +
+			transition_time(data_form_to$Time)+
+			labs(title = paste0(every,": {frame_time}"))
+		output_file <- paste0("./gifs/",file_name,".mp4")
+		anim_save(output_file,mappa_animata,duration = len_time,fps = 10, renderer = av_renderer())
+	}
+}
+
 
 
 
