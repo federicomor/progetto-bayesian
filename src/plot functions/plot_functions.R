@@ -20,6 +20,10 @@ data_agc_lomb=AGC_Dataset
 data_agc_lomb$Time = as.Date(data_agc_lomb$Time)
 df_agri$Time = as.Date(df_agri$Time)
 
+rm(parte1) # save memory
+rm(parte2) # save memory
+rm(AGC_Dataset) # save memory
+
 sites <- data.frame(
 	longitude = unique(df_agri$Longitude), 
 	latitude = unique(df_agri$Latitude))

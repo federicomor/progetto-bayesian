@@ -30,7 +30,8 @@ every = "month"
 # if you change the file_name from None it will create a mp4 video
 file_name = "None"
 
-chosen_variable_name = "WE_wind_speed_10m_max"
+# chosen_variable_name = "WE_wind_speed_10m_max"
+chosen_variable_name = "Altitude"
 color_low =  "yellow"
 color_high = "blue"
 
