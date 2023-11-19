@@ -1,6 +1,8 @@
 ---
 title: "depth based correletion"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 Analysis correlation year 2017
@@ -12,14 +14,14 @@ Analysis correlation year 2017
 # source("include.R")
 
 library(crayon)
-load("../data/v300/df_agri.Rdata")
+load("../data/df_agri.Rdata")
 cat(crayon::cyan("❤ Loaded agrimonia dataset. Available as df_agri.\n"))
 df_agri$Time <- as.Date(df_agri$Time, "%Y-%m-%d")
 cat(crayon::green("❤ Converted df_agri$Time to Date variable type, year-month-day.\n"))
 DATE_FORMAT = "%Y-%m-%d"
 cat(crayon::green("❤ Created DATE_FORMAT variable for date comparisons.\n"))
 # cat(crayon::green('❤ Usage: ...Time >= as.Date(paste0(year,"-01-01"),DATE_FORMAT).\n'))
-load("../data/v300/df_stat.Rdata")
+load("../data/df_stat.Rdata")
 cat(crayon::cyan("❤ Loaded stations split dataset. Available as df_stat.\n"))
 
 ```
@@ -28,7 +30,7 @@ cat(crayon::cyan("❤ Loaded stations split dataset. Available as df_stat.\n"))
 library(roahd)
 library(rlist)
 library(corrplot)
-# library(ggplot2)
+library(ggplot2)
 ```
 
 Plot colnames dataset
@@ -80,7 +82,7 @@ names(list_fdata) = AQ_names
 
 
 mf_data <- as.mfData(list_fdata)
-plot(mf_data)
+# plot(mf_data)
 
 ```
 
@@ -96,7 +98,7 @@ corrplot.mixed(cor_AQ, insig = "blank")
 ```
 
 
-pm10 vs WE
+pm10 vs all
 
 
 ```{r}
@@ -127,19 +129,39 @@ cor_fts = cor_spearman(mf_data, ordering='MHI')
 rownames(cor_fts) = fts_names
 colnames(cor_fts) = fts_names
 
-cor_fts
-corrplot(cor_fts, method = 'color' ,type="upper", sig.level = 0.01, insig = "blank")
-corrplot.mixed(cor_fts, insig = "blank")
+#plot: matrix correlation
+# corrplot.mixed(cor_fts, insig = "blank")
+
+
+ggplot() +
+  geom_bar(
+    aes(x = fts_names[2:length(fts_names)], y = cor_fts[1,][2:length(fts_names)]),
+    fill = "skyblue",
+    stat = "identity",
+    width = 0.6
+  ) +
+  labs(title = "Correlations with pm10 - year 2017", x = "", y = "Correlation") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  coord_cartesian(ylim = c(-0.5, 0.5)) +
+  scale_y_continuous(breaks = seq(-1, 1, by = 0.2), limits = c(-1, 1))
+
+
+## plot with a threshold
+# TH = 0.3
+# ggplot() +
+#   geom_bar(
+#     aes(x = fts_names[2:length(fts_names)], y = cor_fts[1,][2:length(fts_names)],
+#     	fill = ifelse(abs(cor_fts[1,][2:length(fts_names)]) > TH, paste("corr > ", TH), paste("corr < ", TH))),
+#     stat = "identity",
+#     width = 0.6
+#   ) +
+#   labs(title = "Correlations with pm10 - year 2017", x = "", y = "Correlation", fill = paste("Threshlod ", TH)) +
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+#   coord_cartesian(ylim = c(-0.5, 0.5)) +
+#   scale_y_continuous(breaks = seq(-1, 1, by = 0.2), limits = c(-1, 1))
+
+
 ```
-```{r}
-cor_fts[1,]
 
-plot(cor_fts[1,], ylim = c(-1,1), 
-	 main = "Correlation wrt pm10 2017")
-
-### We can do a better plot
-###
-
-```
 
 
