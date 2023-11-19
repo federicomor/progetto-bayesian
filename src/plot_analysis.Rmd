@@ -22,20 +22,20 @@ hist(log(pm10),col=cols[2],probability = T,xlim=c(-1,6))
 
 
 ```{r}
-# Istogramma della variabile originale
-hist_original <- ggplot(data = data.frame(Y = Y), aes(x = Y, y=..density..)) +
-  geom_histogram(binwidth = 7, fill = cols[1], color = "black", alpha = 0.7) +
-  labs(title = "values of pm10", x = "", y = "") +
-  theme_minimal()
+hist_original <- ggplot(data = data.frame(Y = pm10), aes(x = pm10, y=after_stat(density))) +
+	geom_histogram(binwidth = 7, fill = cols[1], color = "black", alpha = 0.7) +
+	labs(title = "values of pm10", x = "", y = "") +
+	theme_minimal()
+	# geom_density(adjust=2)
 
-# Istogramma del logaritmo della variabile
-hist_log <- ggplot(data = data.frame(log_Y = log(Y)), aes(x = log_Y, y=..density..)) +
-  geom_histogram(binwidth = 0.25, fill = cols[2], color = "black", alpha = 0.7) +
-  labs(title = "values of ln(pm10)", x = "", y = "") +
-  theme_minimal()+
-  coord_cartesian(xlim = c(-0.5,6))
+hist_log <- ggplot(data = data.frame(log_Y = log(pm10)), aes(x = log_Y, y=after_stat(density))) +
+	geom_histogram(binwidth = 0.25, fill = cols[2], color = "black", alpha = 0.7) +
+	labs(title = "values of ln(pm10)", x = "", y = "") +
+	theme_minimal()+
+	coord_cartesian(xlim = c(-0.5,6))
+	# geom_density(adjust=2)
 
-# Affiancamento dei due grafici
+library(gridExtra)
 grid.arrange(hist_original, hist_log, ncol = 2)
 ```
 
