@@ -4,8 +4,9 @@ title: "R Notebook"
 
 ```{r,warning=FALSE}
 source("include.R")
+source("plot functions/plot_data_and_libraries.R")
 ```
-
+# update plot libraries
 ```{r,warning=FALSE}
 source("plot functions/plot_functions.R")
 ```
@@ -25,14 +26,16 @@ hist(log(pm10),col=cols[2],probability = T,xlim=c(-1,6))
 hist_original <- ggplot(data = data.frame(Y = pm10), aes(x = pm10, y=after_stat(density))) +
 	geom_histogram(binwidth = 7, fill = cols[1], color = "black", alpha = 0.7) +
 	labs(title = "values of pm10", x = "", y = "") +
-	theme_minimal()
+	theme_minimal()+
+	theme(panel.grid = element_blank())
 	# geom_density(adjust=2)
 
 hist_log <- ggplot(data = data.frame(log_Y = log(pm10)), aes(x = log_Y, y=after_stat(density))) +
 	geom_histogram(binwidth = 0.25, fill = cols[2], color = "black", alpha = 0.7) +
 	labs(title = "values of ln(pm10)", x = "", y = "") +
 	theme_minimal()+
-	coord_cartesian(xlim = c(-0.5,6))
+	coord_cartesian(xlim = c(-0.5,6))+
+	theme(panel.grid = element_blank())
 	# geom_density(adjust=2)
 
 library(gridExtra)
@@ -41,7 +44,7 @@ grid.arrange(hist_original, hist_log, ncol = 2)
 
 
 
-# Mappa stazioni: REMOVE LEGEND
+# Mappa stazioni
 ```{r}
 stationPlot <- stationPlot()
 ```
@@ -63,8 +66,9 @@ file_name = "None"
 data_agc_lomb$WE_wind_speed_10m_max = as.numeric(data_agc_lomb$WE_wind_speed_10m_max)
 chosen_variable_name = "WE_wind_speed_10m_max"
 # chosen_variable_name = "Altitude"
-color_low =  "yellow"
-color_high = "blue"
+cols = colora(2,15)
+color_low =  cols[1]
+color_high = cols[2]
 
 map = gridMap(initial_date,final_date,every,file_name,color_low,color_high,chosen_variable_name)
 ```
@@ -74,11 +78,11 @@ map = gridMap(initial_date,final_date,every,file_name,color_low,color_high,chose
 
 ```{r}
 initial_date = "2016-01-01"
-final_date = "2016-12-01"
-every = "month"
+final_date = "2017-01-01"
+every = "year"
 
 # if you change the file_name from None it will create a mp4 video
-file_name = "prova expanding circles"
+file_name = "None"
 
 chosen_var_name = "AQ_pm10" 
 
@@ -90,22 +94,26 @@ circles_plot <- circlesPlot(initial_date,final_date,every,file_name,chosen_var_n
 
 ```{r}
 initial_date = "2016-01-01"
-final_date = "2017-01-01"
+final_date = "2016-01-01"
 every = "month"
 
 # if you change the file_name from None it will create a mp4 video
-file_name = "wind plot 2016"
+file_name = "None"
 wind = windPlot(initial_date,final_date,every,file_name)
 ```
 
 
 # xy color+size in time
 ```{r}
+initial_date = "2016-01-01"
+final_date = "2016-02-01"
+file_name= "None"
+every = "month"
 var1_name = "AQ_no2"
 var2_name = "WE_wind_speed_100m_mean"
 # you can change size to refer to a particular variable
 size_name = "LI_bovine"
-size_name = 3
+
 colors_factor_name = "IDStations"
 
 xyplot <- xyPlot(initial_date,final_date,every,file_name,var1_name,var2_name,size_name,colors_factor_name)
@@ -117,7 +125,7 @@ xyplot <- xyPlot(initial_date,final_date,every,file_name,var1_name,var2_name,siz
 ```{r}
 chosen_station = 1
 final_date = "2021-12-31"
-file_name = "time_trend"
+file_name = "None"
 chosen_variable_name = "AQ_pm10"
 
 trendStationYear_plot = trendStationYear(chosen_station,initial_date,final_date,file_name,chosen_variable_name)
@@ -130,7 +138,7 @@ trendStationYear_plot = trendStationYear(chosen_station,initial_date,final_date,
 initial_date = "2016-01-01"
 final_date = "2016-12-31"
 chosen_stations = 1:4
-file_name = "prova trend year"
+file_name = "None"
 chosen_variable_name = "AQ_pm10"
 
 trendYearStation_plot <- trendYearStation(initial_date,final_date,chosen_stations,file_name,chosen_variable_name)

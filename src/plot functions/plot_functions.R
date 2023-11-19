@@ -1,54 +1,5 @@
-library(maps)
-library(ggplot2)
-library(sf)
-library(lubridate)
-#devtools::install_github("dgrtwo/gganimate")
-library(gganimate)
-library(av)
-library(ggpubr)
-library(jpeg)
-
-##### OLD
-# load("../data/data_agc_lomb.Rdata")
-##### NEW
-load("../data/data_agc_lomb_part1.RData")
-load("../data/data_agc_lomb_part2.RData")
-AGC_Dataset = rbind(parte1, parte2)
-
-head(AGC_Dataset)
-data_agc_lomb=AGC_Dataset
-data_agc_lomb$Time = as.Date(data_agc_lomb$Time)
-df_agri$Time = as.Date(df_agri$Time)
-
-rm(parte1) # save memory
-rm(parte2) # save memory
-rm(AGC_Dataset) # save memory
-
-sites <- data.frame(
-	longitude = unique(df_agri$Longitude), 
-	latitude = unique(df_agri$Latitude))
-
-stations = unique(df_agri$IDStations)
-cols = colora(6,970,show=F)
-pad <- 0.2 * c(-1, 1)
-DATE_FORMAT = "%Y-%m-%d"
-########################
-
-# carica file shp
-details <- 3
-details_altre_regioni <- 2
-
-confini  <- c("Emilia-Romagna","Piemonte","Lombardia","Trentino-Alto Adige","Veneto")
-regioni_italiane <- st_read(paste0("italia/gadm40_ITA_",details,".shp"))
-regioni_italiane_2 <- st_read(paste0("italia/gadm40_ITA_",details_altre_regioni,".shp"))
-
-lombardia <- regioni_italiane[regioni_italiane$NAME_1 == "Lombardia",]
-altre_regioni <- regioni_italiane_2[regioni_italiane_2$NAME_1 %in% confini,]
-
-shp_map <- st_read(paste0("italia/gadm40_ITA_",1,".shp"))
-#######################################################################
 #########################   UTILITIES #################################
-#######################################################################
+
 # Check if a station is inside each subregion
 lombardia$station_inside <- sapply(lombardia$geometry, function(x) any(st_intersects(st_as_sf(sites, coords = c("longitude", "latitude")), x)))
 
@@ -77,7 +28,7 @@ lerp_pm10_radius <- function(val){
 }
 
 lerp_pm10_color <- function(val) {
-	color_0 <- col2rgb("#008F39")
+	color_0 <- col2rgb("blue")
 	color_f <- col2rgb("#F80000")
 	
 	min_max <- range(val[!is.na(val)])
@@ -114,9 +65,9 @@ filter_date <- function(dataframe,initial_date,final_date,every){
 	return(list(filtered_dataset,length(date_time)))
 	
 }
-#######################################################################
+
 #########################   GRID MAP ##################################
-#######################################################################
+
 gridMap <- function(initial_date,final_date,every,file_name,color_low,color_high,chosen_variable_name){
 	
 	filter_date_list = filter_date(data_agc_lomb,initial_date,final_date,every)
@@ -138,7 +89,9 @@ gridMap <- function(initial_date,final_date,every,file_name,color_low,color_high
 		grid+
 		geom_tile(data = data_from_to, aes(x = Longitude, y = Latitude, fill = chosen_variable), 
 				  colour = "grey50",width = 1, height = 1,alpha = 1) +
-		scale_fill_gradient(low = color_low, high = color_high,na.value = "gray") 
+		scale_fill_gradient(low = color_low, high = color_high,na.value = "gray") +
+		labs(title = chosen_variable_name)+
+		guides(color = guide_legend(title = chosen_variable_name))
 	
 	
 	if (file_name == "None"){
@@ -156,21 +109,22 @@ gridMap <- function(initial_date,final_date,every,file_name,color_low,color_high
 	}
 
 }
-#######################################################################
+
 #########################   STATION MAP ###############################
-#######################################################################
+
 stationPlot <- function(){
 	# crea mappa lombardia
 	mappa_migliorata <- ggplot() +
 		# background_image(img)+
 		# l'ordine è importante!
-		geom_sf(data = altre_regioni, fill = "white" ,color = "lightgreen", size = 1, show.legend = FALSE) +
+		geom_sf(data = altre_regioni, fill = "white" ,color = "forestgreen", size = 1, show.legend = FALSE) +
 		scale_fill_manual(values = c("orange", "white"),na.value = "white") +  # Define colors for inside/outside stations
-		geom_sf(data = lombardia,aes(fill = station_inside), color = "red", size = 1, show.legend = FALSE) +
-		scale_fill_manual(values = c("yellow", "white"),na.value = "lightblue") +  # Define colors for inside/outside stations
+		geom_sf(data = lombardia,aes(fill = station_inside), color = "red", size = 0.1, show.legend = FALSE) +
+		scale_fill_manual(values = c("yellow", "white"),na.value = "forestgreen") +  # Define colors for inside/outside stations
 		coord_sf(xlim = range(sites$longitude) + pad, ylim = range(sites$latitude) + pad, expand = FALSE)+
+		theme_bw()+
 		theme(panel.grid = element_blank())+
-		theme_bw()
+		labs(title = "stations positions in Lombardy")
 	
 	# aggiungi stazioni
 	mappa_migliorata <- mappa_migliorata + 
@@ -180,9 +134,9 @@ stationPlot <- function(){
 	return(mappa_migliorata)
 }
 
-#######################################################################
+
 #########################   WIND MAP  #################################
-#######################################################################
+
 
 windPlot <- function(initial_date,final_date,every,file_name){
 	
@@ -212,7 +166,7 @@ windPlot <- function(initial_date,final_date,every,file_name){
 	
 	
 	mappa_wind <- ggplot(data = wind_arrows) +
-		geom_sf(data = shp_map, fill = "lightgreen", color = "black", size = 0.5)+
+		geom_sf(data = shp_map, fill = "forestgreen", color = "black", size = 0.5,alpha=0.6)+
 		coord_sf(xlim = range(na.omit(wind_arrows$longitude))+pad,
 				 ylim = range(na.omit(wind_arrows$latitude))+pad, expand = FALSE)+
 		
@@ -221,7 +175,9 @@ windPlot <- function(initial_date,final_date,every,file_name){
 					 	color = intensity),
 					 arrow = arrow(type = "closed", length = unit(0.08, "inches"), ends = "last"),
 					 lineend = "round", size = 0.3,alpha=0.9 )+
-		theme_bw()
+		theme_bw()+
+		theme(panel.grid = element_blank())+
+		labs(title="Wind map")
 	
 	if (file_name == "None"){
 		mappa_wind <- mappa_wind +facet_wrap(~t)
@@ -236,9 +192,9 @@ windPlot <- function(initial_date,final_date,every,file_name){
 		anim_save(output_file,mappa_animata,duration = len_time,fps = 10, renderer = av_renderer(), width = 1280, height = 720)
 	}
 }
-##########################################################################
+
 #########################   XY PLOT  #####################################
-##########################################################################
+
 xyPlot <- function(initial_date,final_date,every,file_name,var1_name,var2_name,size_name,colors_factor_name){
 
 	filter_date_list = filter_date(df_agri,initial_date,final_date,every)
@@ -294,9 +250,9 @@ xyPlot <- function(initial_date,final_date,every,file_name,var1_name,var2_name,s
 	
 
 
-##########################################################################
+
 #########################   TREND PLOTS-stations  ########################
-##########################################################################
+
 
 trendStationYear <- function(chosen_station,initial_date,final_date,file_name,chosen_variable_name){
 	st = stations[chosen_station]
@@ -344,9 +300,9 @@ trendStationYear <- function(chosen_station,initial_date,final_date,file_name,ch
 	
 }
 
-##########################################################################
+
 #########################  TREND PLOTS-years #############################
-##########################################################################
+
 trendYearStation <- function(initial_date,final_date,chosen_stations,file_name,chosen_variable_name){
 	
 	st = stations[chosen_stations]
@@ -389,9 +345,9 @@ trendYearStation <- function(initial_date,final_date,chosen_stations,file_name,c
 	
 }
 
-##########################################################################
+
 #########################   CIRCLES MAP  #################################
-##########################################################################
+
 
 circlesPlot <- function(initial_date,final_date,every,file_name,chosen_var_name){
 	filter_date_list = filter_date(df_agri,initial_date,final_date,every)
@@ -402,13 +358,13 @@ circlesPlot <- function(initial_date,final_date,every,file_name,chosen_var_name)
 	
 	
 	
-	mappa_expanding <- stationPlot+
+	mappa_expanding <- stationPlot()+
 		geom_point(data =data_form_to, aes(x=Longitude,y=Latitude),
 				   size=lerp_pm10_radius(chosen_var),
 				   color = lerp_pm10_color(chosen_var), alpha=0.6)+
 		theme(legend.position = "none")+
-		theme(panel.grid = element_blank())+
-		theme_bw()
+		labs(title=paste0("measurments of ",chosen_var_name))
+
 	
 	if (file_name == "None"){
 		mappa_expanding <- mappa_expanding +facet_wrap(~Time)
