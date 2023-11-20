@@ -5,6 +5,7 @@ title: "R Notebook"
 ```{r,warning=FALSE}
 source("include.R")
 source("plot functions/plot_data_and_libraries.R")
+source("plot functions/plot_utilities.R")
 ```
 # update plot libraries
 ```{r,warning=FALSE}
@@ -13,32 +14,27 @@ source("plot functions/plot_functions.R")
 
 # Istogram Y and ln(Y)
 
-```{r}
+```{r,warning=FALSE}
+library(gridExtra)
 cols = colora(2,15)
-pm10 = df_agri$AQ_pm10
-par(mfrow=c(1,2),mar=c(2,2,2,2))
-hist(pm10,col=cols[1],probability = T)
-hist(log(pm10),col=cols[2],probability = T,xlim=c(-1,6))
-```
+chosen_var = df_agri$AQ_pm10
 
-
-```{r}
-hist_original <- ggplot(data = data.frame(Y = pm10), aes(x = pm10, y=after_stat(density))) +
-	geom_histogram(binwidth = 7, fill = cols[1], color = "black", alpha = 0.7) +
+hist_original <- ggplot(data = data.frame(Y = chosen_var), aes(x = chosen_var, y=after_stat(density))) +
+	geom_histogram(binwidth = 7, fill = cols[1], color = "black", alpha = 1) +
 	labs(title = "values of pm10", x = "", y = "") +
-	theme_minimal()+
+	theme_classic()+
 	theme(panel.grid = element_blank())
 	# geom_density(adjust=2)
 
-hist_log <- ggplot(data = data.frame(log_Y = log(pm10)), aes(x = log_Y, y=after_stat(density))) +
-	geom_histogram(binwidth = 0.25, fill = cols[2], color = "black", alpha = 0.7) +
+hist_log <- ggplot(data = data.frame(log_Y = log(chosen_var)), aes(x = log_Y, y=after_stat(density))) +
+	geom_histogram(binwidth = 0.25, fill = cols[2], color = "black", alpha = 1) +
 	labs(title = "values of ln(pm10)", x = "", y = "") +
-	theme_minimal()+
+	theme_classic()+
 	coord_cartesian(xlim = c(-0.5,6))+
 	theme(panel.grid = element_blank())
 	# geom_density(adjust=2)
 
-library(gridExtra)
+
 grid.arrange(hist_original, hist_log, ncol = 2)
 ```
 
@@ -63,14 +59,13 @@ every = "month"
 # if you change the file_name from None it will create a mp4 video
 file_name = "None"
 
-data_agc_lomb$WE_wind_speed_10m_max = as.numeric(data_agc_lomb$WE_wind_speed_10m_max)
 chosen_variable_name = "WE_wind_speed_10m_max"
 # chosen_variable_name = "Altitude"
-cols = colora(2,15)
+cols = colora(2,15,show=F)
 color_low =  cols[1]
 color_high = cols[2]
 
-map = gridMap(initial_date,final_date,every,file_name,color_low,color_high,chosen_variable_name)
+map = gridMap(initial_date,final_date,every,file_name,chosen_variable_name)
 ```
 
 
@@ -94,7 +89,7 @@ circles_plot <- circlesPlot(initial_date,final_date,every,file_name,chosen_var_n
 
 ```{r}
 initial_date = "2016-01-01"
-final_date = "2016-01-01"
+final_date = "2016-02-01"
 every = "month"
 
 # if you change the file_name from None it will create a mp4 video
@@ -145,17 +140,11 @@ trendYearStation_plot <- trendYearStation(initial_date,final_date,chosen_station
 ```
 
 
+
+
 # TO DO LIST:
-- check trend plot animation (Time vs t)
 
-- higher video quality mp4 av_renderer?
-	for this maybe we just need to use the device parameter, and set it to "svg" as svg does
-	not compress images. This is the device help of the animate package:
-	The device to use for rendering the single frames.
-	Possible values are 'png', 'ragg_png' (requires the ragg package), 'jpeg',
-	'tiff', 'bmp', 'svg', and 'svglite' (requires the svglite package). (default 'png')
 
-- crea grafici carini
 
 
 
