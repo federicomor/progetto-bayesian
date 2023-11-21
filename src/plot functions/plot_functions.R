@@ -3,28 +3,27 @@ color_comuni_lombardia = "red"
 color_empty = "white"
 color_station = "yellow"
 color_fill = "forestgreen"
-color_station = "darkred"
+color_station_point = "darkred"
 
 stationPlot <- function(){
 	# crea mappa lombardia
 	mappa_migliorata <- ggplot() +
-		# background_image(img)+
+		#background_image(img)+
 		# l'ordine è importante!
-		geom_sf(data = altre_regioni, fill = color_empty ,color = color_fill, size = 1,alpha=0.4, show.legend = FALSE) +
+		geom_sf(data = altre_regioni, fill = color_empty ,color = color_fill, linewidth = 0.1,alpha=0.1, show.legend = FALSE) +
 		scale_fill_manual(values = c(color_station,color_empty),na.value = color_empty) +  # Define colors for inside/outside stations
 		
-		geom_sf(data = lombardia,aes(fill = station_inside), color = color_comuni_lombardia, size = 0.1,alpha=0.7, show.legend = FALSE) +
+		geom_sf(data = lombardia,aes(fill = station_inside), color = color_comuni_lombardia, linewidth = 0.1,alpha=0.7, show.legend = FALSE) +
 		scale_fill_manual(values = c(color_station, color_empty),na.value = color_fill) +  # Define colors for inside/outside stations
 		
 		coord_sf(xlim = range(sites$longitude) + pad, ylim = range(sites$latitude) + pad, expand = FALSE)+
-		geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = color_station) +
+		geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = color_station_point) +
 		
 		theme_bw()+
 		theme(panel.grid = element_blank())+
 		labs(title = "stations positions in Lombardy")
 	
 	
-	print(mappa_migliorata)
 	return(mappa_migliorata)
 }
 #########################   GRID MAP ##################################
@@ -40,13 +39,14 @@ gridMap <- function(initial_date,final_date,every,file_name,chosen_variable_name
 	
 
 	gradient_map <- ggplot() +
-		geom_hline( yintercept = data_from_to$Latitude, color = "black", size = 0.1) +  # Linee orizzontali
-		geom_vline(xintercept = data_from_to$Longitude, color = "black", size = 0.1) + # Linee verticali
+	
 		geom_tile(data = data_from_to, aes(x = Longitude, y = Latitude, fill = chosen_variable), 
-				  colour = "grey50",width = 1, height = 1,alpha = 1) +
+				  colour = "grey50",alpha = 1) +
+		geom_hline( yintercept = data_from_to$Latitude, color = "black", size = 0.1) +  # Linee orizzontali
+		geom_vline( xintercept = data_from_to$Longitude, color = "black", size = 0.1) + # Linee verticali
+		
 		scale_fill_gradient(low = color_low, high = color_high,na.value = "gray") +
-		labs(title = chosen_variable_name)+
-		guides(color = guide_legend(title = chosen_variable))
+		labs(title = chosen_variable_name, fill = chosen_variable_name)
 	
 	return(animator(file_name,gradient_map,data_from_to,len_time,1920,1080))
 	
@@ -86,6 +86,8 @@ windPlot <- function(initial_date,final_date,every,file_name){
 	filter_date_list = filter_date(data_agc_lomb,initial_date,final_date,every)
 	data_from_to = filter_date_list[[1]]
 	len_time = filter_date_list[[2]]
+	data_from_to <- data_from_to[order(data_from_to$Latitude), ]
+	data_from_to <- data_from_to[order(data_from_to$Longitude), ]
 
 	wind_arrows <- data.frame(
 		longitude = data_from_to$Longitude,

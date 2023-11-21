@@ -53,17 +53,13 @@ head(data_agc_lomb)
 # Grid map with chosen variable 
 ```{r}
 initial_date = "2016-01-01"
-final_date = "2016-01-01"
+final_date = "2017-01-01"
 every = "month"
 
 # if you change the file_name from None it will create a mp4 video
 file_name = "None"
 
 chosen_variable_name = "WE_wind_speed_10m_max"
-# chosen_variable_name = "Altitude"
-cols = colora(2,15,show=F)
-color_low =  cols[1]
-color_high = cols[2]
 
 map = gridMap(initial_date,final_date,every,file_name,chosen_variable_name)
 ```
@@ -77,7 +73,7 @@ final_date = "2017-01-01"
 every = "month"
 
 # if you change the file_name from None it will create a mp4 video
-file_name = "expancding circles"
+file_name = "expanding circles"
 
 chosen_var_name = "AQ_pm10" 
 
@@ -89,11 +85,11 @@ circles_plot <- circlesPlot(initial_date,final_date,every,file_name,chosen_var_n
 
 ```{r}
 initial_date = "2016-01-01"
-final_date = "2017-01-01"
+final_date = "2016-01-01"
 every = "month"
 
 # if you change the file_name from None it will create a mp4 video
-file_name = "wind map"
+file_name = "None"
 wind = windPlot(initial_date,final_date,every,file_name)
 ```
 
@@ -138,6 +134,64 @@ file_name = "year-stations"
 chosen_variable_name = "AQ_pm10"
 
 trendYearStation_plot <- trendYearStation(initial_date,final_date,chosen_stations,file_name,chosen_variable_name)
+```
+
+# TEST
+```{r}
+initial_date = "2016-01-01"
+final_date = "2016-01-01"
+every = "month"
+
+# if you change the file_name from None it will create a mp4 video
+file_name = "None"
+
+
+chosen_variable_name = "Altitude"
+
+cols = colora(2,15,show=F)
+color_low =  cols[2]
+color_high = cols[1]
+gridMap <- function(initial_date,final_date,every,file_name,chosen_variable_name){
+	
+	filter_date_list = filter_date(data_agc_lomb,initial_date,final_date,every)
+	data_from_to = filter_date_list[[1]]
+	len_time = filter_date_list[[2]]
+	chosen_variable = as.numeric(data_from_to[,chosen_variable_name])
+
+
+	gradient_map <- ggplot() +
+		
+
+		# xlim(min(data_from_to$Longitude), max(data_from_to$Longitude)) +  # Imposta i limiti dell'asse x
+		# ylim(min(data_from_to$Latitude), max(data_from_to$Latitude))+    # Imposta i limiti dell'asse y
+		
+		 geom_tile(data = data_from_to, aes(x = data_from_to$Longitude, y = data_from_to$Latitude, 
+		 								   fill = chosen_variable), 
+		 		  colour = "grey50",alpha = 1) 
+		# 	geom_hline( yintercept = data_from_to$Latitude, color = "black", size = 0.1) +  # Linee orizzontali
+		# geom_vline( xintercept = data_from_to$Longitude, color = "black", size = 0.1)  # Linee verticali
+		# 
+		# scale_fill_gradient(low = color_low, high = color_high,na.value = "gray") +
+		# labs(title = chosen_variable_name)+
+		# 
+		# guides(color = guide_legend(title = chosen_variable))
+	
+	print(gradient_map)
+	
+
+}
+map = gridMap(initial_date,final_date,every,file_name,chosen_variable_name)
+
+```
+```{r}
+
+
+data_sorted_1 <- data_agc_lomb[order(data_agc_lomb$Longitude), ]
+data_sorted_2 <- data_sorted_1[order(data_sorted_1$Latitude), c("Time","Latitude","Longitude","Altitude")]
+
+
+data_sorted_2[(Time=="2016-01-01")&(Longitude>11.35),]
+
 ```
 
 
