@@ -12,9 +12,9 @@ library(dplyr)
 # Dataset comparison
 
 ```{r}
-df_agri = read.csv("../data/v300/Agrimonia_Dataset_v_3_0_0.csv")
-df_agc = read.csv("../data/v300/AGC_Dataset_v_3_0_0.csv")
-save(df_agc,file="df_agc.Rdata")
+df_agri = read.csv("../data/Agrimonia_Dataset_v_3_0_0.csv")
+AGC_Dataset = read.csv("../data/AGC_Dataset_v_3_0_0.csv")
+save(AGC_Dataset,file="data_agc_lomb.Rdata")
 save(df_agri,file="df_agri.Rdata")
 ```
 
@@ -27,16 +27,16 @@ colnames(df_agri)
 dim(df_agri)
 
 print("df agc ##############")
-colnames(df_agc)
-dim(df_agc)
+colnames(AGC_Dataset)
+dim(AGC_Dataset)
 
 df = df_agri
 ```
 
 ```{r}
-head(df_agc)
+head(AGC_Dataset)
 head(df_agri)
-df_agc$Time[length(df_agc$Time)]
+AGC_Dataset$Time[length(AGC_Dataset$Time)]
 df_agri$Time[length(df_agri$Time)]
 ```
 
