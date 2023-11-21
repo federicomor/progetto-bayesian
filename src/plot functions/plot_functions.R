@@ -1,29 +1,3 @@
-#########################   GRID MAP ##################################
-cols = colora(2,15,show=F)
-color_low =  cols[1]
-color_high = cols[2]
-gridMap <- function(initial_date,final_date,every,file_name,chosen_variable_name){
-	
-	filter_date_list = filter_date(data_agc_lomb,initial_date,final_date,every)
-	data_from_to = filter_date_list[[1]]
-	len_time = filter_date_list[[2]]
-	chosen_variable = as.numeric(data_from_to[,chosen_variable_name])
-	
-
-	gradient_map <- ggplot() +
-		geom_hline( yintercept = data_from_to$Latitude, color = "black", size = 0.1) +  # Linee orizzontali
-		geom_vline(xintercept = data_from_to$Longitude, color = "black", size = 0.1) + # Linee verticali
-		geom_tile(data = data_from_to, aes(x = Longitude, y = Latitude, fill = chosen_variable), 
-				  colour = "grey50",width = 1, height = 1,alpha = 1) +
-		scale_fill_gradient(low = color_low, high = color_high,na.value = "gray") +
-		labs(title = chosen_variable_name)+
-		guides(color = guide_legend(title = chosen_variable_name))
-	
-	return(animator(file_name,gradient_map,data_from_to,len_time))
-	
-
-}
-
 #########################   STATION MAP ###############################
 color_comuni_lombardia = "red"
 color_empty = "white"
@@ -53,6 +27,33 @@ stationPlot <- function(){
 	print(mappa_migliorata)
 	return(mappa_migliorata)
 }
+#########################   GRID MAP ##################################
+cols = colora(2,15,show=F)
+color_low =  cols[2]
+color_high = cols[1]
+gridMap <- function(initial_date,final_date,every,file_name,chosen_variable_name){
+	
+	filter_date_list = filter_date(data_agc_lomb,initial_date,final_date,every)
+	data_from_to = filter_date_list[[1]]
+	len_time = filter_date_list[[2]]
+	chosen_variable = as.numeric(data_from_to[,chosen_variable_name])
+	
+
+	gradient_map <- ggplot() +
+		geom_hline( yintercept = data_from_to$Latitude, color = "black", size = 0.1) +  # Linee orizzontali
+		geom_vline(xintercept = data_from_to$Longitude, color = "black", size = 0.1) + # Linee verticali
+		geom_tile(data = data_from_to, aes(x = Longitude, y = Latitude, fill = chosen_variable), 
+				  colour = "grey50",width = 1, height = 1,alpha = 1) +
+		scale_fill_gradient(low = color_low, high = color_high,na.value = "gray") +
+		labs(title = chosen_variable_name)+
+		guides(color = guide_legend(title = chosen_variable))
+	
+	return(animator(file_name,gradient_map,data_from_to,len_time,1920,1080))
+	
+
+}
+
+
 #########################   CIRCLES MAP  #################################
 
 
@@ -72,7 +73,7 @@ circlesPlot <- function(initial_date,final_date,every,file_name,chosen_var_name)
 		labs(title=paste0("measurments of ",chosen_var_name))+
 		guides(color = guide_legend(title = chosen_var_name))
 
-	return(animator(file_name,mappa_expanding,data_from_to,len_time))
+	return(animator(file_name,mappa_expanding,data_from_to,len_time,1080,1080))
 
 }
 
@@ -109,7 +110,7 @@ windPlot <- function(initial_date,final_date,every,file_name){
 	
 	mappa_wind <- ggplot(data = wind_arrows) +
 		
-		geom_sf(data = shp_map, fill = color_background_map , color = "black", size = 0.5,alpha=0.6)+
+		geom_sf(data = shp_map, fill = color_background_map , color = "black", linewidth = 0.5,alpha=0.6)+
 		coord_sf(xlim = range(na.omit(wind_arrows$longitude))+pad,
 				 ylim = range(na.omit(wind_arrows$latitude))+pad, expand = FALSE)+
 		
@@ -122,7 +123,7 @@ windPlot <- function(initial_date,final_date,every,file_name){
 		theme(panel.grid = element_blank())+
 		labs(title="Wind map")
 	
-	return(animator(file_name,mappa_wind,wind_arrows,len_time))
+	return(animator(file_name,mappa_wind,wind_arrows,len_time,1080,1080))
 
 }
 
@@ -149,8 +150,8 @@ xyPlot <- function(initial_date,final_date,every,file_name,var1_name,var2_name,s
 			data_from_to, 
 			aes(x = var1, y=var2, size = size, colour = colors_factor)) +
 			geom_point(alpha = 1) +
-			scale_color_manual(values = cols) +
-			#scale_color_viridis_d() +
+			#scale_color_manual(values = cols) +
+			scale_color_viridis_d() +
 			scale_size(range = c(2, 12)) +
 			labs(x = var1_name, y =var2_name)+
 			guides(size = guide_legend(title = size_name), color = "none")+
@@ -159,14 +160,14 @@ xyPlot <- function(initial_date,final_date,every,file_name,var1_name,var2_name,s
 		p <- ggplot(
 			data_from_to, 
 			aes(x = var1, y=var2, size = size, colour = colors_factor)) +
-			geom_point(alpha = 1,show.legend = FALSE) +
+			geom_point(alpha = 1,size=size,show.legend = FALSE) +
 			scale_color_viridis_d() +
 			scale_size(range = c(2, 12)) +
 			labs(x = var1_name, y =var2_name)+
 			theme_bw()
 	}
 	
-	return(animator(file_name,p,data_from_to,len_time))
+	return(animator(file_name,p,data_from_to,len_time,1080,1080))
 	
 }
 	
@@ -214,7 +215,7 @@ trendStationYear <- function(chosen_station,initial_date,final_date,file_name,ch
 		output_file <- paste0("./gifs/",file_name,".mp4")
 		anim_save(output_file,trend_animate,
 				  height = 1080, width = 1920,
-				  duration = len_time,
+				  duration = (len_time%/%365),
 				  fps = 10,
 				  renderer = av_renderer(),
 				  res = 200, type = "cairo")
@@ -263,7 +264,7 @@ trendYearStation <- function(initial_date,final_date,chosen_stations,file_name,c
 		output_file <- paste0("./gifs/",file_name,".mp4")
 		anim_save(output_file,station_trend_animate,
 				  		  height = 1080, width = 1920, 
-						  duration = (len_time%/%365),
+						  duration = (len_time%/%365)*5,
 				  		  fps = 10, 
 				  		  renderer = av_renderer(),
 				  		  res = 200, type = "cairo")

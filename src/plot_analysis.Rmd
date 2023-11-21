@@ -71,13 +71,13 @@ map = gridMap(initial_date,final_date,every,file_name,chosen_variable_name)
 
 #  Map expanding radius: togliere la legenda
 
-```{r}
+```{r,warning=FALSE}
 initial_date = "2016-01-01"
 final_date = "2017-01-01"
-every = "year"
+every = "month"
 
 # if you change the file_name from None it will create a mp4 video
-file_name = "None"
+file_name = "expancding circles"
 
 chosen_var_name = "AQ_pm10" 
 
@@ -89,11 +89,11 @@ circles_plot <- circlesPlot(initial_date,final_date,every,file_name,chosen_var_n
 
 ```{r}
 initial_date = "2016-01-01"
-final_date = "2016-02-01"
+final_date = "2017-01-01"
 every = "month"
 
 # if you change the file_name from None it will create a mp4 video
-file_name = "None"
+file_name = "wind map"
 wind = windPlot(initial_date,final_date,every,file_name)
 ```
 
@@ -101,13 +101,13 @@ wind = windPlot(initial_date,final_date,every,file_name)
 # xy color+size in time
 ```{r}
 initial_date = "2016-01-01"
-final_date = "2016-02-01"
-file_name= "None"
+final_date = "2017-01-01"
+file_name= "xy plot"
 every = "month"
-var1_name = "AQ_no2"
-var2_name = "WE_wind_speed_100m_mean"
+var1_name = "AQ_pm10"
+var2_name = "EM_nh3_sum"
 # you can change size to refer to a particular variable
-size_name = "LI_bovine"
+size_name = 3.5
 
 colors_factor_name = "IDStations"
 
@@ -119,8 +119,9 @@ xyplot <- xyPlot(initial_date,final_date,every,file_name,var1_name,var2_name,siz
 
 ```{r}
 chosen_station = 1
+initial_date = "2016-01-01"
 final_date = "2021-12-31"
-file_name = "None"
+file_name = "station-years"
 chosen_variable_name = "AQ_pm10"
 
 trendStationYear_plot = trendStationYear(chosen_station,initial_date,final_date,file_name,chosen_variable_name)
@@ -133,7 +134,7 @@ trendStationYear_plot = trendStationYear(chosen_station,initial_date,final_date,
 initial_date = "2016-01-01"
 final_date = "2016-12-31"
 chosen_stations = 1:4
-file_name = "None"
+file_name = "year-stations"
 chosen_variable_name = "AQ_pm10"
 
 trendYearStation_plot <- trendYearStation(initial_date,final_date,chosen_stations,file_name,chosen_variable_name)
