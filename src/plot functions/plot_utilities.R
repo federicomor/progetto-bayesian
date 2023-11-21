@@ -69,7 +69,7 @@ filter_date <- function(dataframe,initial_date,final_date,every){
 }
 
 
-animator <- function(file_name,plotgg, df,len_time){
+animator <- function(file_name,plotgg, df,len_time,w,h){
 	if (file_name == "None"){
 		plotgg <- plotgg +facet_wrap(~Time)
 		print(plotgg)
@@ -84,7 +84,8 @@ animator <- function(file_name,plotgg, df,len_time){
 				  
 				  duration = len_time,
 				  fps = 10, 
-				  width = 1080, height = 1920, 
+				  #width = 1080, height = 1920, 
+				  width = w, height = h, 
 				  renderer = av_renderer(),
 				  res = 200, type = "cairo")
 	}
