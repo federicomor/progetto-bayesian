@@ -1,0 +1,35 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+source("include.R")
+```
+
+
+```{r}
+# colnames(df_agri)
+stations = unique(df_agri$IDStations)
+nas = as.data.frame(matrix(nrow=2192,ncol=141))
+for (j in 1:141 ){
+	nas[,j] = df_stat[[stations[j]]]$AQ_pm10
+}
+nas = matrix(as.integer(!is.na(nas)),nrow = 2192,ncol=141)
+rownames(nas)=1:nrow(nas)
+colnames(nas) = stations
+# head(nas)
+# pdf("na_time_series.pdf",width=10,height=9)
+png("na_time_series.png",width=800,height=800)
+heatmap(t(nas[,1:70]),Colv=NA, Rowv=NA,col = c("white", "darkred"), scale='none',xlab="days",ylab="stations",
+		 margins = c(3, 3),main="NA time series (white are NAs) all data",
+		add.expr = abline(v=c(366,731,1096,1461,1827),col="black",lwd=2))
+dev.off()
+
+heatmap(t(nas[,1:47]),Colv=NA, Rowv=NA,col = c("white", "darkred"), scale='none',xlab="days",ylab="stations",
+		 margins = c(3, 3),main="NA time series (white are NAs) zoom 1 of 3",cexRow=0.5)
+heatmap(t(nas[,48:94]),Colv=NA, Rowv=NA,col = c("white", "darkred"),scale='none',xlab="days",ylab="stations",
+		 margins = c(3, 3),main="NA time series (white are NAs) zoom 2 of 3",cexRow=0.5)
+heatmap(t(nas[,95:141]),Colv=NA, Rowv=NA,col = c("white", "darkred"), scale='none',xlab="days",ylab="stations",
+		margins = c(3, 4.8),main="NA time series (white are NAs) zoom 3 of 3",cexRow=0.5)
+```
