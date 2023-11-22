@@ -7,7 +7,7 @@ color_station_point = "darkred"
 
 stationPlot <- function(){
 	# crea mappa lombardia
-	mappa_migliorata <- ggplot() +
+	mappa_stations <- ggplot() +
 		#background_image(img)+
 		# l'ordine è importante!
 		geom_sf(data = altre_regioni, fill = color_empty ,color = color_fill, linewidth = 0.1,alpha=0.1, show.legend = FALSE) +
@@ -24,7 +24,7 @@ stationPlot <- function(){
 		labs(title = "stations positions in Lombardy")
 	
 	
-	return(mappa_migliorata)
+	return(mappa_stations)
 }
 #########################   GRID MAP ##################################
 cols = colora(2,15,show=F)
@@ -169,7 +169,7 @@ xyPlot <- function(initial_date,final_date,every,file_name,var1_name,var2_name,s
 			theme_bw()
 	}
 	
-	return(animator(file_name,p,data_from_to,len_time,1080,1080))
+	return(animator(file_name,p,data_from_to,len_time,1080,1080,TRUE))
 	
 }
 	
@@ -209,22 +209,9 @@ trendStationYear <- function(chosen_station,initial_date,final_date,file_name,ch
 		theme_bw()+
 		theme(panel.grid = element_blank()) 
 	
-	print(time_trend)
-	
-	if(file_name!="None"){
-		trend_animate <- time_trend + transition_reveal(data_from_to$t)+ ggtitle(data_from_to$t) + geom_point() 
-		
-		output_file <- paste0("./gifs/",file_name,".mp4")
-		anim_save(output_file,trend_animate,
-				  height = 1080, width = 1920,
-				  duration = (len_time%/%365),
-				  fps = 10,
-				  renderer = av_renderer(),
-				  res = 200, type = "cairo")
-	}
-	
-	return(time_trend)
-	
+
+	len_time = len_time%/%365
+	return(trend_animator(file_name,time_trend, data_from_to$t,len_time))
 }
 
 
@@ -259,23 +246,9 @@ trendYearStation <- function(initial_date,final_date,chosen_stations,file_name,c
 		theme(panel.grid = element_blank()) +
 		guides(color = guide_legend(title = "Stations"))
 	
-	print(station_trend)
-	
-	if(file_name!="None"){
-		station_trend_animate <- station_trend + transition_reveal(data_from_to$Time)+ ggtitle(data_from_to$Time) + geom_point() 
-		output_file <- paste0("./gifs/",file_name,".mp4")
-		anim_save(output_file,station_trend_animate,
-				  		  height = 1080, width = 1920, 
-						  duration = (len_time%/%365)*5,
-				  		  fps = 10, 
-				  		  renderer = av_renderer(),
-				  		  res = 200, type = "cairo")
-	
-	}
-	
-	return(station_trend)
-	
-	
+	len_time = (len_time%/%365)*5
+
+	return(trend_animator(file_name,station_trend, data_from_to$Time,len_time))
 }
 
 

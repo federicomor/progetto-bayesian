@@ -69,7 +69,7 @@ filter_date <- function(dataframe,initial_date,final_date,every){
 }
 
 
-animator <- function(file_name,plotgg, df,len_time,w,h){
+animator <- function(file_name,plotgg, df,len_time,w,h,shadow=FALSE){
 	if (file_name == "None"){
 		plotgg <- plotgg +facet_wrap(~Time)
 		print(plotgg)
@@ -78,16 +78,37 @@ animator <- function(file_name,plotgg, df,len_time,w,h){
 			ggtitle(df$Time) +
 			transition_time(df$Time)+
 			labs(title = paste0(every,": {frame_time}"))
+		if(shadow){
+			mappa_animata <- mappa_animata+shadow_wake(wake_length = 0.1, alpha = FALSE)
+		}
 		output_file <- paste0(folder,file_name,file_type)
 		
 		anim_save(output_file,mappa_animata,
 				  
 				  duration = len_time,
 				  fps = 10, 
-				  #width = 1080, height = 1920, 
 				  width = w, height = h, 
 				  renderer = av_renderer(),
 				  res = 200, type = "cairo")
 	}
 	return(plotgg)
+}
+
+trend_animator <- function(file_name,plotgg, time,len_time){
+	
+	if(file_name!="None"){
+		plot_trend_animate <- plotgg + transition_reveal(time)+ ggtitle(time) + geom_point() 
+		output_file <- paste0(folder,file_name,file_type)
+		anim_save(output_file,plot_trend_animate,
+				  height = 1080, width = 1920, 
+				  duration = len_time,
+				  fps = 10, 
+				  renderer = av_renderer(),
+				  res = 200, type = "cairo")
+		
+	}
+	print(plotgg)
+	return(plotgg)
+	
+	
 }

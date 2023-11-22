@@ -42,7 +42,7 @@ grid.arrange(hist_original, hist_log, ncol = 2)
 
 # Mappa stazioni
 ```{r}
-stationPlot <- stationPlot()
+stationPlotgg <- stationPlot()
 ```
 
 
@@ -51,15 +51,15 @@ head(data_agc_lomb)
 ```
 
 # Grid map with chosen variable 
-```{r}
+```{r,warning=FALSE}
 initial_date = "2016-01-01"
 final_date = "2017-01-01"
-every = "month"
+every = "year"
 
 # if you change the file_name from None it will create a mp4 video
 file_name = "None"
 
-chosen_variable_name = "WE_wind_speed_10m_max"
+chosen_variable_name = "WE_wind_speed_10m_mean"
 
 map = gridMap(initial_date,final_date,every,file_name,chosen_variable_name)
 ```
@@ -68,12 +68,12 @@ map = gridMap(initial_date,final_date,every,file_name,chosen_variable_name)
 #  Map expanding radius: togliere la legenda
 
 ```{r,warning=FALSE}
-initial_date = "2016-01-01"
-final_date = "2017-01-01"
-every = "month"
+initial_date = "2018-01-01"
+final_date = "2019-01-01"
+every = "year"
 
 # if you change the file_name from None it will create a mp4 video
-file_name = "expanding circles"
+file_name = "None"
 
 chosen_var_name = "AQ_pm10" 
 
@@ -83,7 +83,7 @@ circles_plot <- circlesPlot(initial_date,final_date,every,file_name,chosen_var_n
 
 # WIND  
 
-```{r}
+```{r,warning=FALSE}
 initial_date = "2016-01-01"
 final_date = "2016-01-01"
 every = "month"
@@ -95,11 +95,11 @@ wind = windPlot(initial_date,final_date,every,file_name)
 
 
 # xy color+size in time
-```{r}
-initial_date = "2016-01-01"
-final_date = "2017-01-01"
-file_name= "xy plot"
-every = "month"
+```{r,warning=FALSE}
+initial_date = "2018-01-01"
+final_date = "2019-01-01"
+file_name= "None"
+every = "year"
 var1_name = "AQ_pm10"
 var2_name = "EM_nh3_sum"
 # you can change size to refer to a particular variable
@@ -113,11 +113,11 @@ xyplot <- xyPlot(initial_date,final_date,every,file_name,var1_name,var2_name,siz
 # Trend plots
 ## 1 station - multiple years
 
-```{r}
+```{r,warning=FALSE}
 chosen_station = 1
 initial_date = "2016-01-01"
 final_date = "2021-12-31"
-file_name = "station-years"
+file_name = "None"
 chosen_variable_name = "AQ_pm10"
 
 trendStationYear_plot = trendStationYear(chosen_station,initial_date,final_date,file_name,chosen_variable_name)
@@ -126,78 +126,17 @@ trendStationYear_plot = trendStationYear(chosen_station,initial_date,final_date,
 
 
 ## 1 year - multiple stations
-```{r}
+```{r,warning=FALSE}
 initial_date = "2016-01-01"
 final_date = "2016-12-31"
 chosen_stations = 1:4
-file_name = "year-stations"
+file_name = "None"
 chosen_variable_name = "AQ_pm10"
 
 trendYearStation_plot <- trendYearStation(initial_date,final_date,chosen_stations,file_name,chosen_variable_name)
 ```
 
-# TEST
-```{r}
-initial_date = "2016-01-01"
-final_date = "2016-01-01"
-every = "month"
 
-# if you change the file_name from None it will create a mp4 video
-file_name = "None"
-
-
-chosen_variable_name = "Altitude"
-
-cols = colora(2,15,show=F)
-color_low =  cols[2]
-color_high = cols[1]
-gridMap <- function(initial_date,final_date,every,file_name,chosen_variable_name){
-	
-	filter_date_list = filter_date(data_agc_lomb,initial_date,final_date,every)
-	data_from_to = filter_date_list[[1]]
-	len_time = filter_date_list[[2]]
-	chosen_variable = as.numeric(data_from_to[,chosen_variable_name])
-
-
-	gradient_map <- ggplot() +
-		
-
-		# xlim(min(data_from_to$Longitude), max(data_from_to$Longitude)) +  # Imposta i limiti dell'asse x
-		# ylim(min(data_from_to$Latitude), max(data_from_to$Latitude))+    # Imposta i limiti dell'asse y
-		
-		 geom_tile(data = data_from_to, aes(x = data_from_to$Longitude, y = data_from_to$Latitude, 
-		 								   fill = chosen_variable), 
-		 		  colour = "grey50",alpha = 1) 
-		# 	geom_hline( yintercept = data_from_to$Latitude, color = "black", size = 0.1) +  # Linee orizzontali
-		# geom_vline( xintercept = data_from_to$Longitude, color = "black", size = 0.1)  # Linee verticali
-		# 
-		# scale_fill_gradient(low = color_low, high = color_high,na.value = "gray") +
-		# labs(title = chosen_variable_name)+
-		# 
-		# guides(color = guide_legend(title = chosen_variable))
-	
-	print(gradient_map)
-	
-
-}
-map = gridMap(initial_date,final_date,every,file_name,chosen_variable_name)
-
-```
-```{r}
-
-
-data_sorted_1 <- data_agc_lomb[order(data_agc_lomb$Longitude), ]
-data_sorted_2 <- data_sorted_1[order(data_sorted_1$Latitude), c("Time","Latitude","Longitude","Altitude")]
-
-
-data_sorted_2[(Time=="2016-01-01")&(Longitude>11.35),]
-
-```
-
-
-
-
-# TO DO LIST:
 
 
 
