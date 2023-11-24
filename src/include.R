@@ -34,6 +34,7 @@ for (st in stations){
 	df_stat[[st]] = df_agri[which(df_agri$IDStations == st),]
 	# dim(df_stat[[st]]) # == 2192) # make sure each df_stat has all his 2192 obs
 }
+rm(st)
 rm(stations)
 cat(crayon::cyan(h,"Created stations split dataset. Available as"),crayon::red("df_stat.\n"))
 cat(crayon::italic("Use it as df_stat[[\"1264\"]] and it retrieves the dataset for station 1264.\n\n"))
@@ -43,7 +44,7 @@ cat(crayon::italic("Use it as df_stat[[\"1264\"]] and it retrieves the dataset f
 # useful aliases
 ########################
 size = dim
-end = lenght = length
+end = len = lenght = length
 assert = stopifnot
 ln = log
 
