@@ -8,23 +8,36 @@
 # loading procedure, with feedback
 ########################
 library(crayon)
+library(hash)
+
+
+h="❤"
 load("../data/df_agri.Rdata")
-cat(crayon::cyan("❤ Loaded agrimonia dataset. Available as df_agri.\n"))
+df_agri_full = df_agri
+rm(df_agri)
+cat(crayon::cyan(h,"Loaded agrimonia dataset. Available as"),crayon::red("df_agri_full.\n"))
+
+load("../data/Cleaned_data.Rdata")
+cat(crayon::cyan(h,"Loaded cleaned dataset. Available as"),crayon::red("df_agri.\n"))
+
 df_agri$Time <- as.Date(df_agri$Time, "%Y-%m-%d")
-cat(crayon::green("❤ Converted df_agri$Time to Date variable type, year-month-day.\n"))
+cat(crayon::italic("Converted df_agri$Time to Date variable type, format: year-month-day.\n"))
 DATE_FORMAT = "%Y-%m-%d"
-cat(crayon::green("❤ Created DATE_FORMAT variable for date comparisons.\n"))
-# cat(crayon::green('❤ Usage: ...Time >= as.Date(paste0(year,"-01-01"),DATE_FORMAT).\n'))
-load("../data/df_stat.Rdata")
-cat(crayon::cyan("❤ Loaded stations split dataset. Available as df_stat.\n"))
+cat(crayon::italic("Created DATE_FORMAT = \"%Y-%m-%d\" variable for date comparisons.\n"))
+cat(crayon::italic("Usage example: df_agri$Time >= as.Date(\"2017-01-01\",DATE_FORMAT).\n"))
+cat(crayon::italic("Actually also this works: df_agri$Time >= as.Date(\"2017-01-01\").\n\n"))
 
 
-########################
-# dictionary to get the variables description
-########################
-# what_is <- new.env(hash = TRUE, parent = emptyenv(), size = NA)
-library(hash) # maybe you need to install it
-what_is = hash()
+df_stat = hash()
+stations = unique(df_agri$IDStations)
+for (st in stations){
+	df_stat[[st]] = df_agri[which(df_agri$IDStations == st),]
+	# dim(df_stat[[st]]) # == 2192) # make sure each df_stat has all his 2192 obs
+}
+rm(stations)
+cat(crayon::cyan(h,"Created stations split dataset. Available as"),crayon::red("df_stat.\n"))
+cat(crayon::italic("Use it as df_stat[[\"1264\"]] and it retrieves the dataset for station 1264.\n\n"))
+
 
 ########################
 # useful aliases
@@ -42,8 +55,9 @@ fun_colori = function(len=2, seed=33, show=1){
 	col.ramp_ = hcl.colors(len,palette=hcols_[seed%%115+1])
 	if(show==1){
 		dati_ <- matrix(1:100, ncol = 1)
+		par(mar=rep(2,4))
 		image(dati_, col = col.ramp_, axes = FALSE)
-		title(main=seed)
+		title(main=paste("palette",seed,"of",len,"colors"))
 	}
 	return(col.ramp_)
 	
@@ -52,9 +66,15 @@ colori_fun = colorami = colora = fun_colori # aliases
 # usage: cols = colora(7) for getting a palette with 7 colors
 # usage: cols = colora(7,456) for getting a palette of seed 456 with 7 colors
 
+cat(crayon::cyan(h,"Created function to get color palettes. Available as"),crayon::red("colora(len, seed, show)\n"))
+cat(crayon::italic("Try for example colora(10,56,1).\n\n"))
+
+
 ########################
 # function to show the has content
 ########################
+# what_is <- new.env(hash = TRUE, parent = emptyenv(), size = NA)
+what_is = hash()
 # usage: explain("AQ_pm10") show AQ_pm10 explanation
 # usage: explain("pm10") yes works also with partial names
 # usage: explain("pm") here explains both pm 10 and 2.5
@@ -66,7 +86,7 @@ spiegami = function(pattern) {
 		cat("no matching variable name found\n")
 	} else {
 		for (var in matching_vars) {
-			cat(var, ":", what_is[[var]], "\n")
+			cat(crayon::red(var), ":", what_is[[var]], "\n")
 		}
 	}
 }
@@ -74,6 +94,7 @@ spiega = tellme = tell_me = tell = explain = spiegami # aliases
 # spiegami = function(colonna){
 # 	cat(what_is[[colonna]])
 # }
+
 
 what_is[["AQ"]] = "Air quality - Air pollutants concentrations"
 what_is[["WE"]] = "Wheather - Estimates of atmospheric variables"
@@ -124,3 +145,9 @@ what_is[["LA_hvi"]] = "One-half of the total green leaf area per unit horizontal
 what_is[["LA_lvi"]] = "One-half of the total green leaf area per unit horizontal ground surface area for low vegetation type. \n[ unitless (m^2/m^2) ]"
 what_is[["LA_land_use"]] = "Land use across 44 sectors \n[ categorical ]"
 what_is[["LA_soil_use"]] = "Lombardy soil use across 21 sectors \n[ categorical ]"
+
+cat(crayon::cyan(h,"Created utility to explain covariates. Available as"),crayon::red("spiega(string)\n"))
+cat(crayon::italic("Try for example spiega(\"wind\")."))
+
+rm(h)
+
