@@ -8,6 +8,7 @@ library(av)
 library(ggpubr)
 library(jpeg)
 
+cat(crayon::italic("Loading AGC dataset, may took some time.\n"))
 load("../data/data_agc_lomb_part1.RData")
 load("../data/data_agc_lomb_part2.RData")
 AGC_Dataset = rbind(parte1, parte2)
@@ -36,11 +37,11 @@ details <- 3
 details_altre_regioni <- 2
 
 confini  <- c("Emilia-Romagna","Piemonte","Lombardia","Trentino-Alto Adige","Veneto")
-regioni_italiane <- st_read(paste0("italia/gadm40_ITA_",details,".shp"))
-regioni_italiane_2 <- st_read(paste0("italia/gadm40_ITA_",details_altre_regioni,".shp"))
+regioni_italiane <- st_read(paste0("plot functions/italia/gadm40_ITA_",details,".shp"))
+regioni_italiane_2 <- st_read(paste0("plot functions/italia/gadm40_ITA_",details_altre_regioni,".shp"))
 
 lombardia <- regioni_italiane[regioni_italiane$NAME_1 == "Lombardia",]
 altre_regioni <- regioni_italiane_2[regioni_italiane_2$NAME_1 %in% confini,]
 
-shp_map <- st_read(paste0("italia/gadm40_ITA_",1,".shp"))
+shp_map <- st_read(paste0("plot functions/italia/gadm40_ITA_",1,".shp"))
 

@@ -43,6 +43,7 @@ grid.arrange(hist_original, hist_log, ncol = 2)
 # Mappa stazioni
 ```{r}
 stationPlotgg <- stationPlot()
+print(stationPlotgg)
 ```
 
 
