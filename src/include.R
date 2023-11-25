@@ -76,7 +76,13 @@ cat(crayon::italic("Use it as df_stat[[\"1264\"]] and it retrieves the dataset f
 ########################
 fun_colori = function(len=2, seed=33, show=1){
 	hcols_ = hcl.pals()
-	col.ramp_ = hcl.colors(len,palette=hcols_[seed%%115+1])
+	if(seed=="rand"){
+		seed = round(runif(1,0,115))
+		col.ramp_ = hcl.colors(len,palette=hcols_[seed%%115+1])
+	}
+	else{
+		col.ramp_ = hcl.colors(len,palette=hcols_[seed%%115+1])
+	}
 	if(show==1){
 		dati_ <- matrix(1:100, ncol = 1)
 		par(mar=rep(2,4))

@@ -111,37 +111,43 @@ plot(df_st_int$Time,df_st_int$AQ_pm10,main=title,type="b")
 NA visual plot reconstruction:
 
 ```{r}
-# Chat GPT help :/
-interpola_NA <- function(seq) {
-  non_na_indices <- which(!is.na(seq))
-  na_indices <- which(is.na(seq))
+interpola_NA <- function(obs) {
+  non_na_indices <- which(!is.na(obs))
+  na_indices <- which(is.na(obs))
+  # print(non_na_indices)
+  # print(na_indices)
   
   # loop on Na indices
   for (na_index in na_indices) {
     # Trova l'indice più vicino a sinistra e quello più vicino a destra
-    left_index <- max(non_na_indices[non_na_indices < na_index])
-    right_index <- min(non_na_indices[non_na_indices > na_index])
-    
+    left_index <- suppressWarnings(max(non_na_indices[non_na_indices < na_index]))
+    right_index <- suppressWarnings(min(non_na_indices[non_na_indices > na_index]))
+    # cat("NA idx",na_index," - LR values = ",obs[left_index],",",obs[right_index],"\n")
+
     # Esegui l'interpolazione se ci sono valori a sinistra e a destra
     if (!is.na(left_index) && !is.na(right_index)) {
-      left_value <- seq[left_index]
-      right_value <- seq[right_index]
+      left_value <- obs[left_index]
+      right_value <- obs[right_index]
       
       # Calcola il valore interpolato
       interpolated_value <- left_value + 
         ((right_value - left_value) / (right_index - left_index)) * (na_index - left_index)
       
       # Sostituisci il valore NA con quello interpolato
-      seq[na_index] <- interpolated_value
+      obs[na_index] <- interpolated_value
     }
+    if(is.na(obs[na_index])){
+    	obs[na_index] = na.omit(c(obs[left_index],obs[right_index]))
+    }
+	# cat(obs[na_index],"\n")
   }
-  return(seq)
+  return(obs)
 }
 
 # example
-sequence <- c(10, 15, NA, 20, 24, 20, 18, NA, NA, 10, 9, 9)
-print(sequence)
-result <- interpola_NA(sequence)
+test <- c(NA,NA,10, 15, NA, 20, 24, 20, 18, NA, NA, 10, 9, 9, NA)
+print(test)
+result <- interpola_NA(test)
 print(round(result))
 ```
 
@@ -156,13 +162,139 @@ lines(df_st_int_wo_na$Time,df_st_int_wo_na$AQ_pm10,type="b",lty=2,col="blue")
 ```
 This seems a better choice for NA filling then?
 
+```{r}
+historic_fill_pm10col_na = function(df_st){
+	day_names = as.vector(df_st$day)
+	obs = df_st$AQ_pm10
+	day_mean = hash()
+	for (d in days){
+		day_mean[[d]] = mean(na.omit(obs[day_names==d]))
+	}
+	for (i in 1:length(obs)){
+		if(is.na(obs[i])){
+			obs[i] = day_mean[[day_names[i]]]
+		}
+	}
+	return(obs)
+} 
+```
+
+
+## Comparison of the two approaches
+### random time interval
+
+```{r}
+we_have_na = 0
+while(we_have_na == 0){
+	end_day = 400
+	while(end_day > 365){
+		start_day = round(runif(1, min=0, max=365))
+		end_day = start_day + round(runif(1,min=10,max=40))
+	}
+	st = sample(unique(df_2018$IDStations),1)
+	title=paste("station",st,"-",
+				end_day-start_day,"days:",
+				"from",format(as.Date("2018-01-01")+start_day),
+				"to",format(as.Date("2018-01-01")+end_day))
+	df_st = df_2018[df_2018$IDStations==st,] # filter a single station
+	df_st_int = df_st[start_day:end_day,]
+	we_have_na = any(is.na(df_st_int$AQ_pm10))
+}
+plt_type = "l"
+plot(df_st_int$Time,df_st_int$AQ_pm10,main=title,type=plt_type,lwd=2)
+
+############## Method 2 intempolation
+obs = df_st_int$AQ_pm10
+obs_wo_na = interpola_NA(obs)
+df_st_int_wo_na = df_st_int
+df_st_int_wo_na$AQ_pm10 = obs_wo_na
+lines(df_st_int_wo_na$Time,df_st_int_wo_na$AQ_pm10,type=plt_type,lty=2,col="blue",lwd=0.6)
+
+############## Method 1 historical fill
+
+obs_wo_na = historic_fill_pm10col_na(df_st)
+df_st_int_wo_na = df_st_int
+df_st_int_wo_na$AQ_pm10 = obs_wo_na[start_day:end_day]
+lines(df_st_int_wo_na$Time,df_st_int_wo_na$AQ_pm10,type=plt_type,lty=2,col="red",lwd=0.6)
+
+legend("topright",c("intempolation","historical"),fill=c("blue","red"),bty="n")
+```
+
+### selected time interval
+```{r}
+start_day = 100
+end_day = 300
+
+cols = colora(3,56,0)
+we_have_na = 0
+while(we_have_na == 0){
+	st = sample(unique(df_2018$IDStations),1)
+	df_st = df_2018[df_2018$IDStations==st,] # filter a single station
+
+	df_st_int = df_st[start_day:end_day,]
+	we_have_na = any(is.na(df_st_int$AQ_pm10))
+}
+title = paste("station",st,"- #NA =",sum(as.numeric(is.na(df_st_int$AQ_pm10))))
+plt_type = "l"
+plot(df_st_int$Time,df_st_int$AQ_pm10,main=title,lwd=1,type=plt_type,col=cols[1])
+
+############## Method 2 intempolation
+obs = df_st_int$AQ_pm10
+obs_wo_na = interpola_NA(obs)
+df_st_int_wo_na = df_st_int
+df_st_int_wo_na$AQ_pm10 = obs_wo_na
+lines(df_st_int_wo_na$Time,df_st_int_wo_na$AQ_pm10,type=plt_type,col=cols[2])
+
+############## Method 1 historical fill
+
+obs_wo_na = historic_fill_pm10col_na(df_st)
+df_st_int_wo_na = df_st_int
+df_st_int_wo_na$AQ_pm10 = obs_wo_na[start_day:end_day]
+lines(df_st_int_wo_na$Time,df_st_int_wo_na$AQ_pm10,type=plt_type,col=cols[3])
+
+# to superimpose the first color
+lines(df_st_int$Time,df_st_int$AQ_pm10,main=title,lwd=1,type=plt_type,col=cols[1])
+legend("topright",c("original","intempolation","historical"),fill=cols,bty="n")
+```
+
+### days trend fill comparison
+```{r}
+# cols = colora(7,runif(1,0,133),1)
+cols = colora(3,56,0)
+
+enough_na = 0
+while(enough_na==0){
+	st = sample(unique(df_2018$IDStations),1)
+	df_st = df_2018[df_2018$IDStations==st,] # filter a single station
+	enough_na = sum(as.numeric(is.na(df_st$AQ_pm10)))>20
+}
+
+for (d in days){
+# d = "lunedì"
+	df_st_day = df_st[df_st$day == d,] # filter a certain day
+
+	plot(df_st_day$AQ_pm10,xlab="year weeks",ylab="PM10 values",
+		 main=paste("station =",st,"- day =",d,"- #NA =",
+		 		   sum(as.numeric(is.na(df_st_day$AQ_pm10)))),
+		 col=cols[1],type="l")
+	lines(interpola_NA(df_st_day$AQ_pm10),col=cols[2],type="l")
+	lines(historic_fill_pm10col_na(df_st_day),col=cols[3],type="l")
+	
+	# to superimpose the first color
+	lines(df_st_day$AQ_pm10)
+	legend("top",c("original","intempolation","historical"),fill=cols,bty="n")
+}
+
+```
+
+
+
 
 
 # Week division
 ```{r}
 
 ```
-
 
 
 
