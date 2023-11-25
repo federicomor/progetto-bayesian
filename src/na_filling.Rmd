@@ -293,6 +293,7 @@ for (d in days){
 
 
 # NA cols filling
+check/fix variable type
 ```{r}
 for (c in colnames(df_2018)){
 	cat(sprintf("%28s, %s\n",c,typeof(df_2018[,c])))
@@ -307,17 +308,23 @@ df_2018$LI_bovine_v2 = as.numeric(df_2018$LI_bovine_v2)
 head(df_2018$LI_pigs_v2)
 ```
 
-Candidate code for filling with the temporal interpolation idea.
+copy original dataset
 ```{r}
-df_2018_filled = df_2018
-for (c in colnames(df_2018)){
-	cat(sprintf("%28s, #NAs = %f\n",c,sum(as.numeric(is.na(df_2018_filled[,c])))))
+na_summary = function(df){
+	for (c in colnames(df)){
+		cat(sprintf("%28s, #NAs = %f\n",c,sum(as.numeric(is.na(df[,c])))))
+	}
 }
+	
+df_2018_filled = df_2018
+na_summary(df_2018_filled)
 # we just have to fill AQ_pm10 and LI_ecc variables
 ```
 
+plot inspection of na cols trend
 ```{r}
 source("plot functions/plot_data_and_libraries.R")
+source("plot functions/plot_functions_2.R")
 suppressWarnings(source("plot functions/plot_utilities.R"))
 ```
 
@@ -327,12 +334,63 @@ final_date = "2018-12-31"
 chosen_stations = 1:5
 file_name = "None"
 
-for (chosen_variable_name in c("LI_pigs","LI_bovine","LI_pigs_v2","LI_pigs_v2")) {
+for (chosen_variable_name in c("LI_pigs","LI_bovine","LI_pigs_v2","LI_bovine_v2")) {
 	trendYearStation_plot <- trendYearStation(initial_date,final_date,chosen_stations,
 											  file_name,chosen_variable_name)
 }
 # the temporal interpolation seems good here, the trend is very stable
 ```
+
+## actual fill
+```{r}
+stations = unique(df_2018_filled$IDStations)
+nas_cols = c("AQ_pm10","LI_pigs","LI_bovine","LI_pigs_v2","LI_bovine_v2")
+
+for (st in stations){
+	df_st = df_2018_filled[df_2018_filled$IDStations==st,nas_cols]
+	for (col_name in colnames(df_st)){
+		obs = df_st[,col_name]
+		if(!all(is.na(obs))){
+			obs_wo_na = interpola_NA(obs)
+			df_st[,col_name] = obs_wo_na
+			if (sum(as.numeric(is.na(obs)))==0){ 
+				assert(obs==obs_wo_na)
+			}
+		}
+		else{
+			cat("Column",col_name,"station",st,
+				"had all NAs. Intempolation not possible.\n")
+		}
+	}
+	df_2018_filled[which(df_2018_filled$IDStations==st),nas_cols] = df_st
+}
+na_summary(df_2018_filled)
+```
+
+PM10 filled.
+The four LI cols are missing, we need to think about them. 
+Maybe like taking the average of those columns value in some stations close to them.
+
+But we see that those stations are a bit autonomous, like away from the others.
+Anyway we could fix with an average of the close points, there is like a semi-circle of close stations around them.
+
+```{r}
+problematic_stations = c("STA-CH0011A","STA-CH0033A","STA-CH0043A")
+lat=unique(df_2018_filled$Latitude[which(df_2018_filled$IDStations==problematic_stations)])
+long=unique(df_2018_filled$Longitude[which(df_2018_filled$IDStations==problematic_stations)])
+
+problematic_stations = data.frame(
+  x = long,
+  y = lat
+)
+
+stationPlotgg <- stationPlot()+ geom_point(data = problematic_stations, aes(x,y),
+										    size = 2, shape = 21, fill = "cyan")
+print(stationPlotgg)
+```
+
+
+
 
 
 # Week division
