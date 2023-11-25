@@ -1,0 +1,16 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+install.packages("ppmSuite")
+library(ppmSuite)
+```
+
+https://www.tandfonline.com/doi/suppl/10.1080/10618600.2021.1987255?scroll=top
+```{r}
+devtools::install_github("https://github.com/gpage2990/drpm.git")
+library(drpm)
+```
+
