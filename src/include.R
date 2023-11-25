@@ -5,23 +5,41 @@
 
 
 ########################
+# useful aliases
+########################
+size = dim
+end = len = lenght = length
+assert = stopifnot
+ln = log
+
+
+########################
 # loading procedure, with feedback
 ########################
 library(crayon)
 library(hash)
-
 
 h="❤"
 load("../data/df_agri.Rdata")
 df_agri_full = df_agri
 rm(df_agri)
 cat(crayon::cyan(h,"Loaded agrimonia dataset. Available as"),crayon::red("df_agri_full.\n"))
+cat(crayon::italic("Consider to remove it with rm(df_agri_full).\n"))
+
 
 load("../data/Cleaned_data.Rdata")
 cat(crayon::cyan(h,"Loaded cleaned dataset. Available as"),crayon::red("df_agri.\n"))
 
+indeces_2018 = df_agri$Time>=as.Date("2018-01-01") & df_agri$Time<=as.Date("2018-12-31")
+assert(sum(indeces_2018==TRUE) == 365*length(unique(df_agri$IDStations)))
+df_2018 = df_agri[indeces_2018,]
+cat(crayon::cyan(h,"Loaded 2018 dataset. Available as"),crayon::red("df_2018.\n"))
+rm(indeces_2018)
+
 df_agri$Time <- as.Date(df_agri$Time, "%Y-%m-%d")
-cat(crayon::italic("Converted df_agri$Time to Date variable type, format: year-month-day.\n"))
+df_2018$Time <- as.Date(df_2018$Time, "%Y-%m-%d")
+
+cat(crayon::italic("Converted column Time (of all dfs) to Date variable type, format: year-month-day.\n"))
 DATE_FORMAT = "%Y-%m-%d"
 cat(crayon::italic("Created DATE_FORMAT = \"%Y-%m-%d\" variable for date comparisons.\n"))
 cat(crayon::italic("Usage example: df_agri$Time >= as.Date(\"2017-01-01\",DATE_FORMAT).\n"))
@@ -36,17 +54,22 @@ for (st in stations){
 }
 rm(st)
 rm(stations)
-cat(crayon::cyan(h,"Created stations split dataset. Available as"),crayon::red("df_stat.\n"))
+cat(crayon::cyan(h,"Created stations split dataset for df_agri. Available as"),crayon::red("df_stat.\n"))
+cat(crayon::italic("Use it as df_stat[[\"1264\"]] and it retrieves the dataset for station 1264.\n"))
+
+
+df_stat_2018 = hash()
+stations = unique(df_2018$IDStations)
+for (st in stations){
+	df_stat_2018[[st]] = df_2018[which(df_2018$IDStations == st),]
+	# dim(df_stat_2018[[st]]) # == 2192) # make sure each df_stat_2018 has all his 2192 obs
+}
+rm(st)
+rm(stations)
+cat(crayon::cyan(h,"Created stations split dataset for df_2018. Available as"),crayon::red("df_stat_2018.\n"))
 cat(crayon::italic("Use it as df_stat[[\"1264\"]] and it retrieves the dataset for station 1264.\n\n"))
 
 
-########################
-# useful aliases
-########################
-size = dim
-end = len = lenght = length
-assert = stopifnot
-ln = log
 
 ########################
 # function to get colors for plotting
@@ -67,7 +90,7 @@ colori_fun = colorami = colora = fun_colori # aliases
 # usage: cols = colora(7) for getting a palette with 7 colors
 # usage: cols = colora(7,456) for getting a palette of seed 456 with 7 colors
 
-cat(crayon::cyan(h,"Created function to get color palettes. Available as"),crayon::red("colora(len, seed, show)\n"))
+cat(crayon::cyan(h,"Created function to get color palettes. Available as"),crayon::red("colora(len, seed, show).\n"))
 cat(crayon::italic("Try for example colora(10,56,1).\n\n"))
 
 
@@ -147,7 +170,7 @@ what_is[["LA_lvi"]] = "One-half of the total green leaf area per unit horizontal
 what_is[["LA_land_use"]] = "Land use across 44 sectors \n[ categorical ]"
 what_is[["LA_soil_use"]] = "Lombardy soil use across 21 sectors \n[ categorical ]"
 
-cat(crayon::cyan(h,"Created utility to explain covariates. Available as"),crayon::red("spiega(string)\n"))
+cat(crayon::cyan(h,"Created utility to explain covariates. Available as"),crayon::red("spiega(string).\n"))
 cat(crayon::italic("Try for example spiega(\"wind\")."))
 
 rm(h)

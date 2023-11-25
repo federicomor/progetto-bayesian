@@ -8,17 +8,84 @@ source("include.R")
 ```
 
 ```{r}
-indeces_2018 =  df_agri$Time>=as.Date("2018-01-01") & df_agri$Time<=as.Date("2018-12-31")
-# check we have everything
-sum(indeces_2018==TRUE)
-365*length(unique(df_agri$IDStations)) # they should be equal
-
-df_2018 = df_agri[indeces_2018,]
 cat("df_agri shape",size(df_agri),"\n")
 cat("df_2018 shape",size(df_2018),"\n")
 ```
 
 # NA Filling
+
+We have to choose which approach to use:
+- historical average ("if a monday is missing fill it with the mean/median of all mondays")
+- temporal interpolation ("if a monday is missing fill it with the mean of sunday and tuesday")
+
+We should inspect the trend to see which approach is better maybe.
+
+
+```{r}
+# add column day (names) on df_2018
+days = c("lunedì","martedì","mercoledì","giovedì","venerdì","sabato","domenica")
+day_names = weekdays(df_2018$Time)
+df_2018$day = as.factor(day_names)
+head(df_2018)
+```
+
+
+## Trend inspection
+```{r}
+# cols = colora(7,runif(1,0,133),1)
+cols = colora(7,24,0)
+st = sample(unique(df_2018$IDStations),1)
+
+for (d in days){
+	df_st = df_2018[df_2018$IDStations==st,] # filter a single station
+	df_st_day = df_st[df_st$day == d,] # filter a certain day
+	
+	col_idx = which(days==d)
+	if(col_idx==1)
+		plot(df_st_day$AQ_pm10,xlab="year weeks",ylab="PM10 values",
+			 main=paste("station",st),col=cols[col_idx],type="l")
+	else
+		points(df_st_day$AQ_pm10,xlab="year weeks",ylab="PM10 values",
+			   main=paste("station",st),col=cols[col_idx],type="l")
+}
+legend("top",c("lunedì","martedì","mercoledì","giovedì","venerdì","sabato","domenica"),
+	   fill=cols,cex=0.6,bty = "n")
+```
+
+It seems that there is the U trend (high in winter, low in summer), as we already knew.
+So maybe averaging does not lead to a good result, as we will put
+- "high" values in summer and
+- "low" values in winter
+as the next plot shows
+
+```{r}
+# cols = colora(7,runif(1,0,133),1)
+cols = colora(7,24,0)
+st = sample(unique(df_2018$IDStations),1)
+
+for (d in days){
+	df_st = df_2018[df_2018$IDStations==st,] # filter a single station
+	df_st_day = df_st[df_st$day == d,] # filter a certain day
+	
+	col_idx = which(days==d)
+	if(col_idx==1)
+		plot(df_st_day$AQ_pm10,xlab="year weeks",ylab="PM10 values",
+			 main=paste("station",st),col=cols[col_idx],type="l")
+	else
+		points(df_st_day$AQ_pm10,xlab="year weeks",ylab="PM10 values",
+			   main=paste("station",st),col=cols[col_idx],type="l")
+	
+	abline(h=mean(na.omit(df_st_day$AQ_pm10)),col=cols[col_idx])
+}
+legend("top",c("lunedì","martedì","mercoledì","giovedì","venerdì","sabato","domenica"),
+	   fill=cols,cex=0.6,bty = "n")
+```
+
+
+
+
+
+
 ```{r}
 
 ```
