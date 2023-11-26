@@ -1,6 +1,7 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "na_filling"
+date: "2023-11-26"
+output: html_document
 ---
 
 ```{r}
@@ -343,8 +344,10 @@ for (chosen_variable_name in c("LI_pigs","LI_bovine","LI_pigs_v2","LI_bovine_v2"
 
 ## actual fill
 ```{r}
+# df_2018_filled = df_2018
 stations = unique(df_2018_filled$IDStations)
 nas_cols = c("AQ_pm10","LI_pigs","LI_bovine","LI_pigs_v2","LI_bovine_v2")
+cols = colora(2,455,1)
 
 for (st in stations){
 	df_st = df_2018_filled[df_2018_filled$IDStations==st,nas_cols]
@@ -355,6 +358,13 @@ for (st in stations){
 			df_st[,col_name] = obs_wo_na
 			if (sum(as.numeric(is.na(obs)))==0){ 
 				assert(obs==obs_wo_na)
+			}
+			if(any(is.na(obs))){
+				plot(obs_wo_na, main=paste("station =",st,"- column =",col_name,
+									 "- #NA =",sum(as.numeric(is.na(obs)))),
+					col=cols[2],type="l")
+				lines(obs,col=cols[1])
+				legend("top",c("original","intempolation"),fill=cols,bty="n")
 			}
 		}
 		else{
@@ -367,7 +377,7 @@ for (st in stations){
 na_summary(df_2018_filled)
 ```
 
-PM10 filled.
+
 The four LI cols are missing, we need to think about them. 
 Maybe like taking the average of those columns value in some stations close to them.
 
@@ -390,13 +400,25 @@ print(stationPlotgg)
 ```
 
 
+# UPDATE
+
+*Federico*
+1. We can ignore the NA and build directly the weekly division by the available days.
+Scorre sulle settimane, calcola quanti NA ci sono, e da lì crea la media.
+Media per ogni stazione però.
+
+*Federica*
+2. Con attenzione alle covariate non numeriche (vento). Con tipo media/mediana/argmax delle direzioni.
+
+Quindi qui creaimo df_2018_week.
+
+*Giulia*
+3. Mentre per le tre problematiche recuperiamo i valori delle stazioni vicine e li riempiamo con la loro media.
+Vedi file scelte.png per quali stazioni considerare.
+
+Qui riempiamo df_2018_week$MaialiEcc nelle stazioni mancanti con la media delle medie di quelle selezionate nel file scelte.png.
 
 
-
-# Week division
-```{r}
-
-```
 
 
 
