@@ -8,9 +8,55 @@ install.packages("ppmSuite")
 library(ppmSuite)
 ```
 
+# Test ppmSuite installation
+```{r}
+head(ppmSuite::bear)
+# it's a dataset of ppmSuite
+# If there is output it means that it works, the package is correctly installed
+```
+
+
+
+
+
 https://www.tandfonline.com/doi/suppl/10.1080/10618600.2021.1987255?scroll=top
 ```{r}
 devtools::install_github("https://github.com/gpage2990/drpm.git")
 library(drpm)
 ```
 
+# Test drpm installation
+```{r}
+# preparation
+source("include.R") # for having df_agri
+
+sites = data.frame(
+	longitude = unique(df_agri$Longitude)[1:10], 
+	latitude = unique(df_agri$Latitude)[1:10])
+
+# unique(df_agri[,c("Longitude","Latitude")])[1:10,] == sites[1:10,]
+```
+
+Again if there is some output it means that the installation went well :)
+```{r}
+drpm_fit(y=matrix(data=rnorm(10*4),nrow = 10,ncol = 4), # random data
+		 # 10 stations for 4 time instants
+         s_coords=as.matrix(sites),
+         M=1,
+         initial_partition = NULL,
+         starting_alpha = 0.5,
+         unit_specific_alpha = FALSE,
+         time_specific_alpha = FALSE,
+         alpha_0=FALSE,
+         eta1_0=FALSE,
+         phi1_0=FALSE,
+         modelPriors=c(0,100^2,1,1,1,1),
+         alphaPriors=rbind(c(1,1)),
+         simpleModel = 0,
+         theta_tau2 = c(0, 2),
+         SpatialCohesion=4,
+         cParms=c(0, 1, 2, 1),
+         mh=c(0.5, 1, 0.1, 0.1, 0.1),
+         verbose=TRUE,
+         draws=1100,burn=100,thin=1)
+```
