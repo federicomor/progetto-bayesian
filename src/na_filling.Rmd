@@ -156,8 +156,15 @@ for (st in stations){
 		}
 		if(col %in% character_cols){
 			# Federica function, something like
-			# directions = df_st_col[,col]
+			
+			directions = df_st_col[,col]
+			# qui c'è la stringa di valori corrispondenti ad un anno di
+			# osservazioni per quella stazione
+			
 			# dirs_corrected = Federica_function(directions)
+			# questa funzione prende la stringa lunga 365 e ne ritorna una lunga 53
+			# perché ci sono 53 settimane
+			
 			# df_weekly[which(df_weekly$IDStations==st), col] = dirs_corrected
 		}
 		else{ # numerical cols
@@ -179,6 +186,20 @@ Ora nelle colonne problematiche esce 159 e 53 perché:
 - e ce n'è una che è sempre vuota anche nelle covariat v2 
 => (53*1 = 53 NA segnati lì)
 
+### correctness check
+```{r}
+st = sample(stations,1)
+w = sample(1:53,1)
+col = sample(cnames,1)
+
+cat("original values\n")
+df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col]
+cat("computed mean\n")
+mean(df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col])
+cat("df_weekly value\n")
+df_weekly[[intersect(which(df_weekly$IDStations==st),which(df_weekly$week==w)),col]]
+
+```
 
 
 *Federica*
