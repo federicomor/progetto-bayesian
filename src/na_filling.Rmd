@@ -410,6 +410,56 @@ Media per ogni stazione però.
 *Federica*
 2. Con attenzione alle covariate non numeriche (vento). Con tipo media/mediana/argmax delle direzioni.
 
+
+```{r}
+weekly_wind_direction_10_m <- character(0)  # vettore che contiene dati settimanali 
+weekly_data_wind_direction_10_m <- character(0) # vettore finale con mode settimali per tutto l'anno tutte le stat
+weekly_wind_direction_100_m <- character(0) # vettore che contiene dati settimanali 
+weekly_data_wind_direction_100_m <- character(0) # vettore finale con mode settimali per tutto l'anno tutte le stat
+num_sett <- numeric(0)
+Id_stat <- df_2018$IDStations[1]
+
+for (i in 1:dim(df_2018)[1]) {
+  weekly_wind_direction_10_m <- c(weekly_wind_direction_10_m, df_2018$WE_mode_wind_direction_10m[i])
+  weekly_wind_direction_100_m <- c(weekly_wind_direction_100_m, df_2018$WE_mode_wind_direction_100m[i])
+
+  Id_stat_new <- df_2018$IDStations[i]
+  
+  if (df_2018$day[i] == 'domenica') {
+  	table_freq <- table(weekly_wind_direction_10_m)
+    weekly_data_wind_direction_10_m <- c(weekly_data_wind_direction_10_m, names(table_freq)[which.max(table_freq)])
+    weekly_wind_direction_10_m <- character(0)
+    table_freq <- table(weekly_wind_direction_100_m)
+    weekly_data_wind_direction_100_m <- c(weekly_data_wind_direction_100_m, names(table_freq)[which.max(table_freq)])
+    weekly_wind_direction_100_m <- character(0)
+    # definisco vettore/colonna che mi dà numero di settimana nell'anno
+    val <- num_sett[lenght(num_sett)]+1
+    if (Id_stat != Id_stat_new)
+  {
+  	Id_stat = Id_stat_new
+  	val = 1
+  	
+  }
+    num_sett <- c(num_sett, val)
+    } 
+
+  
+}
+
+# nuove variabili settimanali 
+print(weekly_data_wind_direction_10_m)
+print(weekly_data_wind_direction_100_m)
+print(num_sett)
+
+
+
+
+
+```
+
+
+
+
 Quindi qui creaimo df_2018_week.
 
 *Giulia*
