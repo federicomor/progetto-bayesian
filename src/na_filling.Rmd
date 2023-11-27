@@ -4,97 +4,12 @@ date: "2023-11-26"
 output: html_document
 ---
 
+
 ```{r}
 source("include.R")
 ```
 
-```{r}
-cat("df_agri shape",size(df_agri),"\n")
-cat("df_2018 shape",size(df_2018),"\n")
-```
-
-# NA Filling ideas
-
-We have to choose which approach to use:
-- historical fill ("if a monday is missing fill it with the mean/median of all mondays")
-- temporal interpolation ("if a monday is missing fill it with the mean of sunday and tuesday")
-or others approach if you have.
-
-We could inspect the trend to see which approach is better.
-
-```{r}
-# add column day (names) on df_2018
-days = c("lunedì","martedì","mercoledì","giovedì","venerdì","sabato","domenica")
-day_names = weekdays(df_2018$Time)
-df_2018$day = as.factor(day_names)
-head(df_2018)
-```
-
-
-## Trend inspection - historical fill
-Here with historical fill we mean that when we encounter a NA value we do this
-- see at which day of the week corrsponds that value
-- look up the mean for that day values (mean of mondays, mean of tuesdays, ecc)
-- substitute the NA with that day mean
-Ie if a value is missing, and that NA occurred on a monday, then we look up the mean over all the mondays, and substitute that NA with that monday mean.
-
-Maybe we should also try with a week-mean substitution, but this is basically what the next idea, temporal filling, does.
-
-```{r}
-# cols = colora(7,runif(1,0,133),1)
-cols = colora(7,24,0)
-st = sample(unique(df_2018$IDStations),1)
-
-for (d in days){
-	df_st = df_2018[df_2018$IDStations==st,] # filter a single station
-	df_st_day = df_st[df_st$day == d,] # filter a certain day
-	
-	col_idx = which(days==d)
-	if(col_idx==1)
-		plot(df_st_day$AQ_pm10,xlab="year weeks",ylab="PM10 values",
-			 main=paste("station",st),col=cols[col_idx],type="l")
-	else
-		points(df_st_day$AQ_pm10,xlab="year weeks",ylab="PM10 values",
-			   main=paste("station",st),col=cols[col_idx],type="l")
-}
-legend("top",c("lunedì","martedì","mercoledì","giovedì","venerdì","sabato","domenica"),
-	   fill=cols,cex=0.6,bty = "n")
-```
-
-It seems that there is the U trend (high in winter, low in summer), as we already knew.
-So maybe averaging does not lead to a good result, as we will put "high" values in summer and "low" values in winter, as the next plot shows.
-
-```{r}
-# cols = colora(7,runif(1,0,133),1)
-cols = colora(7,24,0)
-st = sample(unique(df_2018$IDStations),1)
-
-for (d in days){
-	df_st = df_2018[df_2018$IDStations==st,] # filter a single station
-	df_st_day = df_st[df_st$day == d,] # filter a certain day
-	
-	col_idx = which(days==d)
-	if(col_idx==1)
-		plot(df_st_day$AQ_pm10,xlab="year weeks",ylab="PM10 values",
-			 main=paste("station",st),col=cols[col_idx],type="l")
-	else
-		points(df_st_day$AQ_pm10,xlab="year weeks",ylab="PM10 values",
-			   main=paste("station",st),col=cols[col_idx],type="l")
-	
-	abline(h=mean(na.omit(df_st_day$AQ_pm10)),col=cols[col_idx])
-}
-legend("top",c("lunedì","martedì","mercoledì","giovedì","venerdì","sabato","domenica"),
-	   fill=cols,cex=0.6,bty = "n")
-```
-
-## Trend inspection - temporal interpolation
-or "intempolation" :)
-
-Now the idea is to see how much variability there is in consequent days, to see if it's feasible to subsitute a NA with like an interpolation of the closest not-NA values around him.
-
-So for now we select a random interval of time and see the trend there, and compare it with the reconstruction we would obtain with this temporal interpolation idea.
-
-
+# auxiliary functions
 ```{r}
 interpola_NA <- function(obs) {
   non_na_indices <- which(!is.na(obs))
@@ -134,269 +49,34 @@ test <- c(NA,NA,10, 15, NA, 20, 24, 20, 18, NA, NA, 10, 9, 9, NA)
 print(test)
 result <- interpola_NA(test)
 print(round(result))
-```
-
-```{r}
-# to not have huge intervals
-we_have_na = 0
-while(we_have_na == 0){
-	end_day = 400
-	while(end_day > 365){
-		start_day = round(runif(1, min=0, max=365))
-		end_day = start_day + round(runif(1,min=5,max=30))
-	}
-	
-	title=paste(end_day-start_day,"days:",
-				"from",format(as.Date("2018-01-01")+start_day),
-				"to",format(as.Date("2018-01-01")+end_day))
-	
-	
-	# st = "635"
-	st = sample(unique(df_2018$IDStations),1)
-	df_st = df_2018[df_2018$IDStations==st,] # filter a single station
-	df_st_int = df_st[start_day:end_day,]
-	we_have_na = sum(as.numeric(is.na(df_st_int$AQ_pm10)))
-}
-
-plot(df_st_int$Time,df_st_int$AQ_pm10,main=title,type="b",lwd=2)
-obs = df_st_int$AQ_pm10
-obs_wo_na = interpola_NA(obs)
-
-df_st_int_wo_na = df_st_int
-df_st_int_wo_na$AQ_pm10 = obs_wo_na
-lines(df_st_int_wo_na$Time,df_st_int_wo_na$AQ_pm10,type="b",lty=2,col="blue")
-```
-This seems a better choice for NA filling.
-We proceed with a comparison now.
-
-## Comparison of the two approaches
-```{r}
-historic_fill_pm10col_na = function(df_st){
-	day_names = as.vector(df_st$day)
-	obs = df_st$AQ_pm10
-	day_mean = hash()
-	for (d in days){
-		day_mean[[d]] = mean(na.omit(obs[day_names==d]))
-	}
-	for (i in 1:length(obs)){
-		if(is.na(obs[i])){
-			obs[i] = day_mean[[day_names[i]]]
-		}
-	}
-	return(obs)
-} 
-```
-
-### random time interval
-```{r}
-we_have_na = 0
-while(we_have_na == 0){
-	end_day = 400
-	while(end_day > 365){
-		start_day = round(runif(1, min=0, max=365))
-		end_day = start_day + round(runif(1,min=10,max=40))
-	}
-	st = sample(unique(df_2018$IDStations),1)
-	title=paste("station",st,"-",
-				end_day-start_day,"days:",
-				"from",format(as.Date("2018-01-01")+start_day),
-				"to",format(as.Date("2018-01-01")+end_day))
-	df_st = df_2018[df_2018$IDStations==st,] # filter a single station
-	df_st_int = df_st[start_day:end_day,]
-	we_have_na = any(is.na(df_st_int$AQ_pm10))
-}
-plt_type = "l"
-plot(df_st_int$Time,df_st_int$AQ_pm10,main=title,type=plt_type,lwd=2)
-
-############## Method 2 intempolation
-obs = df_st_int$AQ_pm10
-obs_wo_na = interpola_NA(obs)
-df_st_int_wo_na = df_st_int
-df_st_int_wo_na$AQ_pm10 = obs_wo_na
-lines(df_st_int_wo_na$Time,df_st_int_wo_na$AQ_pm10,type=plt_type,lty=2,col="blue",lwd=0.6)
-
-############## Method 1 historical fill
-
-obs_wo_na = historic_fill_pm10col_na(df_st)
-df_st_int_wo_na = df_st_int
-df_st_int_wo_na$AQ_pm10 = obs_wo_na[start_day:end_day]
-lines(df_st_int_wo_na$Time,df_st_int_wo_na$AQ_pm10,type=plt_type,lty=2,col="red",lwd=0.6)
-
-legend("topright",c("intempolation","historical"),fill=c("blue","red"),bty="n")
-```
-
-### selected time interval
-```{r}
-start_day = 100
-end_day = 300
-
-cols = colora(3,56,0)
-we_have_na = 0
-while(we_have_na == 0){
-	st = sample(unique(df_2018$IDStations),1)
-	df_st = df_2018[df_2018$IDStations==st,] # filter a single station
-
-	df_st_int = df_st[start_day:end_day,]
-	we_have_na = any(is.na(df_st_int$AQ_pm10))
-}
-title = paste("station",st,"- #NA =",sum(as.numeric(is.na(df_st_int$AQ_pm10))))
-plt_type = "l"
-plot(df_st_int$Time,df_st_int$AQ_pm10,main=title,lwd=1,type=plt_type,col=cols[1])
-
-############## Method 2 intempolation
-obs = df_st_int$AQ_pm10
-obs_wo_na = interpola_NA(obs)
-df_st_int_wo_na = df_st_int
-df_st_int_wo_na$AQ_pm10 = obs_wo_na
-lines(df_st_int_wo_na$Time,df_st_int_wo_na$AQ_pm10,type=plt_type,col=cols[2])
-
-############## Method 1 historical fill
-
-obs_wo_na = historic_fill_pm10col_na(df_st)
-df_st_int_wo_na = df_st_int
-df_st_int_wo_na$AQ_pm10 = obs_wo_na[start_day:end_day]
-lines(df_st_int_wo_na$Time,df_st_int_wo_na$AQ_pm10,type=plt_type,col=cols[3])
-
-# to superimpose the first color
-lines(df_st_int$Time,df_st_int$AQ_pm10,main=title,lwd=1,type=plt_type,col=cols[1])
-legend("topright",c("original","intempolation","historical"),fill=cols,bty="n")
-```
-
-### days trend fill comparison
-```{r}
-# cols = colora(7,runif(1,0,133),1)
-cols = colora(3,56,0)
-
-enough_na = 0
-while(enough_na==0){
-	st = sample(unique(df_2018$IDStations),1)
-	df_st = df_2018[df_2018$IDStations==st,] # filter a single station
-	enough_na = sum(as.numeric(is.na(df_st$AQ_pm10)))>20
-}
-
-for (d in days){
-# d = "lunedì"
-	df_st_day = df_st[df_st$day == d,] # filter a certain day
-
-	plot(df_st_day$AQ_pm10,xlab="year weeks",ylab="PM10 values",
-		 main=paste("station =",st,"- day =",d,"- #NA =",
-		 		   sum(as.numeric(is.na(df_st_day$AQ_pm10)))),
-		 col=cols[1],type="l")
-	lines(interpola_NA(df_st_day$AQ_pm10),col=cols[2],type="l")
-	lines(historic_fill_pm10col_na(df_st_day),col=cols[3],type="l")
-	
-	# to superimpose the first color
-	lines(df_st_day$AQ_pm10)
-	legend("top",c("original","intempolation","historical"),fill=cols,bty="n")
-}
-
-```
 
 
-# NA cols filling
-check/fix variable type
-```{r}
-for (c in colnames(df_2018)){
-	cat(sprintf("%28s, %s\n",c,typeof(df_2018[,c])))
-}
-# type character: 
-# ("WE_mode_wind_direction_10m","WE_mode_wind_direction_100m", "LI_pigs_v2","LI_bovine_v2")
-# the first two are really characters, the last two no are numbers not correctly read by R
-
-head(df_2018$LI_pigs_v2)
-df_2018$LI_pigs_v2 = as.numeric(df_2018$LI_pigs_v2)
-df_2018$LI_bovine_v2 = as.numeric(df_2018$LI_bovine_v2)
-head(df_2018$LI_pigs_v2)
-```
-
-copy original dataset
-```{r}
 na_summary = function(df){
 	for (c in colnames(df)){
 		cat(sprintf("%28s, #NAs = %f\n",c,sum(as.numeric(is.na(df[,c])))))
 	}
 }
-	
-df_2018_filled = df_2018
-na_summary(df_2018_filled)
-# we just have to fill AQ_pm10 and LI_ecc variables
-```
-
-plot inspection of na cols trend
-```{r}
-source("plot functions/plot_data_and_libraries.R")
-source("plot functions/plot_functions_2.R")
-suppressWarnings(source("plot functions/plot_utilities.R"))
-```
-
-```{r}
-initial_date = "2018-01-01"
-final_date = "2018-12-31"
-chosen_stations = 1:5
-file_name = "None"
-
-for (chosen_variable_name in c("LI_pigs","LI_bovine","LI_pigs_v2","LI_bovine_v2")) {
-	trendYearStation_plot <- trendYearStation(initial_date,final_date,chosen_stations,
-											  file_name,chosen_variable_name)
-}
-# the temporal interpolation seems good here, the trend is very stable
-```
-
-## actual fill
-```{r}
-# df_2018_filled = df_2018
-stations = unique(df_2018_filled$IDStations)
-nas_cols = c("AQ_pm10","LI_pigs","LI_bovine","LI_pigs_v2","LI_bovine_v2")
-cols = colora(2,455,1)
-
-for (st in stations){
-	df_st = df_2018_filled[df_2018_filled$IDStations==st,nas_cols]
-	for (col_name in colnames(df_st)){
-		obs = df_st[,col_name]
-		if(!all(is.na(obs))){
-			obs_wo_na = interpola_NA(obs)
-			df_st[,col_name] = obs_wo_na
-			if (sum(as.numeric(is.na(obs)))==0){ 
-				assert(obs==obs_wo_na)
-			}
-			if(any(is.na(obs))){
-				plot(obs_wo_na, main=paste("station =",st,"- column =",col_name,
-									 "- #NA =",sum(as.numeric(is.na(obs)))),
-					col=cols[2],type="l")
-				lines(obs,col=cols[1])
-				legend("top",c("original","intempolation"),fill=cols,bty="n")
-			}
-		}
-		else{
-			cat("Column",col_name,"station",st,
-				"had all NAs. Intempolation not possible.\n")
-		}
-	}
-	df_2018_filled[which(df_2018_filled$IDStations==st),nas_cols] = df_st
-}
-na_summary(df_2018_filled)
+na_summary(df_2018)
 ```
 
 
-The four LI cols are missing, we need to think about them. 
-Maybe like taking the average of those columns value in some stations close to them.
-
-But we see that those stations are a bit autonomous, like away from the others.
-Anyway we could fix with an average of the close points, there is like a semi-circle of close stations around them.
-
+# add DAY and WEEK columns
 ```{r}
-problematic_stations = c("STA-CH0011A","STA-CH0033A","STA-CH0043A")
-lat=unique(df_2018_filled$Latitude[which(df_2018_filled$IDStations==problematic_stations)])
-long=unique(df_2018_filled$Longitude[which(df_2018_filled$IDStations==problematic_stations)])
+library(lubridate)
 
-problematic_stations = data.frame(
-  x = long,
-  y = lat
-)
+# add day
+# days = c("lunedì","martedì","mercoledì","giovedì","venerdì","sabato","domenica")
+day_names = weekdays(df_2018$Time)
+df_2018$day = as.factor(day_names)
 
-stationPlotgg <- stationPlot()+ geom_point(data = problematic_stations, aes(x,y),
-										    size = 2, shape = 21, fill = "cyan")
-print(stationPlotgg)
+# add week
+df_2018$week = week(df_2018$Time)
+cat("we have #weeks =",max(df_2018$week))
+
+# check result
+head(df_2018) # funziona, scorrere a destra in fondo per trovare day e week
+# print(df_2018[1:40,c("IDStations","Time","day","week")])
+
 ```
 
 
@@ -406,6 +86,100 @@ print(stationPlotgg)
 1. We can ignore the NA and build directly the weekly division by the available days.
 Scorre sulle settimane, calcola quanti NA ci sono, e da lì crea la media.
 Media per ogni stazione però.
+
+## chek col type
+and convert integer to doubles
+```{r}
+for (c in colnames(df_2018)){
+	# cat(sprintf("%28s, %s\n",c,typeof(df_2018[,c])))
+	if(typeof(df_2018[,c])=="integer")
+		df_2018[,c] = as.double(df_2018[,c])
+}
+df_2018$LI_pigs_v2 = as.double(df_2018$LI_pigs_v2)
+df_2018$LI_bovine_v2 = as.double(df_2018$LI_bovine_v2)
+
+cat("\n")
+for (c in colnames(df_2018)){
+	cat(sprintf("%28s, %s\n",c,typeof(df_2018[,c])))
+}
+```
+
+
+## build df_weekly
+```{r}
+library(dplyr)
+
+# Crea un nuovo dataframe con solo i primi valori di ogni settimana
+# che dopo andremo a modificare nel for con la media dei valori.
+# Qui è solo per creare la struttura di df_weekly
+
+df_weekly <- df_2018 %>%
+  group_by(IDStations,week) %>%
+  slice(1) %>% # prendi la prima riga, poi la cambieremo
+  ungroup()
+
+head(df_weekly)
+colnames(df_weekly)
+assert(size(df_2018)[1] == 105*365)
+assert(size(df_weekly)[1] == 105*53)
+```
+
+
+
+## fill df_weekly with weekly averages
+and fix na problems if they appear.
+
+Ie we loop on all the stations, selecting the covariates which have to be weekly-combined, poi le combiniamo, e assegnamo i valori combinati nel dataset df_weekly.
+
+La parte con interpola_NA non fa nulla se l'argomento è già pieno, altrimenti attua la modifica nei valori mancanti (che corrispondono a settimanetutte vuote, sostituite con le medie delle settimane prima e dopo di quella).
+
+```{r}
+stations = unique(df_2018$IDStations)
+problematic_stations = c("STA-CH0011A","STA-CH0033A","STA-CH0043A")
+
+problematic_cols = c("LI_pigs","LI_bovine","LI_pigs_v2","LI_bovine_v2")
+character_cols = c("WE_mode_wind_direction_10m","WE_mode_wind_direction_100m")
+
+
+for (st in stations){
+	cat(crayon::blue("Station",st,"\n"))
+	df_st = df_2018[df_2018$IDStations==st,] # extract covariates for station st
+	cnames = colnames(df_st)[7:37]
+	
+	for (col in cnames){
+		# cat(crayon::green(col,"... "))
+		df_st_col = df_st[,c(col,"week")]
+		
+		if(col %in% problematic_cols && st %in% problematic_stations){
+			cat("We deal with problematic cols later.\n")
+			next
+		}
+		if(col %in% character_cols){
+			# Federica function, something like
+			# directions = df_st_col[,col]
+			# dirs_corrected = Federica_function(directions)
+			# df_weekly[which(df_weekly$IDStations==st), col] = dirs_corrected
+		}
+		else{ # numerical cols
+			obs = df_st_col %>%
+					group_by(week) %>%
+					summarize(media = mean(!!sym(col), na.rm = TRUE))
+			obs=obs$media
+			obs_corrected = interpola_NA(obs)
+			df_weekly[which(df_weekly$IDStations==st), col] = obs_corrected
+		}
+	}
+}
+na_summary(df_weekly)
+```
+
+Ora nelle colonne problematiche esce 159 e 53 perché:
+- abbiamo le tre stazioni problematiche che sono vuote per tutte le 53 settimane 
+=> (53*3 = 159 NA segnati lì)
+- e ce n'è una che è sempre vuota anche nelle covariat v2 
+=> (53*1 = 53 NA segnati lì)
+
+
 
 *Federica*
 2. Con attenzione alle covariate non numeriche (vento). Con tipo media/mediana/argmax delle direzioni.
@@ -450,9 +224,6 @@ for (i in 1:dim(df_2018)[1]) {
 print(weekly_data_wind_direction_10_m)
 print(weekly_data_wind_direction_100_m)
 print(num_sett)
-
-
-
 
 
 ```
