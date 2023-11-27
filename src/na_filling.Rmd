@@ -77,6 +77,7 @@ cat("we have #weeks =",max(df_2018$week))
 head(df_2018) # funziona, scorrere a destra in fondo per trovare day e week
 # print(df_2018[1:40,c("IDStations","Time","day","week")])
 
+unique(df_2018$week)) # 53, perchè sono 52 complete più la 53esima che inizia lunedì 31 dicembre 2018
 ```
 
 
@@ -180,11 +181,7 @@ for (st in stations){
 na_summary(df_weekly)
 ```
 
-Ora nelle colonne problematiche esce 159 e 53 perché:
-- abbiamo le tre stazioni problematiche che sono vuote per tutte le 53 settimane 
-=> (53*3 = 159 NA segnati lì)
-- e ce n'è una che è sempre vuota anche nelle covariat v2 
-=> (53*1 = 53 NA segnati lì)
+
 
 ### correctness check
 ```{r}
@@ -192,6 +189,7 @@ st = sample(stations,1)
 w = sample(1:53,1)
 col = sample(cnames,1)
 
+cat("### column",col,"###\n")
 cat("original values\n")
 df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col]
 cat("computed mean\n")
@@ -220,7 +218,7 @@ for (i in 1:dim(df_2018)[1]) {
 
   Id_stat_new <- df_2018$IDStations[i]
   
-  if (df_2018$day[i] == 'domenica') {
+  if (df_2018$day[i] == 'lunedì') {
   	table_freq <- table(weekly_wind_direction_10_m)
     weekly_data_wind_direction_10_m <- c(weekly_data_wind_direction_10_m, names(table_freq)[which.max(table_freq)])
     weekly_wind_direction_10_m <- character(0)
@@ -245,14 +243,34 @@ for (i in 1:dim(df_2018)[1]) {
 print(weekly_data_wind_direction_10_m)
 print(weekly_data_wind_direction_100_m)
 print(num_sett)
+```
 
+```{r}
+# check size
+# it should be 105 stations * 53 week
+assert(length(weekly_data_wind_direction_10_m) == 105*53)
+assert(length(weekly_data_wind_direction_100_m) == 105*53)
+# nice, we can add them to df_weekly
 
+df_weekly$WE_mode_wind_direction_10m = weekly_data_wind_direction_10_m
+df_weekly$WE_mode_wind_direction_100m = weekly_data_wind_direction_100_m
 ```
 
 
+```{r}
+summary(df_weekly)
+```
 
+```{r}
+na_summary(df_weekly)
+```
+Ora nelle colonne problematiche esce 159 e 53 perché:
+- abbiamo le tre stazioni problematiche che sono vuote per tutte le 53 settimane 
+=> (53*3 = 159 NA segnati lì)
+- e ce n'è una che è sempre vuota anche nelle covariat v2 
+=> (53*1 = 53 NA segnati lì))
 
-Quindi qui creaimo df_2018_week.
+Quindi qui abbiamo df_2018_week ora.
 
 *Giulia*
 3. Mentre per le tre problematiche recuperiamo i valori delle stazioni vicine e li riempiamo con la loro media.
@@ -260,6 +278,16 @@ Vedi file scelte.png per quali stazioni considerare.
 
 Qui riempiamo df_2018_week$MaialiEcc nelle stazioni mancanti con la media delle medie di quelle selezionate nel file scelte.png.
 
+O altrimenti controllare se il dataset df_AGC non ha NA in quelle colonne e in quelle location.
+```{r}
+cat(crayon::italic("Loading AGC dataset, may took some time.\n"))
+load("../data/data_agc_lomb_part1.RData")
+load("../data/data_agc_lomb_part2.RData")
+AGC_Dataset = rbind(parte1, parte2)
+rm(parte1)
+rm(parte2)
+head(AGC_Dataset)
+```
 
 
 

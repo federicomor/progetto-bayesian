@@ -12,6 +12,11 @@ end = len = lenght = length
 assert = stopifnot
 ln = log
 
+count_na = function(vec){
+	na_vals = sum(as.numeric(is.na(vec)))
+	return(na_vals)
+}
+na_count = count_na
 
 ########################
 # loading procedure, with feedback
