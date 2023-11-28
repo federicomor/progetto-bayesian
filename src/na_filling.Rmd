@@ -77,7 +77,7 @@ cat("we have #weeks =",max(df_2018$week))
 head(df_2018) # funziona, scorrere a destra in fondo per trovare day e week
 # print(df_2018[1:40,c("IDStations","Time","day","week")])
 
-unique(df_2018$week)) # 53, perchè sono 52 complete più la 53esima che inizia lunedì 31 dicembre 2018
+unique(df_2018$week) # 53, perchè sono 52 complete più la 53esima che inizia lunedì 31 dicembre 2018
 ```
 
 
@@ -156,17 +156,14 @@ for (st in stations){
 			next
 		}
 		if(col %in% character_cols){
-			# Federica function, something like
-			
-			directions = df_st_col[,col]
-			# qui c'è la stringa di valori corrispondenti ad un anno di
-			# osservazioni per quella stazione
-			
-			# dirs_corrected = Federica_function(directions)
+			# Federica function, la parte del names(table ecc)
+			obs = df_st_col %>%
+					group_by(week) %>%
+					summarize(media = names(table(!!sym(col)))[which.max(table(!!sym(col)))])
 			# questa funzione prende la stringa lunga 365 e ne ritorna una lunga 53
 			# perché ci sono 53 settimane
-			
-			# df_weekly[which(df_weekly$IDStations==st), col] = dirs_corrected
+			obs=obs$media
+			df_weekly[which(df_weekly$IDStations==st), col] = obs
 		}
 		else{ # numerical cols
 			obs = df_st_col %>%
@@ -179,21 +176,38 @@ for (st in stations){
 	}
 }
 na_summary(df_weekly)
+obs
+df_st_col
 ```
 
 
 
 ### correctness check
+run it multiple times
 ```{r}
 st = sample(stations,1)
 w = sample(1:53,1)
 col = sample(cnames,1)
 
-cat("### column",col,"###\n")
+# st = "STA.IT1904A"
+# w = 32
+# col = "WE_mode_wind_direction_100m"
+
+cat("### station",st,"\n")
+cat("### column",col,"\n")
+cat("### week",w,"\n\n")
+
+# problema: week 50, col direction_100m, st STA.IT1904A
+# risolto
+
 cat("original values\n")
 df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col]
+if(col=="WE_mode_wind_direction_100m" || col=="WE_mode_wind_direction_10m"){
+	table_freq = table(df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col])
+	names(table_freq)[which.max(table_freq)]
+}
 cat("computed mean\n")
-mean(df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col])
+suppressWarnings({mean(df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col])})
 cat("df_weekly value\n")
 df_weekly[[intersect(which(df_weekly$IDStations==st),which(df_weekly$week==w)),col]]
 
@@ -252,8 +266,9 @@ assert(length(weekly_data_wind_direction_10_m) == 105*53)
 assert(length(weekly_data_wind_direction_100_m) == 105*53)
 # nice, we can add them to df_weekly
 
-df_weekly$WE_mode_wind_direction_10m = weekly_data_wind_direction_10_m
-df_weekly$WE_mode_wind_direction_100m = weekly_data_wind_direction_100_m
+## Update: già aggiunte nel loop così c'è tutto lì dentro
+# df_weekly$WE_mode_wind_direction_10m = weekly_data_wind_direction_10_m
+# df_weekly$WE_mode_wind_direction_100m = weekly_data_wind_direction_100_m
 ```
 
 
