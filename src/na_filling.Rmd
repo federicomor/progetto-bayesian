@@ -214,6 +214,22 @@ df_weekly[[intersect(which(df_weekly$IDStations==st),which(df_weekly$week==w)),c
 ```
 
 
+```{r}
+st = sample(stations,1)
+col = sample(cnames,1)
+# col="AQ_pm10"
+
+title=paste("station",st,"- column",col)
+cols=colora(2,541,0)
+
+plot(df_2018[which(df_2018$IDStations==st),col],type="l",col=cols[1],main=title)
+
+lines(rep(as.vector(df_weekly[which(df_weekly$IDStations==st),col])[[1]],each=7),
+	  xlim=c(0,365),col=cols[2])
+```
+
+
+
 *Federica*
 2. Con attenzione alle covariate non numeriche (vento). Con tipo media/mediana/argmax delle direzioni.
 
