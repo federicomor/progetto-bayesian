@@ -23,6 +23,7 @@ https://www.tandfonline.com/doi/suppl/10.1080/10618600.2021.1987255?scroll=top
 ```{r}
 devtools::install_github("https://github.com/gpage2990/drpm.git")
 library(drpm)
+library(salso)
 ```
 
 # Test drpm installation
@@ -38,8 +39,40 @@ sites = data.frame(
 ```
 
 Again if there is some output it means that the installation went well :)
+
+# simulated data
 ```{r}
-drpm_fit(y=matrix(data=rnorm(10*4),nrow = 10,ncol = 4), # random data
+# begin all in the same cluster
+y01=matrix(data=rnorm(5,0,1),nrow = 5,ncol = 1)
+y02=matrix(data=rnorm(5,0,1),nrow = 5,ncol = 1)
+y0 = rbind(y01,y02)
+# half in cluster 0, half in cluster 1
+y11=matrix(data=rnorm(5,0,1),nrow = 5,ncol = 1)
+y12=matrix(data=rnorm(5,10,1),nrow = 5,ncol = 1)
+y1 = rbind(y11,y12)
+
+# at time 2 they switch clusters
+y21=matrix(data=rnorm(5,10,1),nrow = 5,ncol = 1)
+y22=matrix(data=rnorm(5,0,1),nrow = 5,ncol = 1)
+y2 = rbind(y21,y22)
+
+# at time 3 they move in a new cluster
+y31=matrix(data=rnorm(5,100,1),nrow = 5,ncol = 1)
+y32=matrix(data=rnorm(5,100,1),nrow = 5,ncol = 1)
+y3 = rbind(y31,y32)
+
+# at time 4 they return to the clusters at 1
+y41=matrix(data=rnorm(5,0,1),nrow = 5,ncol = 1)
+y42=matrix(data=rnorm(5,10,1),nrow = 5,ncol = 1)
+y4 = rbind(y41,y42)
+
+y = cbind(y0,y1,y2,y3,y4)
+as.data.frame(y)
+```
+
+
+```{r}
+drpm1 <- drpm_fit(y, # random data
 		 # 10 stations for 4 time instants
          s_coords=as.matrix(sites),
          M=1,
@@ -60,3 +93,17 @@ drpm_fit(y=matrix(data=rnorm(10*4),nrow = 10,ncol = 4), # random data
          verbose=TRUE,
          draws=1100,burn=100,thin=1)
 ```
+```{r}
+rho <- list()
+for(k in 1:5){
+	rho[[k]] <- salso(t(drpm1$Si[k,,]), loss="binder")
+}
+rho
+```
+
+```{r}
+names(drpm1)
+```
+
+
+

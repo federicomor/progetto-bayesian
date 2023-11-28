@@ -223,32 +223,32 @@ ord2 <- c(8,6,4,2,7,5,3,1)
 # In the plot I include the following models
 # 000_0, 001_0, 110_0, 111_0
 # pdf("PartitionsOverTime3.pdf", height=15, width=15)
-    par(mfrow=c(2,2))
-    for(kkk in c(8,7, 2, 1)){
+par(mfrow=c(2,2))
+for(kkk in c(8,7, 2, 1)){
 
-      rho <- list()
-      ccprob <- list()
+  rho <- list()
+  ccprob <- list()
 
-      for(k in 1:tps){
-	      rho[[k]] <- salso(t(models.out[[kkk]]$Si[k,,]), loss="binder")
-      }
+  for(k in 1:tps){
+      rho[[k]] <- salso(t(models.out[[kkk]]$Si[k,,]), loss="binder")
+  }
 
-      m.n <- as.numeric(do.call(c, strsplit(strsplit(names(models.out)[kkk], "t|\\_")[[1]][c(2,3)], "")))
-      header <- bquote(eta[1]*.(ifelse(m.n[1]==1,"-Yes","-No"))*","~
-	    	       phi[1]*.(ifelse(m.n[2]==1,"-Yes","-No"))*","~
-	        	   alpha[t]*.(ifelse(m.n[3]==1,"-Yes","-No")))
+  m.n <- as.numeric(do.call(c, strsplit(strsplit(names(models.out)[kkk], "t|\\_")[[1]][c(2,3)], "")))
+  header <- bquote(eta[1]*.(ifelse(m.n[1]==1,"-Yes","-No"))*","~
+    	       phi[1]*.(ifelse(m.n[2]==1,"-Yes","-No"))*","~
+        	   alpha[t]*.(ifelse(m.n[3]==1,"-Yes","-No")))
 
-      plot(rep(1:12, each=nrow(y)), rep(1:60, times=ncol(y)), type='n',
-           yaxt="n",ylab="", xlab="time", main=header, cex.main=2, cex.lab=1.75,
-           xaxt="n")
-      axis(side=1, at=1:12, cex.axis=1.5)
-      for(jj in 1:ncol(y)){
-        ord <- order(rho[[jj]])
-        cex1 <- rep(0.8,length(ord))
-        text(rep(jj, each=nrow(y)), 1:60, labels=pch[ord], col=rho[[jj]][ord], cex=cex1[ord])
-        if(jj>1)text(jj-0.5, 61, bquote(alpha[.(jj)]==.(amn[kkk,jj])), cex=0.85)
-      }
-    }
+  plot(rep(1:12, each=nrow(y)), rep(1:60, times=ncol(y)), type='n',
+       yaxt="n",ylab="", xlab="time", main=header, cex.main=2, cex.lab=1.75,
+       xaxt="n")
+  axis(side=1, at=1:12, cex.axis=1.5)
+  for(jj in 1:ncol(y)){
+    ord <- order(rho[[jj]])
+    cex1 <- rep(0.8,length(ord))
+    text(rep(jj, each=nrow(y)), 1:60, labels=pch[ord], col=rho[[jj]][ord], cex=cex1[ord])
+    if(jj>1)text(jj-0.5, 61, bquote(alpha[.(jj)]==.(amn[kkk,jj])), cex=0.85)
+  }
+}
 
 # dev.off()
 
@@ -265,16 +265,16 @@ ord2 <- c(16,14,12,10,15,13,11,9)
 
 # pdf(paste0("LaggedARI_OnlySpace2.pdf"), height=7, width=13)
 
-	par(mfrow=c(2,4),mar=c(2,2,2,2), mgp=c(1.5,0.5,0))
-	for(h in ord2){
-		m.n <- as.numeric(do.call(c, strsplit(strsplit(names(models.out)[h], "t|\\_")[[1]][c(2,3)], "")))
-		header <- bquote(eta[1]*.(ifelse(m.n[1]==1,"-Yes","-No"))*","~
-	    	             phi[1]*.(ifelse(m.n[2]==1,"-Yes","-No"))*","~
-	        	         alpha[t]*.(ifelse(m.n[3]==1,"-Yes","-No")))
-		image.plot(ARImats[[h]], main=header, zlim=range(do.call(c,ARImats),na.rm=TRUE), axes=FALSE)
-		mtext(text=c(paste("",1:tps)), side=2, line=0.3, at=seq(0,1,length=12), las=1, cex=0.8)
-		mtext(text=c(paste("",1:tps)), side=1, line=0.3, at=seq(0,1,length=12), las=2, cex=0.8)
-	}
+par(mfrow=c(2,4),mar=c(2,2,2,2), mgp=c(1.5,0.5,0))
+for(h in ord2){
+	m.n <- as.numeric(do.call(c, strsplit(strsplit(names(models.out)[h], "t|\\_")[[1]][c(2,3)], "")))
+	header <- bquote(eta[1]*.(ifelse(m.n[1]==1,"-Yes","-No"))*","~
+    	             phi[1]*.(ifelse(m.n[2]==1,"-Yes","-No"))*","~
+        	         alpha[t]*.(ifelse(m.n[3]==1,"-Yes","-No")))
+	image.plot(ARImats[[h]], main=header, zlim=range(do.call(c,ARImats),na.rm=TRUE), axes=FALSE)
+	mtext(text=c(paste("",1:tps)), side=2, line=0.3, at=seq(0,1,length=12), las=1, cex=0.8)
+	mtext(text=c(paste("",1:tps)), side=1, line=0.3, at=seq(0,1,length=12), las=2, cex=0.8)
+}
 # dev.off()
 
 
@@ -332,18 +332,18 @@ xtable(round(adj.rand,2))
 # This plot was not included in the paper.
 #
 # pdf("LaggedARIvalues.pdf",height=11, width=9)
-	par(mfrow=c(4,3))
-	plot(mn, type='n', xlab="Month", ylab="PM10", main="PM10 for each station",
-			ylim=range(t(t(y) + mn)))
-	for(k in 1:nrow(y)){
-		lines(t(t(y) + mn)[k,], type='b' )
-	}
-	plot(amn[9,], type='b', xlab="Month", ylab=expression(E(alpha[t]*'|'*Y)), main=expression("Posterior mean of" ~ alpha[t]))
-	for(k in 1:(tps-2)){
-		plot(adj.rand[k,((k+1):tps)], col=1, type='b', xlab="Lagged Month", ylab="Adjusted Rand Index",
+par(mfrow=c(4,3))
+plot(mn, type='n', xlab="Month", ylab="PM10", main="PM10 for each station",
+		ylim=range(t(t(y) + mn)))
+for(k in 1:nrow(y)){
+	lines(t(t(y) + mn)[k,], type='b' )
+}
+plot(amn[9,], type='b', xlab="Month", ylab=expression(E(alpha[t]*'|'*Y)), main=expression("Posterior mean of" ~ alpha[t]))
+for(k in 1:(tps-2)){
+	plot(adj.rand[k,((k+1):tps)], col=1, type='b', xlab="Lagged Month", ylab="Adjusted Rand Index",
 #			main= bquote(ARI(hat(rho)[.(k)],.)))
-			main= bquote("Lagged ARI values for" ~ hat(rho)[.(k)]))
-	}
+		main= bquote("Lagged ARI values for" ~ hat(rho)[.(k)]))
+}
 # dev.off()
 
 
@@ -352,9 +352,9 @@ xtable(round(adj.rand,2))
 # This plot is not included in the Final draft of the paper
 #
 # pdf("MeanAlphaPM10.pdf",height=5, width=7)
-	par(mfrow=c(2,1))
-	plot(mn, type='b', xlab="Month", ylab="PM10")
-	plot(amn[9,], type='b', xlab="Month", ylab=expression(E(alpha[t]*'|'*Y)))
+par(mfrow=c(2,1))
+plot(mn, type='b', xlab="Month", ylab="PM10")
+plot(amn[9,], type='b', xlab="Month", ylab=expression(E(alpha[t]*'|'*Y)))
 # dev.off()
 
 
@@ -365,17 +365,17 @@ ord <- c(8,6,4,2,7,5,3,1,16,14,12,10,15,13,11,9)
 
 # pdf(paste0("LaggedARI.pdf"), height=10, width=10)
 
-	par(mfrow=c(4,4),mar=c(2,2,2,2), mgp=c(1.5,0.5,0))
-	for(h in ord){
-		m.n <- as.numeric(do.call(c, strsplit(strsplit(names(models.out)[h], "t|\\_")[[1]][c(2,3)], "")))
-		header <- bquote(eta[1]*.(ifelse(m.n[1]==1,"-Yes","-No"))*","~
-	    	             phi[1]*.(ifelse(m.n[2]==1,"-Yes","-No"))*","~
-	        	         alpha[t]*.(ifelse(m.n[3]==1,"-Yes","-No"))*","~
-	            	     "space"*.(ifelse(m.n[4]==1,"-Yes","-No")))
-		image.plot(ARImats[[h]], main=header, zlim=range(do.call(c,ARImats),na.rm=TRUE), axes=FALSE)
-		mtext(text=c(paste("",1:tps)), side=2, line=0.3, at=seq(0,1,length=12), las=1, cex=0.8)
-		mtext(text=c(paste("",1:tps)), side=1, line=0.3, at=seq(0,1,length=12), las=2, cex=0.8)
-	}
+par(mfrow=c(4,4),mar=c(2,2,2,2), mgp=c(1.5,0.5,0))
+for(h in ord){
+	m.n <- as.numeric(do.call(c, strsplit(strsplit(names(models.out)[h], "t|\\_")[[1]][c(2,3)], "")))
+	header <- bquote(eta[1]*.(ifelse(m.n[1]==1,"-Yes","-No"))*","~
+    	             phi[1]*.(ifelse(m.n[2]==1,"-Yes","-No"))*","~
+        	         alpha[t]*.(ifelse(m.n[3]==1,"-Yes","-No"))*","~
+            	     "space"*.(ifelse(m.n[4]==1,"-Yes","-No")))
+	image.plot(ARImats[[h]], main=header, zlim=range(do.call(c,ARImats),na.rm=TRUE), axes=FALSE)
+	mtext(text=c(paste("",1:tps)), side=2, line=0.3, at=seq(0,1,length=12), las=1, cex=0.8)
+	mtext(text=c(paste("",1:tps)), side=1, line=0.3, at=seq(0,1,length=12), las=2, cex=0.8)
+}
 # dev.off()
 
 
