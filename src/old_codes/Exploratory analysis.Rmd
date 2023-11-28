@@ -12,10 +12,11 @@ library(dplyr)
 # Dataset comparison
 
 ```{r}
-df_agri = read.csv("../data/Agrimonia_Dataset_v_3_0_0.csv")
-AGC_Dataset = read.csv("../data/AGC_Dataset_v_3_0_0.csv")
-save(AGC_Dataset,file="data_agc_lomb.Rdata")
-save(df_agri,file="df_agri.Rdata")
+# df_agri = read.csv("../data/Agrimonia_Dataset_v_3_0_0.csv")
+# AGC_Dataset = read.csv("../data/AGC_Dataset_v_3_0_0.csv")
+# save(AGC_Dataset,file="data_agc_lomb.Rdata")
+# save(df_agri,file="df_agri.Rdata")
+source("../include.R")
 ```
 
 It seems that the agc one is less complete, even if it wheights more memory (as it has more lines).
@@ -41,10 +42,6 @@ df_agri$Time[length(df_agri$Time)]
 ```
 
 
-```{r}
-```
-
-
 # First plots
 ```{r}
 head(df)
@@ -56,15 +53,6 @@ dim(df)[1]/2192 == 141
 
 We have 2192 days: between 1st January 2016 and 31st December 2021.
 Plot the trend of PM10 measurements for the first FIRST_STAT stations
-
-```{r}
-fun_colori = function(len=2, seed=33){
-	hcols_ = hcl.pals()
-	col.ramp_ = hcl.colors(len,palette=hcols_[seed%%115+1])
-	return(col.ramp_)
-}
-colori_fun = colorami = colora = fun_colori
-```
 
 
 ```{r}
@@ -88,17 +76,52 @@ for (stat in unique(df$IDStations)[1:FIRST_STAT]) {
 		#          16  17 18  19  20  21
 		days = c(366,365,365,365,366,365)
 		cdays = c(0,cumsum(days))
-		cols = colora(length(days),2)
+		cols = colora(length(days),15)
 		plot(1:days[1],y[cdays[1]+1:days[1]],type="l", col=cols[1])
 		lines(1:days[2],y[cdays[2]+1:days[2]],type="l",col=cols[2])
 		lines(1:days[3],y[cdays[3]+1:days[3]],type="l",col=cols[3])
 		lines(1:days[4],y[cdays[4]+1:days[4]],type="l",col=cols[4])
 		lines(1:days[5],y[cdays[5]+1:days[5]],type="l",col=cols[5])
 		lines(1:days[6],y[cdays[6]+1:days[6]],type="l",col=cols[6])
+		title(paste0("station ",stat,", all years toghether"))
 	}
 	# plot(1:2192,df[which(df$IDStations==stat),"AQ_pm10"])
 }
 ```
+
+```{r}
+par(mar=c(4,4,2,2))
+maxy=250
+ncols =10
+cols=colora(ncols,15)
+for (i in 1:length(unique(df$IDStations)) ) {
+	# print(stat)
+	# print(length(df[which(df$IDStations==stat),"AQ_pm10"]))
+	# print(max(na.omit(df[which(df$IDStations==stat),"AQ_pm10"])))
+	stat = unique(df$IDStations)[i]
+	y = df[which(df$IDStations==stat),"AQ_pm10"]
+	y = na.omit(y)
+	
+	if(length(y)>=2000){
+		if(stat=="1264"){
+			plot(1:length(y),y,type="l",col=cols[i%%(ncols)],ylim=c(0,maxy),
+				 xlab = "days",ylab="pm10 values")
+		} else{
+			lines(1:length(y),y,type="l",col=cols[i%%(ncols)],ylim=c(0,maxy))
+		}
+	}
+}
+pad=40
+abline(v=0   ,col="darkred"); text(pad     ,maxy,"2016",col="darkred",cex=0.5)
+abline(v=366 ,col="darkred"); text(366+pad ,maxy,"2017",col="darkred",cex=0.5)
+abline(v=731 ,col="darkred"); text(731+pad ,maxy,"2018",col="darkred",cex=0.5)
+abline(v=1096,col="darkred"); text(1096+pad,maxy,"2019",col="darkred",cex=0.5)
+abline(v=1461,col="darkred"); text(1461+pad,maxy,"2020",col="darkred",cex=0.5)
+abline(v=1827,col="darkred"); text(1827+pad,maxy,"2021",col="darkred",cex=0.5)
+
+```
+
+
 
 
 ```{r}

@@ -42,7 +42,8 @@ grid.arrange(hist_original, hist_log, ncol = 2)
 
 # Mappa stazioni
 ```{r}
-stationPlot <- stationPlot()
+stationPlotgg <- stationPlot()
+print(stationPlotgg)
 ```
 
 
@@ -51,19 +52,15 @@ head(data_agc_lomb)
 ```
 
 # Grid map with chosen variable 
-```{r}
+```{r,warning=FALSE}
 initial_date = "2016-01-01"
-final_date = "2016-01-01"
-every = "month"
+final_date = "2017-01-01"
+every = "year"
 
 # if you change the file_name from None it will create a mp4 video
 file_name = "None"
 
-chosen_variable_name = "WE_wind_speed_10m_max"
-# chosen_variable_name = "Altitude"
-cols = colora(2,15,show=F)
-color_low =  cols[1]
-color_high = cols[2]
+chosen_variable_name = "WE_wind_speed_10m_mean"
 
 map = gridMap(initial_date,final_date,every,file_name,chosen_variable_name)
 ```
@@ -72,12 +69,12 @@ map = gridMap(initial_date,final_date,every,file_name,chosen_variable_name)
 #  Map expanding radius: togliere la legenda
 
 ```{r,warning=FALSE}
-initial_date = "2016-01-01"
-final_date = "2017-01-01"
-every = "month"
+initial_date = "2018-01-01"
+final_date = "2019-01-01"
+every = "year"
 
 # if you change the file_name from None it will create a mp4 video
-file_name = "expancding circles"
+file_name = "None"
 
 chosen_var_name = "AQ_pm10" 
 
@@ -87,23 +84,23 @@ circles_plot <- circlesPlot(initial_date,final_date,every,file_name,chosen_var_n
 
 # WIND  
 
-```{r}
+```{r,warning=FALSE}
 initial_date = "2016-01-01"
-final_date = "2017-01-01"
+final_date = "2016-01-01"
 every = "month"
 
 # if you change the file_name from None it will create a mp4 video
-file_name = "wind map"
+file_name = "None"
 wind = windPlot(initial_date,final_date,every,file_name)
 ```
 
 
 # xy color+size in time
-```{r}
-initial_date = "2016-01-01"
-final_date = "2017-01-01"
-file_name= "xy plot"
-every = "month"
+```{r,warning=FALSE}
+initial_date = "2018-01-01"
+final_date = "2019-01-01"
+file_name= "None"
+every = "year"
 var1_name = "AQ_pm10"
 var2_name = "EM_nh3_sum"
 # you can change size to refer to a particular variable
@@ -117,11 +114,11 @@ xyplot <- xyPlot(initial_date,final_date,every,file_name,var1_name,var2_name,siz
 # Trend plots
 ## 1 station - multiple years
 
-```{r}
+```{r,warning=FALSE}
 chosen_station = 1
 initial_date = "2016-01-01"
 final_date = "2021-12-31"
-file_name = "station-years"
+file_name = "None"
 chosen_variable_name = "AQ_pm10"
 
 trendStationYear_plot = trendStationYear(chosen_station,initial_date,final_date,file_name,chosen_variable_name)
@@ -130,20 +127,17 @@ trendStationYear_plot = trendStationYear(chosen_station,initial_date,final_date,
 
 
 ## 1 year - multiple stations
-```{r}
+```{r,warning=FALSE}
 initial_date = "2016-01-01"
 final_date = "2016-12-31"
 chosen_stations = 1:4
-file_name = "year-stations"
+file_name = "None"
 chosen_variable_name = "AQ_pm10"
 
 trendYearStation_plot <- trendYearStation(initial_date,final_date,chosen_stations,file_name,chosen_variable_name)
 ```
 
 
-
-
-# TO DO LIST:
 
 
 

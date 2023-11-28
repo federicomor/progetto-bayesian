@@ -1,0 +1,59 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+source("include.R")
+```
+
+
+```{r}
+# colnames(df_agri)
+# load("../data/Cleaned_data.Rdata")
+stations = unique(df_agri$IDStations)
+nas = as.data.frame(matrix(nrow=2192,ncol=length(unique(stations))))
+for (j in 1:length(unique(stations)) ){
+	nas[,j] = df_stat[[stations[j]]]$AQ_pm10
+}
+nas = matrix(as.integer(!is.na(nas)),nrow = 2192,ncol=length(unique(stations)))
+rownames(nas)=1:nrow(nas)
+colnames(nas) = stations
+# head(nas)
+```
+
+
+```{r}
+# pdf("na_time_series.pdf",width=10,height=9)
+# png("na_time_series.png",width=800,height=800)
+heatmap(t(nas[,1:length(unique(stations))]),Colv=NA, Rowv=NA,col = c("white", "darkred"), scale='none',xlab="days",ylab="stations",
+		 margins = c(3, 3),main="NA time series (white are NAs) all data",
+		add.expr = abline(v=c(366,731,1096,1461,1827),col="black",lwd=2))
+text(x = 100, y = 100, labels = "2020", col = "orange", cex = 1.5)
+# dev.off()
+```
+
+
+```{r}
+png("na_time_series.png",width=600,height=600)
+heatmap(t(nas), Colv = NA, Rowv = NA, col = c("white", "darkred"), scale = 'none', xlab = "days", ylab = "stations",
+        margins = c(3, 3), main = "NA time series (white are NAs) all data",
+        add.expr = {
+        	abline(v = c(366, 731, 1096, 1461, 1827), col = "gray80", lwd = 2)
+        	pad=80
+			text(x=c(0,366, 731, 1096, 1461, 1827)+pad, y=96,
+				 cex=1.2,c("2016","2017","2018","2019","2020","2021"),col="gray80",font=2)
+        })
+dev.off()
+
+```
+
+
+```{r}
+heatmap(t(nas[,1:47]),Colv=NA, Rowv=NA,col = c("white", "darkred"), scale='none',xlab="days",ylab="stations",
+		 margins = c(3, 3),main="NA time series (white are NAs) zoom 1 of 3",cexRow=0.5)
+heatmap(t(nas[,48:94]),Colv=NA, Rowv=NA,col = c("white", "darkred"),scale='none',xlab="days",ylab="stations",
+		 margins = c(3, 3),main="NA time series (white are NAs) zoom 2 of 3",cexRow=0.5)
+heatmap(t(nas[,95:141]),Colv=NA, Rowv=NA,col = c("white", "darkred"), scale='none',xlab="days",ylab="stations",
+		margins = c(3, 4.8),main="NA time series (white are NAs) zoom 3 of 3",cexRow=0.5)
+```
