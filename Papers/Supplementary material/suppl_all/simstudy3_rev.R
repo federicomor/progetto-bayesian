@@ -9,7 +9,7 @@ args <- commandArgs(TRUE)
 # included in the drpm R package.  These fit the linearDDP
 # weighted DDP, and DP models.
 
-# args <- c(100, 4, 100, 5, 0.0, 0.5)
+args <- c(2, 4, 100, 5, 0.0, 0.5)
 
 ndata <- as.numeric(args[1])
 datatype <- as.numeric(args[2])
@@ -229,7 +229,8 @@ for(ii in 1:ndata){
   #             # m0, s20, A,            At,   Al,   at, bt, be
   modelPriors <- c(0, 100, 0.5*sd(Yvec), 100,  100,  1,  1,  1)
 
-  drpm1 <- drpm_fit(y=Ymat, global_alpha=FALSE,
+  drpm1 <- drpm_fit(y=Ymat, 
+  				  #global_alpha=FALSE,
                  alpha_0 = FALSE,
                  eta1_0 = TRUE,
                  phi1_0 = TRUE,
@@ -430,108 +431,108 @@ for(ii in 1:ndata){
 # Note that the "dir" is the directory where simulation output is stored.
 
   # This code organizes simulation output that was stored in the folder "simstudy3results"
-  dir <- "~/directory to folder where output is saved/simstudy3results/"
+   dir <- "simstudy3results"
 
-  files <- list.files(dir)
+   files <- list.files(dir)
 
 
-  ari.mat <- data.frame(corr=NULL, stdev=NULL, datatype=NULL, time=NULL, procedure=NULL, ari=NULL)
-  waic.mat <- data.frame(corr=NULL, stdev=NULL, datatype=NULL, time=NULL, procedure=NULL, waic=NULL)
-  lpml.mat <- data.frame(corr=NULL, stdev=NULL, datatype=NULL, time=NULL, procedure=NULL, waic=NULL)
-  prob.peg <- data.frame(corr=NULL, stdev=NULL, datatype=NULL, time=NULL, probpeg=NULL)
-  for(jj in 1:length(files)){
-    factors <- strsplit(files[jj], "\\_")[[1]][c(2,4,6,8)]
-    datatype <- as.numeric(factors[1])
-    corr <- as.numeric(factors[2])
-    stdev <- as.numeric(factors[3])
-    time <- as.numeric(factors[4])
-    metric <- strsplit(files[jj], "\\_|\\.")[[1]]
-    metric <- metric[length(metric) - 1]
+   ari.mat <- data.frame(corr=NULL, stdev=NULL, datatype=NULL, time=NULL, procedure=NULL, ari=NULL)
+   waic.mat <- data.frame(corr=NULL, stdev=NULL, datatype=NULL, time=NULL, procedure=NULL, waic=NULL)
+   lpml.mat <- data.frame(corr=NULL, stdev=NULL, datatype=NULL, time=NULL, procedure=NULL, waic=NULL)
+   prob.peg <- data.frame(corr=NULL, stdev=NULL, datatype=NULL, time=NULL, probpeg=NULL)
+   for(jj in 1:length(files)){
+      factors <- strsplit(files[jj], "\\_")[[1]][c(2,4,6,8)]
+      datatype <- as.numeric(factors[1])
+      corr <- as.numeric(factors[2])
+      stdev <- as.numeric(factors[3])
+      time <- as.numeric(factors[4])
+      metric <- strsplit(files[jj], "\\_|\\.")[[1]]
+      metric <- metric[length(metric) - 1]
 
-    tmp <- read.table(paste0(dir, files[jj]), header=TRUE)
+      tmp <- read.table(paste0(dir, files[jj]), header=TRUE)
 
-    nproc <- ncol(tmp)
-    ndata <- nrow(tmp)
-    if(metric == "ari"){
-      ari.mat <- rbind(ari.mat,
-                       data.frame(corr=rep(corr, nproc*ndata),
-                                  stdev = rep(stdev, nproc*ndata),
-                                  datatype = rep(datatype, nproc*ndata),
-                                  time = rep(time, nproc*ndata),
-                                  procedure = rep(colnames(tmp), each=ndata),
-                                  ari = c(unlist(tmp))))
-    }
-    if(metric == "waic"){
-      waic.mat <- rbind(waic.mat,
-                        data.frame(corr=rep(corr, nproc*ndata),
-                                   stdev = rep(stdev, nproc*ndata),
-                                   datatype = rep(datatype, nproc*ndata),
-                                   time = rep(time, nproc*ndata),
-                                   procedure = rep(colnames(tmp), each=ndata),
-                                   waic = c(unlist(tmp))))
+      nproc <- ncol(tmp)
+      ndata <- nrow(tmp)
+      if(metric == "ari"){
+         ari.mat <- rbind(ari.mat,
+                                   data.frame(corr=rep(corr, nproc*ndata),
+                                                   stdev = rep(stdev, nproc*ndata),
+                                                   datatype = rep(datatype, nproc*ndata),
+                                                   time = rep(time, nproc*ndata),
+                                                   procedure = rep(colnames(tmp), each=ndata),
+                                                   ari = c(unlist(tmp))))
+      }
+      if(metric == "waic"){
+         waic.mat <- rbind(waic.mat,
+                                    data.frame(corr=rep(corr, nproc*ndata),
+                                                     stdev = rep(stdev, nproc*ndata),
+                                                     datatype = rep(datatype, nproc*ndata),
+                                                     time = rep(time, nproc*ndata),
+                                                     procedure = rep(colnames(tmp), each=ndata),
+                                                     waic = c(unlist(tmp))))
 
-    }
-    if(metric == "lpml"){
-      lpml.mat <- rbind(lpml.mat,
-                        data.frame(corr=rep(corr, nproc*ndata),
-                                   stdev = rep(stdev, nproc*ndata),
-                                   datatype = rep(datatype, nproc*ndata),
-                                   time = rep(time, nproc*ndata),
-                                   procedure = rep(colnames(tmp), each=ndata),
-                                   waic = c(unlist(tmp))))
+      }
+      if(metric == "lpml"){
+         lpml.mat <- rbind(lpml.mat,
+                                    data.frame(corr=rep(corr, nproc*ndata),
+                                                     stdev = rep(stdev, nproc*ndata),
+                                                     datatype = rep(datatype, nproc*ndata),
+                                                     time = rep(time, nproc*ndata),
+                                                     procedure = rep(colnames(tmp), each=ndata),
+                                                     waic = c(unlist(tmp))))
 
-    }
-    if(metric == "probpeg"){
-      prob.peg <- rbind(prob.peg,
-                        data.frame(corr=rep(corr, ndata),
-                                  stdev = rep(stdev,ndata),
-                                  datatype = rep(datatype, nproc*ndata),
-                                  time = rep(time, nproc*ndata),
-                                  probpeg = tmp[,1]))
+      }
+      if(metric == "probpeg"){
+         prob.peg <- rbind(prob.peg,
+                                    data.frame(corr=rep(corr, ndata),
+                                                   stdev = rep(stdev,ndata),
+                                                   datatype = rep(datatype, nproc*ndata),
+                                                   time = rep(time, nproc*ndata),
+                                                   probpeg = tmp[,1]))
 
-    }
+      }
 
-  }
+   }
 
-  row.names(waic.mat) <- row.names(ari.mat) <- row.names(lpml.mat) <- row.names(prob.peg) <- NULL
-  waic.mat$procedure <- factor(waic.mat$procedure,
-                               levels = c("drpm", "indcrp", "longcrp", "lddp", "wddp", "gmddp"),
+   row.names(waic.mat) <- row.names(ari.mat) <- row.names(lpml.mat) <- row.names(prob.peg) <- NULL
+   waic.mat$procedure <- factor(waic.mat$procedure,
+                                               levels = c("drpm", "indcrp", "longcrp", "lddp", "wddp", "gmddp"),
                                labels = c("drpm", "ind_crp", "static_crp", "lddp", "wddp", "gmddp"))
-  waic.mat$time <- factor(waic.mat$time,
-                               levels = c("5", "10"),
+   waic.mat$time <- factor(waic.mat$time,
+                                               levels = c("5", "10"),
                                labels = c("T = 5", "T = 10"))
-  waic.mat$stdev <- factor(waic.mat$stdev,
-                               levels = c("0.5", "1"),
+   waic.mat$stdev <- factor(waic.mat$stdev,
+                                               levels = c("0.5", "1"),
                                labels = c("v = 0.5", "v = 1"))
-  lpml.mat$procedure <- factor(lpml.mat$procedure,
-                               levels = c("drpm", "indcrp", "longcrp", "lddp", "wddp", "gmddp"),
+   lpml.mat$procedure <- factor(lpml.mat$procedure,
+                                               levels = c("drpm", "indcrp", "longcrp", "lddp", "wddp", "gmddp"),
                                labels = c("drpm", "ind_crp", "static_crp", "lddp", "wddp", "gmddp"))
-  lpml.mat$time <- factor(lpml.mat$time,
-                               levels = c("5", "10"),
+   lpml.mat$time <- factor(lpml.mat$time,
+                                               levels = c("5", "10"),
                                labels = c("T = 5", "T = 10"))
-  lpml.mat$stdev <- factor(lpml.mat$stdev,
-                               levels = c("0.5", "1"),
+   lpml.mat$stdev <- factor(lpml.mat$stdev,
+                                               levels = c("0.5", "1"),
                                labels = c("v = 0.5", "v = 1"))
-  ari.mat$procedure <- factor(ari.mat$procedure,
-                               levels = c("drpm", "indcrp", "longcrp", "lddp", "wddp", "gmddp"),
+   ari.mat$procedure <- factor(ari.mat$procedure,
+                                               levels = c("drpm", "indcrp", "longcrp", "lddp", "wddp", "gmddp"),
                                labels = c("drpm", "ind_crp", "static_crp", "lddp", "wddp", "gmddp"))
-  ari.mat$time <- factor(ari.mat$time,
-                               levels = c("5", "10"),
+   ari.mat$time <- factor(ari.mat$time,
+                                               levels = c("5", "10"),
                                labels = c("T = 5", "T = 10"))
-  ari.mat$stdev <- factor(ari.mat$stdev,
-                               levels = c("0.5", "1"),
+   ari.mat$stdev <- factor(ari.mat$stdev,
+                                               levels = c("0.5", "1"),
                                labels = c("v = 0.5", "v = 1"))
   data_mn <- function(data){
     metric <- strsplit(deparse(substitute(data)), "\\.")[[1]][1]
-    data.mn <- aggregate(data[,6],
-                  list(as.factor(data$corr), data$stdev,
-                       as.factor(data$datatype), data$time,
-                       data$procedure),
-                median, na.rm=TRUE)
-    colnames(data.mn) <- c("corr","stdev","datatype","time","procedure",metric)
-    data.mn$corr <- as.numeric(as.character(data.mn$corr))
-    data.mn$datatype <- as.numeric(as.character(data.mn$datatype))
-    data.mn <- data.mn[data.mn$corr < 0.91,]
+     data.mn <- aggregate(data[,6],
+                          list(as.factor(data$corr), data$stdev,
+                                  as.factor(data$datatype), data$time,
+                                  data$procedure),
+                        median, na.rm=TRUE)
+     colnames(data.mn) <- c("corr","stdev","datatype","time","procedure",metric)
+     data.mn$corr <- as.numeric(as.character(data.mn$corr))
+     data.mn$datatype <- as.numeric(as.character(data.mn$datatype))
+     data.mn <- data.mn[data.mn$corr < 0.91,]
     data.mn
   }
 
@@ -540,11 +541,11 @@ for(ii in 1:ndata){
   ari.mn <- data_mn(ari.mat)
 
 
-  library(ggplot2)
+   library(ggplot2)
 
   # datatype 1
   # Figure S.2 in the supplementary material
-  gg.waic <- ggplot(data = waic.mn[waic.mn$datatype==1,], aes(x=as.numeric(corr), y=waic,col=procedure)) +
+   gg.waic <- ggplot(data = waic.mn[waic.mn$datatype==1,], aes(x=as.numeric(corr), y=waic,col=procedure)) +
                geom_line() +
                geom_point() +
                facet_grid(time ~ stdev,scales="free") + theme_bw() +
@@ -554,19 +555,19 @@ for(ii in 1:ndata){
 
   # datatype 2
   # Figure 4 in the main document
-  gg.waic <- ggplot(data = waic.mn[waic.mn$datatype==2,], aes(x=as.numeric(corr), y=waic,col=procedure)) +
-               geom_line() +
-               geom_point() +
-               facet_grid(time ~ stdev,scales="free") + theme_bw() +
-          	  xlab("auto-correlation used to generate data") + ylab("WAIC")
+   gg.waic <- ggplot(data = waic.mn[waic.mn$datatype==2,], aes(x=as.numeric(corr), y=waic,col=procedure)) +
+                       geom_line() +
+                       geom_point() +
+                       facet_grid(time ~ stdev,scales="free") + theme_bw() +
+               	   xlab("auto-correlation used to generate data") + ylab("WAIC")
 #  ggsave("simstudy_datatype2_waic2.pdf", height=6, width=6)
 
   # Figure 4 in the main document
-  gg.ari <- ggplot(data = ari.mn[ari.mn$datatype==2,], aes(x=as.numeric(corr), y=ari,col=procedure)) +
-               geom_line() +
-               geom_point() +
-               facet_grid(time ~ stdev,scales="free") + theme_bw() +
-          	  xlab("auto-correlation used to generate data") + ylab("Adjusted Rand Index")
+   gg.ari <- ggplot(data = ari.mn[ari.mn$datatype==2,], aes(x=as.numeric(corr), y=ari,col=procedure)) +
+                       geom_line() +
+                       geom_point() +
+                       facet_grid(time ~ stdev,scales="free") + theme_bw() +
+               	   xlab("auto-correlation used to generate data") + ylab("Adjusted Rand Index")
 #  ggsave("simstudy_datatype2_ari2.pdf", height=6, width=6)
 
 
@@ -574,34 +575,34 @@ for(ii in 1:ndata){
   # datatype 3
   # These next two plots were not included in the document 
   # as the results are essentially identical to datatype 2
-  gg.waic <- ggplot(data = waic.mn[waic.mn$datatype==3,], aes(x=as.numeric(corr), y=waic,col=procedure)) +
-               geom_line() +
-               geom_point() +
-               facet_grid(time ~ stdev,scales="free") + theme_bw() +
-          	  xlab("auto-correlation used to generate data") + ylab("WAIC")
+   gg.waic <- ggplot(data = waic.mn[waic.mn$datatype==3,], aes(x=as.numeric(corr), y=waic,col=procedure)) +
+                       geom_line() +
+                       geom_point() +
+                       facet_grid(time ~ stdev,scales="free") + theme_bw() +
+               	   xlab("auto-correlation used to generate data") + ylab("WAIC")
 #  ggsave("simstudy_datatype3_waic2.pdf", height=6, width=6)
 
-  gg.ari <- ggplot(data = ari.mn[ari.mn$datatype==3,], aes(x=as.numeric(corr), y=ari,col=procedure)) +
-               geom_line() +
-               geom_point() +
-               facet_grid(time ~ stdev,scales="free") + theme_bw() +
-          	  xlab("auto-correlation used to generate data") + ylab("Adjusted Rand Index")
+   gg.ari <- ggplot(data = ari.mn[ari.mn$datatype==3,], aes(x=as.numeric(corr), y=ari,col=procedure)) +
+                       geom_line() +
+                       geom_point() +
+                       facet_grid(time ~ stdev,scales="free") + theme_bw() +
+               	   xlab("auto-correlation used to generate data") + ylab("Adjusted Rand Index")
 #  ggsave("simstudy_datatype3_ari2.pdf", height=6, width=6)
 
 
   # datatype 4
   # Figure S.3 in the supplmentary material
-  gg.waic <- ggplot(data = waic.mat[waic.mat$datatype==4,], aes(x=procedure, y=waic)) +
-               geom_boxplot() +
-               facet_grid(time ~ stdev,scales="free") + theme_bw() + ylim(0, 4000) +
-          	  xlab("procedure") + ylab("WAIC")
+   gg.waic <- ggplot(data = waic.mat[waic.mat$datatype==4,], aes(x=procedure, y=waic)) +
+                       geom_boxplot() +
+                       facet_grid(time ~ stdev,scales="free") + theme_bw() + ylim(0, 4000) +
+               	   xlab("procedure") + ylab("WAIC")
 #  ggsave("simstudy_datatype4_waic2.pdf", height=6, width=8)
 
   # Figure S.4 in the supplmentary material
-  gg.ari <- ggplot(data = ari.mat[ari.mat$datatype==4,], aes(x=procedure, y=ari)) +
-               geom_boxplot() +
-               facet_grid(time ~ stdev,scales="free") + theme_bw() +
-          	  xlab("procedure") + ylab("Adjusted Rand Index")
+   gg.ari <- ggplot(data = ari.mat[ari.mat$datatype==4,], aes(x=procedure, y=ari)) +
+                       geom_boxplot() +
+                       facet_grid(time ~ stdev,scales="free") + theme_bw() +
+               	   xlab("procedure") + ylab("Adjusted Rand Index")
 #  ggsave("simstudy_datatype4_ari2.pdf", height=6, width=8)
 
 

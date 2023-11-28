@@ -7,7 +7,7 @@
 # To generate data from the independent cluster-specific parameters model
 # the rtpartition function created in Functions.R file
 
-setwd("JCGS_Codes")
+
 source("Functions.R")
 library(drpm)
 library(salso)
@@ -16,10 +16,10 @@ library(TeachingDemos)
 
 N <- 50; Tm<-5; M<-1;
 alpha <- c(0, 0.1, 0.25, 0.5, 0.75, 0.9, 0.9999)
+#alpha <- c(0.5)
 
-
-# simulation study with 100 data sets
-ndata <- 100
+# simulation study with 2 data sets
+ndata <- 2
 nalpha <- length(alpha)
 
 
@@ -60,7 +60,8 @@ for(jj in 1:nalpha){
     modelPriors <- c(0, 100, 5, 10,  10,  1,  1,  1)
 
     # Dependent CRP
-    out <- drpm_fit(y=y, global_alpha=TRUE,
+    out <- drpm_fit(y=y, 
+    				#global_alpha=TRUE,
                     alpha_0 = FALSE,
                     eta1_0 = TRUE,
                     phi1_0 = TRUE,
@@ -92,7 +93,8 @@ for(jj in 1:nalpha){
     out.alpha.cov[ii] <- prod(emp.hpd(out$alpha,0.95) - alpha[jj]) < 0
 
     # Indepdent CRP
-    out1 <- drpm_fit(y=y, global_alpha=TRUE,
+    out1 <- drpm_fit(y=y, 
+    				#global_alpha=TRUE,
                     alpha_0 = TRUE,
                     eta1_0 = TRUE,
                     phi1_0 = TRUE,
@@ -108,19 +110,19 @@ for(jj in 1:nalpha){
 #    save.image(paste("simstudy1fits/alpha_", alpha[jj], "_data_", ii,".RData",sep=""))
 
     write.table(round(out.rand,4),
-#      paste("simstudy1results/out.rand_", alpha[jj],".txt", sep=""), row.names=FALSE, col.names=FALSE)
+      paste("simstudy1results/out.rand_", alpha[jj],".txt", sep=""), row.names=FALSE, col.names=FALSE)
 
     write.table(round(out.mean.cov,4),
-#      paste("simstudy1results/out.mean.cov_", alpha[jj], ".txt",sep=""), row.names=FALSE, col.names=FALSE)
+      paste("simstudy1results/out.mean.cov_", alpha[jj], ".txt",sep=""), row.names=FALSE, col.names=FALSE)
 
     write.table(round(out.alpha.cov,4),
-#      paste("simstudy1results/out.alpha.cov_", alpha[jj], ".txt",sep=""), row.names=FALSE, col.names=FALSE)
+      paste("simstudy1results/out.alpha.cov_", alpha[jj], ".txt",sep=""), row.names=FALSE, col.names=FALSE)
 
     write.table(round(out.adjust.rand.first.last,4),
-#      paste("simstudy1results/out.rand.first.last_", alpha[jj], ".txt",sep=""), row.names=FALSE, col.names=FALSE)
+      paste("simstudy1results/out.rand.first.last_", alpha[jj], ".txt",sep=""), row.names=FALSE, col.names=FALSE)
 
     write.table(round(out.adjust.rand.cont,4),
-#      paste("simstudy1results/out.rand.cont_", alpha[jj], ".txt",sep=""), row.names=FALSE, col.names=FALSE)
+      paste("simstudy1results/out.rand.cont_", alpha[jj], ".txt",sep=""), row.names=FALSE, col.names=FALSE)
 	
   }
 
@@ -134,7 +136,7 @@ for(jj in 1:nalpha){
 # "simstudy1results" is provided with output from our run. 
 # setwd("simstudy1results")
 
-files <- list.files()
+files <- list.files("simstudy1results")
 
 out.mn <- list()
 out.sd <- list()
@@ -180,5 +182,6 @@ val <- c(out.dat[[28]][,1], out.dat[[22]][,1], out.dat[[23]][,1],
          out.dat[[24]][,1], out.dat[[25]][,1], out.dat[[26]][,1],
          out.dat[[27]][,1])
 grp <- rep(c(0,0.1,0.25,0.5,0.75,0.9,0.9999), each=100)
+x11()
 boxplot(val~grp, ylab="", xlab=expression(alpha))
 mtext(expression("Adjusted Rand Index between"~hat(rho)[1]~"and"~hat(rho)[2]), side=2, line=2.5)

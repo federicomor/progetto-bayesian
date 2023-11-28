@@ -108,19 +108,19 @@ for(jj in 1:nalpha){
 #    save.image(paste("simstudy1fits/alpha_", alpha[jj], "_data_", ii,".RData",sep=""))
 
     write.table(round(out.rand,4),
-#      paste("simstudy1results/out.rand_", alpha[jj],".txt", sep=""), row.names=FALSE, col.names=FALSE)
+      paste("simstudy1results/out.rand_", alpha[jj],".txt", sep=""), row.names=FALSE, col.names=FALSE)
 
     write.table(round(out.mean.cov,4),
-#      paste("simstudy1results/out.mean.cov_", alpha[jj], ".txt",sep=""), row.names=FALSE, col.names=FALSE)
+      paste("simstudy1results/out.mean.cov_", alpha[jj], ".txt",sep=""), row.names=FALSE, col.names=FALSE)
 
     write.table(round(out.alpha.cov,4),
-#      paste("simstudy1results/out.alpha.cov_", alpha[jj], ".txt",sep=""), row.names=FALSE, col.names=FALSE)
+      paste("simstudy1results/out.alpha.cov_", alpha[jj], ".txt",sep=""), row.names=FALSE, col.names=FALSE)
 
     write.table(round(out.adjust.rand.first.last,4),
-#      paste("simstudy1results/out.rand.first.last_", alpha[jj], ".txt",sep=""), row.names=FALSE, col.names=FALSE)
+      paste("simstudy1results/out.rand.first.last_", alpha[jj], ".txt",sep=""), row.names=FALSE, col.names=FALSE)
 
     write.table(round(out.adjust.rand.cont,4),
-#      paste("simstudy1results/out.rand.cont_", alpha[jj], ".txt",sep=""), row.names=FALSE, col.names=FALSE)
+      paste("simstudy1results/out.rand.cont_", alpha[jj], ".txt",sep=""), row.names=FALSE, col.names=FALSE)
 	
   }
 
