@@ -59,9 +59,13 @@ lerp_pm10_color <- function(val) {
 
 
 filter_date <- function(dataframe,initial_date,final_date,every){
+	if(every == ""){
+		date_time = as.Date(c(initial_date,final_date))
+	}else{
+		date_time = as.Date(seq.Date(from=as.Date(initial_date,DATE_FORMAT),
+									 to=as.Date(final_date,DATE_FORMAT),by=every))
+	}
 	
-	date_time = as.Date(seq.Date(from=as.Date(initial_date,DATE_FORMAT),
-								 to=as.Date(final_date,DATE_FORMAT),by=every))
 	filtered_dataset = dataframe[which(as.Date(dataframe$Time) %in% date_time),]
 	
 	return(list(filtered_dataset,length(date_time)))

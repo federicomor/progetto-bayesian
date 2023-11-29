@@ -5,6 +5,10 @@ title: "R Notebook"
 ```{r,warning=FALSE}
 source("include.R")
 source("plot functions/plot_data_and_libraries.R")
+```
+
+
+```{r,warning=FALSE}
 source("plot functions/plot_utilities.R")
 ```
 # update plot libraries
@@ -54,8 +58,9 @@ head(data_agc_lomb)
 # Grid map with chosen variable 
 ```{r,warning=FALSE}
 initial_date = "2016-01-01"
-final_date = "2017-01-01"
-every = "year"
+final_date = "2016-02-01"
+# if you leave every = "" it will display only initial and final
+every = "week"
 
 # if you change the file_name from None it will create a mp4 video
 file_name = "None"
