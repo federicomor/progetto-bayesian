@@ -12,11 +12,15 @@ end = len = lenght = length
 assert = stopifnot
 ln = log
 
+extrema = function(vec){
+	return(c(min(vec),max(vec)))
+}
+
 count_na = function(vec){
 	na_vals = sum(as.numeric(is.na(vec)))
 	return(na_vals)
 }
-na_count = count_na
+na_count = quanti_na = count_na
 
 ########################
 # loading procedure, with feedback
@@ -51,30 +55,28 @@ cat(crayon::italic("Usage example: df_agri$Time >= as.Date(\"2017-01-01\",DATE_F
 cat(crayon::italic("Actually also this works: df_agri$Time >= as.Date(\"2017-01-01\").\n\n"))
 
 
-df_stat = hash()
-stations = unique(df_agri$IDStations)
-for (st in stations){
-	df_stat[[st]] = df_agri[which(df_agri$IDStations == st),]
-	# dim(df_stat[[st]]) # == 2192) # make sure each df_stat has all his 2192 obs
+########################
+# df_stat split
+########################
+create_df_stat = function(df_data){
+	df_stat_ = hash()
+	if("IDStations" %in% colnames(df_data)){
+		stations_ = unique(df_data$IDStations)
+		for (st in stations_){
+			df_stat_[[st]] = df_data[which(df_data$IDStations == st),]
+		}
+		rm(st)
+		rm(stations_)
+		return(df_stat_)
+	}
+	else{
+		cat(crayon::red("Error: missing IDStations field in df.\n"))
+		return(NA)
+	}
 }
-rm(st)
-rm(stations)
-cat(crayon::cyan(h,"Created stations split dataset for df_agri. Available as"),crayon::red("df_stat.\n"))
-cat(crayon::italic("Use it as df_stat[[\"1264\"]] and it retrieves the dataset for station 1264.\n"))
 
-
-df_stat_2018 = hash()
-stations = unique(df_2018$IDStations)
-for (st in stations){
-	df_stat_2018[[st]] = df_2018[which(df_2018$IDStations == st),]
-	# dim(df_stat_2018[[st]]) # == 2192) # make sure each df_stat_2018 has all his 2192 obs
-}
-rm(st)
-rm(stations)
-cat(crayon::cyan(h,"Created stations split dataset for df_2018. Available as"),crayon::red("df_stat_2018.\n"))
-cat(crayon::italic("Use it as df_stat[[\"1264\"]] and it retrieves the dataset for station 1264.\n\n"))
-
-
+cat(crayon::cyan(h,"Created stations split function Available as"),crayon::red("create_df_stat(df).\n"))
+cat(crayon::italic("Use it as my_df_stat = create_df_stat(df_2018).\nThen for example my_df_stat[[\"1264\"]] retrieves the dataset for station 1264.\n"))
 
 ########################
 # function to get colors for plotting
@@ -106,7 +108,7 @@ cat(crayon::italic("Try for example colora(10,56,1).\n\n"))
 
 
 ########################
-# function to show the has content
+# function to show the hash content
 ########################
 # what_is <- new.env(hash = TRUE, parent = emptyenv(), size = NA)
 what_is = hash()

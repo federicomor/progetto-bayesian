@@ -145,7 +145,8 @@ character_cols = c("WE_mode_wind_direction_10m","WE_mode_wind_direction_100m")
 for (st in stations){
 	cat(crayon::blue("Station",st,"\n"))
 	df_st = df_2018[df_2018$IDStations==st,] # extract covariates for station st
-	cnames = colnames(df_st)[7:37]
+	cnames = colnames(df_st)[7:37] # lavora solo sulle colonne necessarie
+	# Time, IDStations, Latitude, Longitude, day, week, ecc sono già a posto
 	
 	for (col in cnames){
 		# cat(crayon::green(col,"... "))
@@ -176,8 +177,6 @@ for (st in stations){
 	}
 }
 na_summary(df_weekly)
-obs
-df_st_col
 ```
 
 
@@ -222,11 +221,17 @@ col = sample(cnames,1)
 title=paste("station",st,"- column",col)
 cols=colora(2,541,0)
 
-plot(df_2018[which(df_2018$IDStations==st),col],type="l",col=cols[1],main=title)
+plot(df_2018[which(df_2018$IDStations==st),col],type="l",col=cols[1],main=title,
+	 ylab="values",xlab="days/weeks")
 
 lines(rep(as.vector(df_weekly[which(df_weekly$IDStations==st),col])[[1]],each=7),
 	  xlim=c(0,365),col=cols[2])
+
+# not very interesting maybe this acf, just exploring some plots
+par(mar=c(4,4,3,2))
+acf(as.vector(df_weekly[which(df_weekly$IDStations==st),col])[[1]],main=title)
 ```
+
 
 
 
@@ -273,6 +278,7 @@ for (i in 1:dim(df_2018)[1]) {
 print(weekly_data_wind_direction_10_m)
 print(weekly_data_wind_direction_100_m)
 print(num_sett)
+
 ```
 
 ```{r}

@@ -68,6 +68,16 @@ y4 = rbind(y41,y42)
 
 y = cbind(y0,y1,y2,y3,y4)
 as.data.frame(y)
+
+cols = colora(size(y)[1],56,0)
+for(i in 1:size(y)[1]){
+	if(i==1){
+		plot(y[i,],col=cols[i],ylim=extrema(y),type="l")
+	}
+	else{
+		lines(y[i,],col=cols[i])
+	}
+}
 ```
 
 
@@ -92,6 +102,7 @@ drpm1 <- drpm_fit(y, # random data
          mh=c(0.5, 1, 0.1, 0.1, 0.1),
          verbose=TRUE,
          draws=1100,burn=100,thin=1)
+names(drpm1)
 ```
 ```{r}
 rho <- list()
