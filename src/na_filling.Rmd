@@ -315,6 +315,7 @@ Vedi file scelte.png per quali stazioni considerare.
 
 Qui riempiamo df_2018_week$MaialiEcc nelle stazioni mancanti con la media delle medie di quelle selezionate nel file scelte.png.
 
+
 O altrimenti controllare se il dataset df_AGC non ha NA in quelle colonne e in quelle location.
 ```{r}
 cat(crayon::italic("Loading AGC dataset, may took some time.\n"))
@@ -325,7 +326,119 @@ rm(parte1)
 rm(parte2)
 head(AGC_Dataset)
 ```
+Mancano le colonne LI_pigs_v2 e LI_bovine_v2
+But we miss v2 only for one station so we can use the mean on the other two (very close)
+And use the AGC dataset to select the mean for the three stations (no nas)
 
+```{r}
+#lat=df_weekly$Latitude[(which(df_weekly$IDStations=="STA-CH0011A"))][1]
+#pig_11A=AGC_Dataset$LI_pigs[(which(AGC_Dataset$Latitude=="STA-CH0011A"))]
+```
+We can't because latitude and long of not all stations
+AGC_Dataset only contains some (?)
+ -> Stick to plan A
+
+
+
+
+
+This to check where nas to know i'm using right station
+```{r}
+#st = "STA-CH0011A"
+st="STA-CH0033A"
+#st="STA-CH0043A"
+w = 33
+col = "LI_bovine"
+
+cat("### station",st,"\n")
+cat("### column",col,"\n")
+cat("### week",w,"\n\n")
+
+
+cat("original values\n")
+df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col]
+if(col=="LI_bovine_v2"){
+	table_freq = table(df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col])
+	names(table_freq)[which.max(table_freq)]
+}
+cat("computed mean\n")
+suppressWarnings({mean(df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col])})
+cat("df_weekly value\n")
+df_weekly[[intersect(which(df_weekly$IDStations==st),which(df_weekly$week==w)),col]]
+
+```
+
+Sistemare pig_v2 e bovine_v2
+```{r}
+pigv2_11A=(df_weekly$LI_pigs_v2[(which(df_weekly$IDStations=="STA-CH0011A"))])
+pigv2_43A=(df_weekly$LI_pigs_v2[(which(df_weekly$IDStations=="STA-CH0043A"))])
+
+df_weekly$LI_pigs_v2[(which(df_weekly$IDStations=="STA-CH0033A"))]=(pigv2_11A+pigv2_43A)/2
+
+
+bovv2_11A=(df_weekly$LI_bovine_v2[(which(df_weekly$IDStations=="STA-CH0011A"))])
+bovv2_43A=(df_weekly$LI_bovine_v2[(which(df_weekly$IDStations=="STA-CH0043A"))])
+
+df_weekly$LI_bovine_v2[(which(df_weekly$IDStations=="STA-CH0033A"))]=(bovv2_11A+bovv2_43A)/2
+
+```
+
+
+
+
+E ora pigs e bovine
+
+
+Grafico amatoriale molto brutto ma non riesco a mettere id station su quello con la cartina della lombardia
+quindi uso questo per vedere le stazioni scelte o almeno ci provo
+zoom sulla parte che mi interessa
+```{r}
+sub=distinct(df_weekly[,2:4],df_weekly$IDStations,.keep_all=TRUE)
+plot(sub$Longitude,sub$Latitude,xlab="lon",ylab="lat", asp=1, xlim=c(8.5,9.5), ylim=c(45.5,46.5))
+text(sub$Longitude,sub$Latitude,sub$IDStations, cex=0.7)
+points(sub$Longitude[(which(sub$IDStations=="STA-CH0011A"))],sub$Latitude[(which(sub$IDStations=="STA-CH0011A"))],col='red')
+points(sub$Longitude[(which(sub$IDStations=="STA-CH0033A"))],sub$Latitude[(which(sub$IDStations=="STA-CH0033A"))],col='red')
+points(sub$Longitude[(which(sub$IDStations=="STA-CH0043A"))],sub$Latitude[(which(sub$IDStations=="STA-CH0043A"))],col='red')
+
+```
+Vedo STA.IT1510A,560,561,572
+
+
+
+
+```{r}
+pig_1=(df_weekly$LI_pigs[(which(df_weekly$IDStations=="STA.IT1510A"))])
+pig_2=(df_weekly$LI_pigs[(which(df_weekly$IDStations=="560"))])
+pig_3=(df_weekly$LI_pigs[(which(df_weekly$IDStations=="561"))])
+pig_4=(df_weekly$LI_pigs[(which(df_weekly$IDStations=="572"))])
+
+pig=(pig_1+pig_2+pig_3+pig_4)/4
+df_weekly$LI_pigs[(which(df_weekly$IDStations=="STA-CH0011A"))]=pig
+df_weekly$LI_pigs[(which(df_weekly$IDStations=="STA-CH0033A"))]=pig
+df_weekly$LI_pigs[(which(df_weekly$IDStations=="STA-CH0043A"))]=pig
+
+
+bov_1=(df_weekly$LI_bovine[(which(df_weekly$IDStations=="STA.IT1510A"))])
+bov_2=(df_weekly$LI_bovine[(which(df_weekly$IDStations=="560"))])
+bov_3=(df_weekly$LI_bovine[(which(df_weekly$IDStations=="561"))])
+bov_4=(df_weekly$LI_bovine[(which(df_weekly$IDStations=="572"))])
+
+bov=(bov_1+bov_2+bov_3+bov_4)/4
+df_weekly$LI_bovine[(which(df_weekly$IDStations=="STA-CH0011A"))]=bov
+df_weekly$LI_bovine[(which(df_weekly$IDStations=="STA-CH0033A"))]=bov
+df_weekly$LI_bovine[(which(df_weekly$IDStations=="STA-CH0043A"))]=bov
+
+```
+
+
+
+
+
+Check no more nas
+```{r}
+na_summary(df_weekly)
+```
+Sembra tutto a posto
 
 
 
