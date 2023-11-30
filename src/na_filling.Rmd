@@ -386,8 +386,8 @@ df_weekly$LI_bovine_v2[(which(df_weekly$IDStations=="STA-CH0033A"))]=(bovv2_11A+
 
 
 
-E ora pigs e bovine
 
+E ora pigs e bovine
 
 Grafico amatoriale molto brutto ma non riesco a mettere id station su quello con la cartina della lombardia
 quindi uso questo per vedere le stazioni scelte o almeno ci provo
@@ -440,5 +440,11 @@ na_summary(df_weekly)
 ```
 Sembra tutto a posto
 
+
+
+
+```{r}
+saveRDS(df_weekly,"../data/df_weekly.Rdata")
+```
 
 
