@@ -60,7 +60,7 @@ head(data_agc_lomb)
 initial_date = "2016-01-01"
 final_date = "2016-02-01"
 # if you leave every = "" it will display only initial and final
-every = "week"
+every = ""
 
 # if you change the file_name from None it will create a mp4 video
 file_name = "None"

@@ -2,9 +2,9 @@
 title: "R Notebook"
 output: html_notebook
 ---
+install.packages("ppmSuite")
 
 ```{r}
-install.packages("ppmSuite")
 library(ppmSuite)
 ```
 
@@ -20,8 +20,8 @@ head(ppmSuite::bear)
 
 
 https://www.tandfonline.com/doi/suppl/10.1080/10618600.2021.1987255?scroll=top
-```{r}
 devtools::install_github("https://github.com/gpage2990/drpm.git")
+```{r}
 library(drpm)
 library(salso)
 ```
@@ -84,7 +84,7 @@ for(i in 1:size(y)[1]){
 ```{r}
 drpm1 <- drpm_fit(y, # random data
 		 # 10 stations for 4 time instants
-         s_coords=as.matrix(sites),
+         #s_coords=as.matrix(sites),
          M=1,
          initial_partition = NULL,
          starting_alpha = 0.5,
@@ -106,8 +106,10 @@ names(drpm1)
 ```
 ```{r}
 rho <- list()
-for(k in 1:5){
-	rho[[k]] <- salso(t(drpm1$Si[k,,]), loss="binder")
+for(t in 1:5){
+	rho[[t]] <- salso(t(drpm1$Si[t,,]),
+					  #structure="clustering",
+					  loss="binder")
 }
 rho
 ```
