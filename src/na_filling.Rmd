@@ -444,7 +444,7 @@ Sembra tutto a posto
 
 
 ```{r}
-saveRDS(df_weekly,"../data/df_weekly.Rdata")
+save(df_weekly, file= "df_weekly.RData")
 ```
 
 
