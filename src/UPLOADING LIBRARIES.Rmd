@@ -122,11 +122,11 @@ drpm1 <- drpm_fit(y[,2:54],
          initial_partition = NULL,
          starting_alpha = 0.5,
          unit_specific_alpha = FALSE,
-         time_specific_alpha = FALSE,
+         time_specific_alpha = TRUE,
          alpha_0=FALSE,
          eta1_0=FALSE,
          phi1_0=FALSE,
-         modelPriors=c(0,100^2,1,1,1,1),
+         modelPriors=c(40,100^2,1,1,1,1),
          alphaPriors=rbind(c(1,1)),
          simpleModel = 0,
          theta_tau2 = c(0, 2),
@@ -139,7 +139,7 @@ names(drpm1)
 ```
 ```{r}
 rho <- list()
-for(t in 1:5){
+for(t in 1:size(y[,2:54])[2]){
 	rho[[t]] <- salso(t(drpm1$Si[t,,]),
 					  #structure="clustering",
 					  loss="binder")
