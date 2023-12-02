@@ -82,9 +82,42 @@ for(i in 1:size(y)[1]){
 
 
 ```{r}
-drpm1 <- drpm_fit(y, # random data
-		 # 10 stations for 4 time instants
-         #s_coords=as.matrix(sites),
+load('df_weekly.RData')
+```
+
+
+```{r}
+stations = unique(df_weekly$IDStations)
+
+y=data.frame()
+
+for(st in stations){
+  y_we_pm10=cbind(as.data.frame(st),t(df_weekly[which(df_weekly$IDStations==st),7]))
+  y=rbind(y,y_we_pm10)
+}
+rownames(y)<-NULL
+```
+
+
+
+
+```{r}
+yred=y[,2:54]
+cols = colora(size(yred)[1],56,0)
+for(i in 1:size(yred)[1]){
+   if(i==1){
+     plot(1:size(yred)[2],yred[i,],col=cols[i],ylim=extrema(yred),type='l',xlab='weeks',ylab='pm10')
+ 	  } 
+	  else{
+		  lines(1:size(yred)[2],yred[i,],col=cols[i])
+	  }
+}
+```
+
+
+
+```{r}
+drpm1 <- drpm_fit(y[,2:54], 
          M=1,
          initial_partition = NULL,
          starting_alpha = 0.5,
