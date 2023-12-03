@@ -8,7 +8,7 @@ install.packages("ppmSuite")
 library(ppmSuite)
 ```
 
-# Test ppmSuite installation
+# Test ppmSuite
 ```{r}
 head(ppmSuite::bear)
 # it's a dataset of ppmSuite
@@ -18,15 +18,13 @@ head(ppmSuite::bear)
 
 
 
-
+# Test drpm
 https://www.tandfonline.com/doi/suppl/10.1080/10618600.2021.1987255?scroll=top
 devtools::install_github("https://github.com/gpage2990/drpm.git")
 ```{r}
 library(drpm)
 library(salso)
 ```
-
-# Test drpm installation
 ```{r}
 # preparation
 source("include.R") # for having df_agri
@@ -38,21 +36,23 @@ sites = data.frame(
 # unique(df_agri[,c("Longitude","Latitude")])[1:10,] == sites[1:10,]
 ```
 
-Again if there is some output it means that the installation went well :)
 
-# simulated data
+# Step 1
+## on simulated data
 ```{r}
 # begin all in the same cluster
 y01=matrix(data=rnorm(5,0,1),nrow = 5,ncol = 1)
 y02=matrix(data=rnorm(5,0,1),nrow = 5,ncol = 1)
 y0 = rbind(y01,y02)
+
 # half in cluster 0, half in cluster 1
 y11=matrix(data=rnorm(5,0,1),nrow = 5,ncol = 1)
-y12=matrix(data=rnorm(5,10,1),nrow = 5,ncol = 1)
+# cambiato da 10 a 50 così i cluster sono più separati
+y12=matrix(data=rnorm(5,50,1),nrow = 5,ncol = 1)
 y1 = rbind(y11,y12)
 
 # at time 2 they switch clusters
-y21=matrix(data=rnorm(5,10,1),nrow = 5,ncol = 1)
+y21=matrix(data=rnorm(5,50,1),nrow = 5,ncol = 1)
 y22=matrix(data=rnorm(5,0,1),nrow = 5,ncol = 1)
 y2 = rbind(y21,y22)
 
@@ -63,11 +63,12 @@ y3 = rbind(y31,y32)
 
 # at time 4 they return to the clusters at 1
 y41=matrix(data=rnorm(5,0,1),nrow = 5,ncol = 1)
-y42=matrix(data=rnorm(5,10,1),nrow = 5,ncol = 1)
+y42=matrix(data=rnorm(5,50,1),nrow = 5,ncol = 1)
 y4 = rbind(y41,y42)
 
 y = cbind(y0,y1,y2,y3,y4)
 as.data.frame(y)
+
 
 cols = colora(size(y)[1],56,0)
 for(i in 1:size(y)[1]){
@@ -78,13 +79,158 @@ for(i in 1:size(y)[1]){
 		lines(y[i,],col=cols[i])
 	}
 }
+abline(h=c(0,50,100),col=cols[1])
+text(4,0,"CL1")
+text(4,50,"CL2")
+text(4,100,"CL3")
+```
+```{r}
+fit_sim <- drpm_fit(y,
+		s_coords = NULL, # per ora cerchiamo solo di capire i cluster, senza spatial effect
+		M=1,
+		initial_partition = NULL,
+		starting_alpha = 0.5,
+		unit_specific_alpha = FALSE,
+		time_specific_alpha = TRUE,
+		alpha_0=FALSE,
+		eta1_0=FALSE,
+		phi1_0=FALSE,
+		modelPriors=c(40,100^2,1,1,1,1),
+		alphaPriors=rbind(c(1,1)),
+		simpleModel = 0,
+		theta_tau2 = c(0, 2),
+		SpatialCohesion=4,
+		cParms=c(0, 1, 2, 1),
+		mh=c(0.5, 1, 0.1, 0.1, 0.1),
+		verbose=TRUE,
+		draws=1100,burn=100,thin=1)
+```
+
+## understand salso
+```{r}
+names(fit_sim)
+size(fit_sim$Si)
+# ?salso
+```
+
+Salso wants
+- as x a B*n matrix, where B stands for the MCMC iterates, and the n cols stands for the cluster assigned to the units (in that MCMC iterate).
+So there is no time account here, in salso (while there was in the model). So maybe we just have to extract the best partition at each time. Le partizioni di salso non dipendono dal tempo, ma quelle generate da drpm_fit sì, quindi non è che il tempo "scompare", resta presente nell'input che diamo a salso.
+
+For example here we get, for time instant 1, the 1000 simulated values for the clustering of our 10 units.
+Indeed they all started at the same level so makes sense they are in cluster 1 all.
+
+```{r}
+cat("Requested size by salso: ")
+size(t(fit_sim$Si[1,,]))
+
+for(time in 1:5){
+	cat("\nTime",time,"\n")
+	if(time==1) cat("all the same cluster\n")
+	if(time==2) cat("two clusters separated\n")
+	if(time==3) cat("again two clusters separated, but the cluster index does not change, as indeed the observations dont mix, they follow different paths.\nCioè quelle che prima erano alte ora scendono, ma non per questo il loro cluster number deve cambiare.\nPrima erano cluster 2 e ora rimangano cluster 2 anche sono \"in basso\".\n")
+	if(time==4) cat("all the same cluster\n")
+	if(time==5) cat("again two clusters\n")
+	
+print(t(fit_sim$Si[time,,])[1:10,])
+}
+```
+
+## get final best partitions
+```{r}
+cat("We had units from 1 to 10.\n")
+for (time in 1:5){
+	cat("\nBest partition at time",time,"is\n")
+	salso_out = suppressWarnings({
+		salso( x =t(fit_sim$Si[time,,]), loss = "binder")
+	})
+	cat(salso_out)
+}
+```
+
+
+Steps to follow maybe, just ideas
+
+# Step 1.5
+## on simulated mixing data
+as the example of step 1 but with interlacing data, like this:
+```{r}
+sigma2 = 0.2
+y0 = c(0,0,0,0)+rnorm(4,0,sigma2)   # all same cluster 
+y1 = c(4,-2,-2,4)+rnorm(4,0,sigma2) # cluster 1&4, 2&3
+y2 = c(4,4,-2,-2)+rnorm(4,0,sigma2) # cluster 1&2, 3&4
+y3 = c(-2,6,6,6)+rnorm(4,0,sigma2)  # cluster 1, 2&3&4
+
+y = cbind(y0,y1,y2,y3)
+
+cols = colora(size(y)[1],56,0)
+for(i in 1:size(y)[1]){
+	if(i==1){
+		plot(y[i,],col=cols[i],ylim=extrema(y),type="l")
+	}
+	else{
+		lines(y[i,],col=cols[i])
+	}
+}
+legend("topleft",c("obs1","obs2","obs3","obs4"),fill=cols)
 ```
 
 
 ```{r}
-load('df_weekly.RData')
+# 1 point 5, the step
+fit_sim_1p5 <- drpm_fit(y,
+		s_coords = NULL, # per ora cerchiamo solo di capire i cluster, senza spatial effect
+		M=1,
+		initial_partition = NULL,
+		starting_alpha = 0.5,
+		unit_specific_alpha = FALSE,
+		time_specific_alpha = TRUE,
+		alpha_0=FALSE,
+		eta1_0=FALSE,
+		phi1_0=FALSE,
+		modelPriors=c(40,100^2,1,1,1,1),
+		alphaPriors=rbind(c(1,1)),
+		simpleModel = 0,
+		theta_tau2 = c(0, 2),
+		SpatialCohesion=4,
+		cParms=c(0, 1, 2, 1),
+		mh=c(0.5, 1, 0.1, 0.1, 0.1),
+		verbose=TRUE,
+		draws=1100,burn=100,thin=1)
 ```
 
+```{r}
+cat("We had units from 1 to 4.\n")
+for (time in 1:size(y)[1]){
+	cat("\nBest partition at time",time,"is\n")
+	salso_out = suppressWarnings({
+		salso( x =t(fit_sim_1p5$Si[time,,]), loss = "binder")
+	})
+	cat(salso_out)
+	if(time == 1) cat(" (all same cluster)")
+	if(time == 2) cat(" (cluster 1&4, 2&3)")
+	if(time == 3) cat(" (cluster 1&2, 3&4)")
+	if(time == 4) cat(" (cluster 1, 2&3&4)")
+}
+```
+
+
+
+
+# Step 2
+## on simulated spatial data
+
+
+
+
+
+
+
+
+
+# Step 3 (?)
+## on df_weekly
+df_weekly già caricato da include.R
 
 ```{r}
 stations = unique(df_weekly$IDStations)
@@ -97,6 +243,11 @@ for(st in stations){
 }
 rownames(y)<-NULL
 ```
+
+```{r}
+y
+```
+
 
 
 
@@ -135,8 +286,24 @@ drpm1 <- drpm_fit(y[,2:54],
          mh=c(0.5, 1, 0.1, 0.1, 0.1),
          verbose=TRUE,
          draws=1100,burn=100,thin=1)
+```
+
+
+```{r}
 names(drpm1)
 ```
+
+
+```{r}
+size(drpm1$Si)
+# questa cos ha le simulazioni dei cluster assegnati
+# ha dimensione 53 righe, 105 colonne, 1000 volte, perché
+# - per ognuna delle 1000 iterazioni delle MCMC
+# - dà i cluster assegnati dalla simulazione per le stazioni in quella simulazione
+
+drpm1$Si
+```
+
 ```{r}
 rho <- list()
 for(t in 1:size(y[,2:54])[2]){
