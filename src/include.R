@@ -104,6 +104,7 @@ fun_colori = function(len=2, seed=33, show=1){
 		par(mar=rep(2,4))
 		image(dati_, col = col.ramp_, axes = FALSE)
 		title(main=paste("palette",seed,"of",len,"colors"))
+		# title(main=paste("palette",seed))
 	}
 	return(col.ramp_)
 	

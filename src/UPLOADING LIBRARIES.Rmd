@@ -1,6 +1,6 @@
 ---
 title: "R Notebook"
-output: html_notebook
+output: html_document
 ---
 
 install.packages("ppmSuite")
@@ -250,10 +250,8 @@ for(st in stations){
   y=rbind(y,y_we_pm10)
 }
 
+rownames(y) = NULL
 colnames(y)<- c("id",paste0("w", 1:53))
-```
-
-```{r}
 y
 ```
 
@@ -307,19 +305,25 @@ size(drpm1$Si)
 
 ```
 
-# check cluster division
+## study cluster division
 check morale di cosa intende quella divisione.
 
 ```{r}
 time = 1
 salso_out <- salso(t(drpm1$Si[time,,]),loss="binder")
 length(salso_out) # 105 valori, i cluster assegnati alle 105 obs
-salso_out
+summary(salso_out)
 ```
 
+
 ```{r}
-# for(time in 1:5){
-time = 1
+plot(summary(salso_out)$dendrogram) # boh
+```
+
+Sembra ci siano molti cluster piccoli, quindi forse occorre capire le prior/i parametri di drpm_fit per aggiustare questo fenomeno.
+```{r}
+# time = 1
+for(time in 1:10){
 
 salso_out <- salso(t(drpm1$Si[time,,]),loss="binder")
 	
@@ -331,6 +335,7 @@ for (cl in 1:n_clusters){
 }
 # ci sta, sembrano abbastanza diverse
 
+# ora creiamo un dataset che ha (105 righe e) due colonne: i valori di pm10, e il cluster assegnato
 clust_vals = list()
 for(cl in 1:n_clusters){
 	clust_vals[[cl]] <- data.frame(values = y$w1[which(salso_out==cl)])
@@ -342,21 +347,73 @@ for(cl in 2:n_clusters){
 	valori = rbind(valori, clust_vals[[cl]])
 }
 
+# per ora stiamo lavorando sui valori del dataset,
+# ma dobbiamo ricordarci che li dobbiamo log-trasformare in realtà
+
+# p = ggplot(valori, aes(log(values), fill = cluster)) +
 p = ggplot(valori, aes(values, fill = cluster)) +
 	# scale_color_discrete(name = "cluster")+
 	# scale_fill_brewer(type="div",palette=4)+
-	scale_fill_manual(values = colora(n_clusters,98,0),name="cl")+
+	scale_fill_manual(values = colora(n_clusters,77,0),name="Cluster")+
 	geom_density(alpha = 0.4)+
 	ggtitle(paste("Time",time))+
-	# xlim(extrema(valori$values))+
-	xlim(0,70)+
+	xlim(extrema(valori$values)+c(-10,10))+
 	theme_classic()
 print(p)
-# }
+
+} # end for(time in eccc)
+```
+
+
+## simple evolution plot
+```{r}
+source("plot functions/plot_data_and_libraries.R")
+source("plot functions/plot_utilities.R")
+source("plot functions/plot_functions_2.R")
+```
+
+```{r}
+for(time in 1:10){
+
+salso_out <- salso(t(drpm1$Si[time,,]),loss="binder")
+	
+n_clusters = max(salso_out)
+
+# ora creiamo un dataset che ha (105 righe e) due colonne: i valori di pm10, e il cluster assegnato
+clust_vals = list()
+for(cl in 1:n_clusters){
+	clust_vals[[cl]] <- data.frame(values = y$w1[which(salso_out==cl)])
+	clust_vals[[cl]]$cluster = as.factor(cl)
+}
+
+valori = clust_vals[[1]] 
+for(cl in 2:n_clusters){
+	valori = rbind(valori, clust_vals[[cl]])
+}
+
+
+df_temp = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	values = valori$values,
+	clusters = valori$cluster
+)
+
+# forse ci sta aggiungere un parametro a stationPlot, tipo (silent=TRUE)
+# per scegliere se fargli stampare la mappa migliorata o se solo ritornarla
+p = stationPlotgg <- stationPlot() +
+	# geom_point(data =df_temp, aes(x=Longitude,y=Latitude),
+	# 			   size=df_temp$values/10,
+	# 			   color = df_temp$clusters, alpha=0.6)
+	geom_point(data = df_temp, aes(x = Longitude, y = Latitude, color = factor(clusters)), size = 3)
+print(p)
+}
 ```
 
 
 
+
+## old code
 ```{r}
 rho <- list()
 for(t in 1:size(y[,2:54])[2]){
@@ -367,9 +424,6 @@ for(t in 1:size(y[,2:54])[2]){
 rho
 ```
 
-```{r}
-names(drpm1)
-```
 
 
 
