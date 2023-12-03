@@ -76,7 +76,7 @@ filter_date <- function(dataframe,initial_date,final_date,every){
 animator <- function(file_name,plotgg, df,len_time,w,h,shadow=FALSE){
 	if (file_name == "None"){
 		plotgg <- plotgg +facet_wrap(~Time)
-		print(plotgg)
+		#print(plotgg)
 	} else {
 		mappa_animata <- plotgg +  
 			ggtitle(df$Time) +
@@ -111,7 +111,7 @@ trend_animator <- function(file_name,plotgg, time,len_time){
 				  res = 200, type = "cairo")
 		
 	}
-	print(plotgg)
+	#print(plotgg)
 	return(plotgg)
 	
 	
