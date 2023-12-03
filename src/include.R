@@ -29,11 +29,14 @@ library(crayon)
 library(hash)
 
 h="❤"
-load("../data/df_agri.Rdata")
-df_agri_full = df_agri
-rm(df_agri)
-cat(crayon::cyan(h,"Loaded agrimonia dataset. Available as"),crayon::red("df_agri_full.\n"))
-cat(crayon::italic("Consider to remove it with rm(df_agri_full).\n"))
+# load("../data/df_agri.Rdata")
+# df_agri_full = df_agri
+# rm(df_agri)
+cat(crayon::strikethrough(
+	crayon::cyan(h,"Loaded agrimonia dataset. Available as"),
+	crayon::red("df_agri_full.\n")))
+# cat(crayon::italic("Consider to remove it with rm(df_agri_full).\n"))
+cat(crayon::italic("Removed it as useless now.\n\n"))
 
 
 load("../data/Cleaned_data.Rdata")
@@ -53,6 +56,10 @@ DATE_FORMAT = "%Y-%m-%d"
 cat(crayon::italic("Created DATE_FORMAT = \"%Y-%m-%d\" variable for date comparisons.\n"))
 cat(crayon::italic("Usage example: df_agri$Time >= as.Date(\"2017-01-01\",DATE_FORMAT).\n"))
 cat(crayon::italic("Actually also this works: df_agri$Time >= as.Date(\"2017-01-01\").\n\n"))
+
+load("../data/df_weekly.Rdata")
+cat(crayon::cyan(h,"Loaded weekly divided dataset. Available as"),crayon::red("df_weekly.\n\n"))
+
 
 
 ########################
