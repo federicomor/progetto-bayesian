@@ -3,6 +3,8 @@
 ## "source("include.R")
 ####################################
 
+# morally always needed
+library(ggplot2)
 
 ########################
 # useful aliases

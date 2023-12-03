@@ -2,8 +2,8 @@
 title: "R Notebook"
 output: html_notebook
 ---
-install.packages("ppmSuite")
 
+install.packages("ppmSuite")
 ```{r}
 library(ppmSuite)
 ```
@@ -215,12 +215,16 @@ for (time in 1:size(y)[1]){
 ```
 
 
+```{r}
+summary(salso_out)
+```
+
+
 
 
 # Step 2
 ## on simulated spatial data
-
-
+o forse no passiamo direttamente allo step 3.
 
 
 
@@ -237,19 +241,21 @@ stations = unique(df_weekly$IDStations)
 
 y=data.frame()
 
+sites = data.frame(
+	longitude = unique(df_weekly$Longitude), 
+	latitude = unique(df_weekly$Latitude))
+
 for(st in stations){
   y_we_pm10=cbind(as.data.frame(st),t(df_weekly[which(df_weekly$IDStations==st),7]))
   y=rbind(y,y_we_pm10)
 }
-rownames(y)<-NULL
+
+colnames(y)<- c("id",paste0("w", 1:53))
 ```
 
 ```{r}
 y
 ```
-
-
-
 
 
 ```{r}
@@ -264,9 +270,7 @@ for(i in 1:size(yred)[1]){
 	  }
 }
 ```
-
-
-
+## fit
 ```{r}
 drpm1 <- drpm_fit(y[,2:54], 
          M=1,
@@ -301,8 +305,57 @@ size(drpm1$Si)
 # - per ognuna delle 1000 iterazioni delle MCMC
 # - dà i cluster assegnati dalla simulazione per le stazioni in quella simulazione
 
-drpm1$Si
 ```
+
+# check cluster division
+check morale di cosa intende quella divisione.
+
+```{r}
+time = 1
+salso_out <- salso(t(drpm1$Si[time,,]),loss="binder")
+length(salso_out) # 105 valori, i cluster assegnati alle 105 obs
+salso_out
+```
+
+```{r}
+# for(time in 1:5){
+time = 1
+
+salso_out <- salso(t(drpm1$Si[time,,]),loss="binder")
+	
+n_clusters = max(salso_out)
+cat(crayon::cyan("Time",time,"\n"))
+for (cl in 1:n_clusters){
+	cat("Cluster",cl,"- size",length(y$w1[which(salso_out==cl)]),
+		"- mean",mean(y$w1[which(salso_out==cl)]),"\n")
+}
+# ci sta, sembrano abbastanza diverse
+
+clust_vals = list()
+for(cl in 1:n_clusters){
+	clust_vals[[cl]] <- data.frame(values = y$w1[which(salso_out==cl)])
+	clust_vals[[cl]]$cluster = as.factor(cl)
+}
+
+valori = clust_vals[[1]] 
+for(cl in 2:n_clusters){
+	valori = rbind(valori, clust_vals[[cl]])
+}
+
+p = ggplot(valori, aes(values, fill = cluster)) +
+	# scale_color_discrete(name = "cluster")+
+	# scale_fill_brewer(type="div",palette=4)+
+	scale_fill_manual(values = colora(n_clusters,98,0),name="cl")+
+	geom_density(alpha = 0.4)+
+	ggtitle(paste("Time",time))+
+	# xlim(extrema(valori$values))+
+	xlim(0,70)+
+	theme_classic()
+print(p)
+# }
+```
+
+
 
 ```{r}
 rho <- list()
