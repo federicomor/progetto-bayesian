@@ -232,63 +232,9 @@ o forse no passiamo direttamente allo step 3.
 
 
 
-# Step 3 (?)
-## on df_weekly
-df_weekly già caricato da include.R
-
-```{r}
-stations = unique(df_weekly$IDStations)
-
-y=data.frame()
-
-sites = data.frame(
-	longitude = unique(df_weekly$Longitude), 
-	latitude = unique(df_weekly$Latitude))
-
-for(st in stations){
-  y_we_pm10=cbind(as.data.frame(st),t(df_weekly[which(df_weekly$IDStations==st),7]))
-  y=rbind(y,y_we_pm10)
-}
-
-rownames(y) = NULL
-colnames(y)<- c("id",paste0("w", 1:53))
-y
-```
 
 
-```{r}
-yred=y[,2:54]
-cols = colora(size(yred)[1],56,0)
-for(i in 1:size(yred)[1]){
-   if(i==1){
-     plot(1:size(yred)[2],yred[i,],col=cols[i],ylim=extrema(yred),type='l',xlab='weeks',ylab='pm10')
- 	  } 
-	  else{
-		  lines(1:size(yred)[2],yred[i,],col=cols[i])
-	  }
-}
-```
-## fit
-```{r}
-drpm1 <- drpm_fit(y[,2:54], 
-         M=1,
-         initial_partition = NULL,
-         starting_alpha = 0.5,
-         unit_specific_alpha = FALSE,
-         time_specific_alpha = TRUE,
-         alpha_0=FALSE,
-         eta1_0=FALSE,
-         phi1_0=FALSE,
-         modelPriors=c(40,100^2,1,1,1,1),
-         alphaPriors=rbind(c(1,1)),
-         simpleModel = 0,
-         theta_tau2 = c(0, 2),
-         SpatialCohesion=4,
-         cParms=c(0, 1, 2, 1),
-         mh=c(0.5, 1, 0.1, 0.1, 0.1),
-         verbose=TRUE,
-         draws=1100,burn=100,thin=1)
-```
+
 
 
 ```{r}
@@ -296,133 +242,19 @@ names(drpm1)
 ```
 
 
-```{r}
-size(drpm1$Si)
-# questa cos ha le simulazioni dei cluster assegnati
-# ha dimensione 53 righe, 105 colonne, 1000 volte, perché
-# - per ognuna delle 1000 iterazioni delle MCMC
-# - dà i cluster assegnati dalla simulazione per le stazioni in quella simulazione
-
-```
-
-## study cluster division
-check morale di cosa intende quella divisione.
-
-```{r}
-time = 1
-salso_out <- salso(t(drpm1$Si[time,,]),loss="binder")
-length(salso_out) # 105 valori, i cluster assegnati alle 105 obs
-summary(salso_out)
-```
-
-
-```{r}
-plot(summary(salso_out)$dendrogram) # boh
-```
-
-Sembra ci siano molti cluster piccoli, quindi forse occorre capire le prior/i parametri di drpm_fit per aggiustare questo fenomeno.
-```{r}
-# time = 1
-for(time in 1:10){
-
-salso_out <- salso(t(drpm1$Si[time,,]),loss="binder")
-	
-n_clusters = max(salso_out)
-cat(crayon::cyan("Time",time,"\n"))
-for (cl in 1:n_clusters){
-	cat("Cluster",cl,"- size",length(y$w1[which(salso_out==cl)]),
-		"- mean",mean(y$w1[which(salso_out==cl)]),"\n")
-}
-# ci sta, sembrano abbastanza diverse
-
-# ora creiamo un dataset che ha (105 righe e) due colonne: i valori di pm10, e il cluster assegnato
-clust_vals = list()
-for(cl in 1:n_clusters){
-	clust_vals[[cl]] <- data.frame(values = y$w1[which(salso_out==cl)])
-	clust_vals[[cl]]$cluster = as.factor(cl)
-}
-
-valori = clust_vals[[1]] 
-for(cl in 2:n_clusters){
-	valori = rbind(valori, clust_vals[[cl]])
-}
-
-# per ora stiamo lavorando sui valori del dataset,
-# ma dobbiamo ricordarci che li dobbiamo log-trasformare in realtà
-
-# p = ggplot(valori, aes(log(values), fill = cluster)) +
-p = ggplot(valori, aes(values, fill = cluster)) +
-	# scale_color_discrete(name = "cluster")+
-	# scale_fill_brewer(type="div",palette=4)+
-	scale_fill_manual(values = colora(n_clusters,77,0),name="Cluster")+
-	geom_density(alpha = 0.4)+
-	ggtitle(paste("Time",time))+
-	xlim(extrema(valori$values)+c(-10,10))+
-	theme_classic()
-print(p)
-
-} # end for(time in eccc)
-```
-
-
-## simple evolution plot
-```{r}
-source("plot functions/plot_data_and_libraries.R")
-source("plot functions/plot_utilities.R")
-source("plot functions/plot_functions_2.R")
-```
-
-```{r}
-for(time in 1:10){
-
-salso_out <- salso(t(drpm1$Si[time,,]),loss="binder")
-	
-n_clusters = max(salso_out)
-
-# ora creiamo un dataset che ha (105 righe e) due colonne: i valori di pm10, e il cluster assegnato
-clust_vals = list()
-for(cl in 1:n_clusters){
-	clust_vals[[cl]] <- data.frame(values = y$w1[which(salso_out==cl)])
-	clust_vals[[cl]]$cluster = as.factor(cl)
-}
-
-valori = clust_vals[[1]] 
-for(cl in 2:n_clusters){
-	valori = rbind(valori, clust_vals[[cl]])
-}
-
-
-df_temp = data.frame(
-	Longitude = sites$longitude,
-	Latitude = sites$latitude,
-	values = valori$values,
-	clusters = valori$cluster
-)
-
-# forse ci sta aggiungere un parametro a stationPlot, tipo (silent=TRUE)
-# per scegliere se fargli stampare la mappa migliorata o se solo ritornarla
-p = stationPlotgg <- stationPlot() +
-	# geom_point(data =df_temp, aes(x=Longitude,y=Latitude),
-	# 			   size=df_temp$values/10,
-	# 			   color = df_temp$clusters, alpha=0.6)
-	geom_point(data = df_temp, aes(x = Longitude, y = Latitude, color = factor(clusters)), size = 3)
-print(p)
-}
-```
 
 
 
 
-## old code
-```{r}
-rho <- list()
-for(t in 1:size(y[,2:54])[2]){
-	rho[[t]] <- salso(t(drpm1$Si[t,,]),
-					  #structure="clustering",
-					  loss="binder")
-}
-rho
-```
+
+
+
+
+
+
+
+
+
 
 
 
