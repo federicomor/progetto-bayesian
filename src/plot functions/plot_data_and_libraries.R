@@ -28,7 +28,7 @@ sites <- data.frame(
 
 stations = unique(df_agri$IDStations)
 cols = colora(6,970,show=F)
-pad <- 0.2 * c(-1, 1)
+padding <- 0.2 * c(-1, 1)
 DATE_FORMAT = "%Y-%m-%d"
 
 
