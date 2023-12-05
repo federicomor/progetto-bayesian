@@ -72,10 +72,15 @@ df_2018$day = as.factor(day_names)
 # add week
 df_2018$week = week(df_2018$Time)
 cat("we have #weeks =",max(df_2018$week))
+```
 
+
+```{r}
 # check result
 head(df_2018) # funziona, scorrere a destra in fondo per trovare day e week
 # print(df_2018[1:40,c("IDStations","Time","day","week")])
+
+df_2018[1:30,c(2:5,7,38,39)]
 
 unique(df_2018$week) # 53, perchè sono 52 complete più la 53esima che inizia lunedì 31 dicembre 2018
 ```
@@ -89,11 +94,15 @@ Scorre sulle settimane, calcola quanti NA ci sono, e da lì crea la media.
 Media per ogni stazione però.
 
 ## chek col type
-and convert integer to doubles
+and convert the numeric variables from integer to doubles.
+Otherwise when later we replace with the mean it gives error 
+(mean is double while column is integer)
+
 ```{r}
 for (c in colnames(df_2018)){
-	# cat(sprintf("%28s, %s\n",c,typeof(df_2018[,c])))
-	if(typeof(df_2018[,c])=="integer")
+	
+	if(typeof(df_2018[,c])=="integer" && c!="day") # fix error spotted by Federica
+		# quello in cui lunedì diventava 3
 		df_2018[,c] = as.double(df_2018[,c])
 }
 df_2018$LI_pigs_v2 = as.double(df_2018$LI_pigs_v2)
@@ -126,6 +135,12 @@ assert(size(df_weekly)[1] == 105*53)
 ```
 
 
+```{r}
+df_weekly[1:30,c(2:5,7,38,39)]
+# ora day è sistemato
+```
+
+
 
 ## fill df_weekly with weekly averages
 and fix na problems if they appear.
@@ -140,6 +155,7 @@ problematic_stations = c("STA-CH0011A","STA-CH0033A","STA-CH0043A")
 
 problematic_cols = c("LI_pigs","LI_bovine","LI_pigs_v2","LI_bovine_v2")
 character_cols = c("WE_mode_wind_direction_10m","WE_mode_wind_direction_100m")
+skippable_cols = c("X","IDStations","Latitude","Longitude","Time","Altitude","day","week")
 
 
 for (st in stations){
@@ -152,6 +168,9 @@ for (st in stations){
 		# cat(crayon::green(col,"... "))
 		df_st_col = df_st[,c(col,"week")]
 		
+		if(col %in% skippable_cols){
+			next
+		}
 		if(col %in% problematic_cols && st %in% problematic_stations){
 			cat("We deal with problematic cols later.\n")
 			next
@@ -176,12 +195,18 @@ for (st in stations){
 		}
 	}
 }
-na_summary(df_weekly)
 ```
 
 
+```{r}
+df_2018[1:30,c(2:5,7,38,39)]
+df_weekly[1:10,c(2:5,7,38,39)]
+na_summary(df_weekly)
 
-### correctness check
+```
+
+
+## correctness check
 run it multiple times
 ```{r}
 st = sample(stations,1)
@@ -228,8 +253,8 @@ lines(rep(as.vector(df_weekly[which(df_weekly$IDStations==st),col])[[1]],each=7)
 	  xlim=c(0,365),col=cols[2])
 
 # not very interesting maybe this acf, just exploring some plots
-par(mar=c(4,4,3,2))
-acf(as.vector(df_weekly[which(df_weekly$IDStations==st),col])[[1]],main=title)
+# par(mar=c(4,4,3,2))
+# acf(as.vector(df_weekly[which(df_weekly$IDStations==st),col])[[1]],main=title)
 ```
 
 
@@ -286,9 +311,9 @@ print(num_sett)
 # it should be 105 stations * 53 week
 assert(length(weekly_data_wind_direction_10_m) == 105*53)
 assert(length(weekly_data_wind_direction_100_m) == 105*53)
-# nice, we can add them to df_weekly
 
-## Update: già aggiunte nel loop così c'è tutto lì dentro
+# nice, we can add them to df_weekly
+## Update: già aggiunte nel loop così c'è tutto lì dentro, funziona
 # df_weekly$WE_mode_wind_direction_10m = weekly_data_wind_direction_10_m
 # df_weekly$WE_mode_wind_direction_100m = weekly_data_wind_direction_100_m
 ```
@@ -386,8 +411,8 @@ df_weekly$LI_bovine_v2[(which(df_weekly$IDStations=="STA-CH0033A"))]=(bovv2_11A+
 
 
 
-E ora pigs e bovine
 
+E ora pigs e bovine
 
 Grafico amatoriale molto brutto ma non riesco a mettere id station su quello con la cartina della lombardia
 quindi uso questo per vedere le stazioni scelte o almeno ci provo
@@ -440,5 +465,57 @@ na_summary(df_weekly)
 ```
 Sembra tutto a posto
 
+# final random checks
+```{r}
+df_weekly[1:10,c(2:5,7,38,39)] # day e week a posto
+head(df_weekly)
+```
+
+
+```{r}
+st = sample(stations,1)
+w = sample(1:53,1)
+col = sample(cnames,1)
+
+# st = "STA.IT1904A"
+# w = 32
+# col = "WE_mode_wind_direction_100m"
+
+cat("### station",st,"\n")
+cat("### column",col,"\n")
+cat("### week",w,"\n\n")
+
+# problema: week 50, col direction_100m, st STA.IT1904A
+# risolto
+
+cat("original values\n")
+df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col]
+if(col=="WE_mode_wind_direction_100m" || col=="WE_mode_wind_direction_10m"){
+	table_freq = table(df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col])
+	names(table_freq)[which.max(table_freq)]
+}
+cat("computed mean\n")
+suppressWarnings({mean(df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col])})
+cat("df_weekly value\n")
+df_weekly[[intersect(which(df_weekly$IDStations==st),which(df_weekly$week==w)),col]]
+
+title=paste("station",st,"- column",col)
+cols=colora(2,541,0)
+
+plot(df_2018[which(df_2018$IDStations==st),col],type="l",col=cols[1],main=title,
+	 ylab="values",xlab="days/weeks")
+
+lines(rep(as.vector(df_weekly[which(df_weekly$IDStations==st),col])[[1]],each=7),
+	  xlim=c(0,365),col=cols[2])
+
+```
+
+
+
+
+
+```{r}
+save(df_weekly, file= "../data/df_weekly.RData")
+```
 
 
