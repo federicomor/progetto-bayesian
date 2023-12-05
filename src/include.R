@@ -60,7 +60,9 @@ cat(crayon::italic("Usage example: df_agri$Time >= as.Date(\"2017-01-01\",DATE_F
 cat(crayon::italic("Actually also this works: df_agri$Time >= as.Date(\"2017-01-01\").\n\n"))
 
 load("../data/df_weekly.Rdata")
-cat(crayon::cyan(h,"Loaded weekly divided dataset. Available as"),crayon::red("df_weekly.\n\n"))
+cat(crayon::cyan(h,"Loaded weekly divided dataset. Available as"),crayon::red("df_weekly.\n"))
+df_weekly$AQ_pm10 = log(df_weekly$AQ_pm10)
+cat(crayon::cyan("⚠️ Log(Ln)-transformed column AQ_pm10 of df_weekly. Only of df_weekly.\n\n"))
 
 
 
@@ -90,11 +92,24 @@ cat(crayon::italic("Use it as my_df_stat = create_df_stat(df_2018).\nThen for ex
 ########################
 # function to get colors for plotting
 ########################
-fun_colori = function(len=2, seed=33, show=1){
+library(RColorBrewer)
+fun_colori = function(len=2, seed=33, show=1, seed_div = "Set3"){
 	hcols_ = hcl.pals()
 	if(seed=="rand"){
 		seed = round(runif(1,0,115))
 		col.ramp_ = hcl.colors(len,palette=hcols_[seed%%115+1])
+	}
+	if(seed=="div"){ # create a divergent palette
+		col.ramp_ = brewer.pal(len, seed_div)
+		# possible seed_div choices (and max len supported)
+		# Set3	    12
+		# Paired    12
+		# Pastel1   9
+		# Set1	    9
+		# Accent    8
+		# Dark2     8
+		# Pastel2   8
+		# Set2	    8
 	}
 	else{
 		col.ramp_ = hcl.colors(len,palette=hcols_[seed%%115+1])

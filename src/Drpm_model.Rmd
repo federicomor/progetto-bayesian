@@ -1,6 +1,6 @@
 ---
 title: "R Notebook"
-output: html_notebook
+output: html_document
 ---
 
 
@@ -27,17 +27,23 @@ stations = unique(df_weekly$IDStations)
 y=data.frame()
 
 for(st in stations){
-  y_we_pm10=cbind(as.data.frame(st),t(df_weekly[which(df_weekly$IDStations==st),7]))
+  y_we_pm10=cbind(as.data.frame(st),t(df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]))
   y=rbind(y,y_we_pm10)
 }
 
 rownames(y) = NULL
 colnames(y)<- c("id",paste0("w", 1:53))
+df_weekly
 y
 ```
 
 
 # plot
+
+```{r}
+hist(df_weekly$AQ_pm10)
+```
+
 ```{r}
 yred=y[,2:54]
 cols = colora(size(yred)[1],56,0)
@@ -52,16 +58,15 @@ for(i in 1:size(yred)[1]){
 ```
 ```{r}
 cols = colora(105,56,show=F)
+chosen_variable_name = "AQ_pm10"
 
 trendYearStation_week <- function(file_name){
 
 	data_from_to = df_weekly
 	len_time = 54
 	
-
 	chosen_variable = (data_from_to[,chosen_variable_name])
-	
-	
+
 	# Crea il grafico ggplot
 	station_trend <- ggplot(data_from_to,aes(x = week, 
 												 y = AQ_pm10,
@@ -78,19 +83,99 @@ trendYearStation_week <- function(file_name){
 		labs(x="week")
 	
 	len_time = (len_time%/%5)
-
 	return(trend_animator(file_name,station_trend, data_from_to$week,len_time))
 }
 trendYearStation_week("None")
 ```
 
 
+
+## Fede: fix year-end value error
+
+c'è una stazione che ha un valore spaventosamente basso di pm10.
+È la stazione STA.IT0499A e ha log(pm10) = -0.456811.
+La data è 31/12, quindi forse si è fatta una media imprecisa, troncando la settimana.
+
+Sistemiamo il file na_missing (calcolando la weekly mean per il 31/12/2019 anche comprendendo i giorni del 2019) o lasciamo così? In generale tutti i valori del 31/12 sembrano bassi (vedi il prossimo plot) quindi ci sta correggere.
+
+Non c'è problema invece coi valori iniziali del 2018 perché il 01/01/2018 era un lunedì.
+
+```{r}
+id_mistery = which(df_weekly$AQ_pm10<1)
+df_weekly[id_mistery,]
+```
+
+Se si vuole sistemare questo dovrebbe essere il codice.
+
+      January 2019        
+Su Mo Tu We Th Fr Sa 
+       1  2  3  4  5 
+ 6  7  8  9 10 11 12 
+13 14 15 16 17 18 19 
+20 21 22 23 24 25 26 
+27 28 29 30 31
+
+```{r}
+old_values = c()
+new_values = c()
+
+df_fixed = df_weekly
+stations = unique(df_fixed$IDStations)
+for(st in stations){
+	df_st = df_agri[which(df_agri$IDStations==st),]
+	new_value = log(mean(na.omit(
+		df_st$AQ_pm10[intersect(which(df_st$Time>=as.Date("2018-12-31")),
+								which(df_st$Time<=as.Date("2019-01-06")))]
+	)))
+	if(!is.na(new_value)){
+		df_fixed[intersect(which(df_fixed$IDStations==st),
+					   which(df_fixed$week==53)),"AQ_pm10"] = new_value
+	}
+
+	cat("Station",st,
+		"- old value",
+		df_weekly[intersect(which(df_weekly$IDStations==st),which(df_weekly$week==53)),"AQ_pm10"][[1]],
+		" - new value",
+		df_fixed[intersect(which(df_fixed$IDStations==st),which(df_fixed$week==53)),"AQ_pm10"][[1]],
+		"\n")
+	
+	old_values = c(old_values,df_weekly[intersect(which(df_weekly$IDStations==st),which(df_weekly$week==53)),"AQ_pm10"][[1]])
+	new_values = c(new_values, new_value)
+		
+}
+
+plot(old_values,type="l",col="blue")
+lines(new_values,type="l",col="red")
+legend("bottomleft",c("old","new"),fill=c("blue","red"),bty="n")
+```
+
+```{r}
+head(df_fixed)
+head(df_weekly)
+df_fixed$AQ_pm10[which(df_fixed$week==53)]
+# sistemiamo quel nan con la media dei suoi valori accanto (come sempre fatto)
+df_fixed$AQ_pm10[which(is.na(df_fixed$AQ_pm10))] = (3.650658+3.720517)/2
+df_fixed$AQ_pm10[which(df_fixed$week==53)]
+```
+
+write the new df_weekly.
+Well needed just the first time, when i push it will be uploaded also the new df_weekly.Rdata then.
+```{r}
+# df_weekly = df_fixed
+# save(df_weekly, file= "../data/df_weekly.RData")
+```
+
+
+
 # fit
+
+
 ```{r}
 drpm1 <- drpm_fit(y[,2:20], 
+		 # s_coords = sites,
          M=1,
          initial_partition = NULL,
-         starting_alpha = 0.5,
+         starting_alpha = 0.2,
          unit_specific_alpha = FALSE,
          time_specific_alpha = TRUE,
          alpha_0=FALSE,
@@ -106,27 +191,20 @@ drpm1 <- drpm_fit(y[,2:20],
          verbose=TRUE,
          draws=1100,burn=100,thin=1)
 ```
+
 ```{r}
+names(drpm1)
 size(drpm1$Si)
 # questa cos ha le simulazioni dei cluster assegnati
 # ha dimensione 53 righe, 105 colonne, 1000 volte, perché
 # - per ognuna delle 1000 iterazioni delle MCMC
 # - dà i cluster assegnati dalla simulazione per le stazioni in quella simulazione
-
 ```
 
 # study cluster division
-check morale di cosa intende quella divisione.
-
-
-
-```{r}
-plot(summary(salso_out)$dendrogram) # boh
-```
-
-
 
 Sembra ci siano molti cluster piccoli, quindi forse occorre capire le prior/i parametri di drpm_fit per aggiustare questo fenomeno.
+Update: dopo la log transformazione non più. Ma anzi ora forse ce ne sono troppi pochi di cluster.
 
 ```{r,warning=FALSE}
 time_span = 1:10
@@ -136,8 +214,7 @@ for(time in time_span){
 		
 	n_clusters = max(salso_out)
 	ycurrent = y[,paste0("w",time)]
-	ycurrent = log(ycurrent)
-	cat(crayon::cyan("Time",time,"\n"))
+	cat(crayon::red("Time",time,"\n"))
 	for (cl in 1:n_clusters){
 
 		cat("Cluster",cl,"- size",length(ycurrent[which(salso_out==cl)]),
@@ -150,16 +227,106 @@ for(time in time_span){
 
 	# per ora stiamo lavorando sui valori del dataset,
 	# ma dobbiamo ricordarci che li dobbiamo log-trasformare in realtà
-	
+
+	pad = 2	
 	p = ggplot(df_temp, aes(ycurrent, fill = factor(clust_vals))) +
 
 		scale_fill_manual(values = colora(n_clusters,77,0),name="Cluster")+
-		geom_density(alpha = 0.4)+
+		geom_density(alpha = 0.3)+
 		ggtitle(paste("Time",time))+
-		theme_classic()
+		theme_classic()+
+		xlim(extrema(ycurrent)+c(-pad,pad))
 	print(p)
 
 } # end for(time in eccc)
+```
+
+# Fede: fix cluster, mode-metod
+molto bella questa funzione, un po' di matematica coinvolta.
+
+```{r}
+mode_correct_clusters = function(cl_old, cl_cur){ # and returns cl_new the updated cl_cur
+	cl_new = cl_cur
+	new_labels = c()
+	tied_labels = c() # solve them later
+	
+	for (i in 1:max(cl_cur)){
+		indici_label_i = which(cl_cur == i)
+		freq = table(cl_old[indici_label_i])
+		better_labels = as.numeric(names(freq[freq == max(freq)]))
+		num_mode = length(better_labels)
+		
+		if(num_mode>=2){ # per risolvere i pareggi
+			warning("Tie case happened.\n")
+
+			tied_labels = c(tied_labels,i)
+		} else{
+			better_label = better_labels
+			new_labels = c(new_labels,better_label)
+			cl_new[indici_label_i] = better_label
+		}
+		# cat(new_labels,"\n")
+	}
+	max_it = 100
+	it = 1
+	while(length(tied_labels)!=0 && it<max_it){
+		for(i in tied_labels){
+			indici_label_i = which(cl_cur == i)
+			freq = table(cl_old[indici_label_i])
+			better_labels = as.numeric(names(freq[freq == max(freq)]))
+
+			better_labels = setdiff(better_labels,new_labels)
+			if(length(better_labels)==1){
+				# risolvi il pareggio ed eilimina label i da tied_labels
+				better_label = better_labels
+				new_labels = c(new_labels,better_label)
+				cl_new[indici_label_i] = better_label
+				tied_labels = setdiff(tied_labels,i)
+			}
+			else{
+				# prendi il primo label, tanto comunque non c'erano in new_labels
+				# perché abbiam fatto prima il set diff, quindi sono label liberi
+				better_label = better_labels[1]
+				new_labels = c(new_labels,better_label)
+				cl_new[indici_label_i] = better_label
+				tied_labels = setdiff(tied_labels,i)
+			}
+		}
+		it = it+1
+	}
+	if(it==max_it){
+		warn("Tie cases not solved :'/")
+		return(cl_cur)
+	} else {
+		message("Tie cases solved :)")
+		return(cl_new)
+	}
+	
+}
+
+cl_old = c(1,2,1,1,2,2,3,3)
+cl_cur = c(1,1,2,2,1,1,3,3)
+check_ = c(2,2,1,1,2,2,3,3)
+mode_correct_clusters(cl_old,cl_cur)
+mode_correct_clusters(cl_old,cl_cur) == check_
+
+# tie case
+#   units  1 2 3 4 5 6 7 8 9 10
+cl_old = c(1,2,1,1,2,1,3,3)
+cl_cur = c(1,1,2,2,1,1,3,3)
+# ora (pareggio) vedere sia il cluster 1 è entrato in 2 ma anche viceversa
+check1 = c(2,2,1,1,2,2,3,3)
+check2 = c(1,1,2,2,1,1,3,3)
+mode_correct_clusters(cl_old,cl_cur)
+mode_correct_clusters(cl_old,cl_cur) == check1
+mode_correct_clusters(cl_old,cl_cur) == check2
+
+# tie case double
+cl_old = c(1,2,1,1,2,1,3,3,4,4,5,5)
+cl_cur = c(1,1,2,2,1,1,3,3,4,5,4,5)
+# ora (pareggio) vedere sia il cluster 1 è entrato in 2 ma anche viceversa
+# e idem per cluster 4 e 5. Vediamo cosa ritorna
+mode_correct_clusters(cl_old,cl_cur)
 ```
 
 
@@ -194,6 +361,7 @@ p  <-  DefaultPlot()+
 p
 ```
 
+
 ## Save png(s) for animation
 ```{r}
 for( time in time_span){
@@ -215,6 +383,88 @@ for( time in time_span){
 
 
 
+# Fede: graph cluster plot
+Create a function find_closest_station_in_my_cluster and use it to create the graph later (maybe with ggplot_segment if it exists).
+
+```{r}
+edges = data.frame(
+	id = unique(df_weekly$IDStations),
+	x = unique(df_weekly$Longitude),
+	y = unique(df_weekly$Latitude),
+	# xend = unique(df_weekly$Longitude),
+	xend = 0,
+	# yend = unique(df_weekly$Latitude)
+	yend = 0,
+	clusters = 0
+)
+stations = unique(df_weekly$IDStations)
+
+find_closest_station_in_same_cluster_not_already_connected = function(my_stat,clusters){
+	my_cluster = clusters[which(stations==my_stat)]
+	siblings_stations = stations[which(clusters==my_cluster)]
+	
+	# molto importante, togliamo noi stessi, se siamo in compagnia nel cluster
+	if(length(siblings_stations)>1){
+		siblings_stations = setdiff(siblings_stations,my_stat)
+	} 
+	# else siamo in un cluster con solo noi stessi :/
+	
+	my_coord = edges[edges$id == my_stat, c("x", "y")]
+
+	# Filtra il dataframe degli archi per le stazioni nell'insieme siblings_stations
+	siblings_coords = edges[edges$id %in% siblings_stations, c("x", "y")]
+	
+	# Calcola le distanze euclidee tra la tua stazione e tutte le stazioni nell'insieme siblings_coords
+	distanze <- sqrt((siblings_coords$x - my_coord$x)^2 + (siblings_coords$y - my_coord$y)^2)
+	
+	# Trova l'indice della stazione più vicina
+	indice_stazione_vicina <- which.min(distanze)
+	# Restituisci l'ID della stazione più vicina
+	stazione_vicina <- siblings_stations[indice_stazione_vicina]
+	
+	return(stazione_vicina)
+}
+
+fix_edges = function(edges_input,clusters){
+	edges = edges_input
+	for(st in stations){
+		st_end = find_closest_station_in_same_cluster(st,clusters)
+		# cat("for",st,"found closest stat to be",st_end,"\n")
+		st_end_coords = edges[which(edges$id==st_end), c("x", "y")]
+		edges[which(edges$id==st),"xend"] = st_end_coords$x
+		edges[which(edges$id==st),"yend"] = st_end_coords$y
+	}
+	return(edges)
+}
+```
+
+
+## Plot for time 1
+```{r}
+time = 1
+df_cluster_cut = df_cluster[df_cluster$Time==time,]
+edges
+edges = fix_edges(edges,df_cluster_cut$clusters)
+edges$clusters = factor(df_cluster_cut$clusters)
+edges
+```
+
+
+devo in realtà ancora finirlo perché per ora non assicura che i cluster siano collegati dal grafo.
+C'è tipo da trovare il minimum spanning tree dentro al grafo di ogni cluster.
+
+```{r}
+p  <-  DefaultPlot()+
+	geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
+										  color = factor(clusters)), size = 1)+
+	labs(title = "Cluster map")+
+	guides(color = guide_legend(title = "Clusters"))
+
+p
+p + geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
+					 color = clusters),
+				 data = edges)
+```
 
 
 
