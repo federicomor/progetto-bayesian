@@ -1,9 +1,9 @@
 ---
 title: "R Notebook"
-output: html_notebook
+output: html_document
 ---
-install.packages("ppmSuite")
 
+install.packages("ppmSuite")
 ```{r}
 library(ppmSuite)
 ```
@@ -215,10 +215,16 @@ for (time in 1:size(y)[1]){
 ```
 
 
+```{r}
+summary(salso_out)
+```
+
+
 
 
 # Step 2
 ## on simulated spatial data
+o forse no passiamo direttamente allo step 3.
 
 
 
@@ -228,65 +234,7 @@ for (time in 1:size(y)[1]){
 
 
 
-# Step 3 (?)
-## on df_weekly
-df_weekly già caricato da include.R
 
-```{r}
-stations = unique(df_weekly$IDStations)
-
-y=data.frame()
-
-for(st in stations){
-  y_we_pm10=cbind(as.data.frame(st),t(df_weekly[which(df_weekly$IDStations==st),7]))
-  y=rbind(y,y_we_pm10)
-}
-rownames(y)<-NULL
-```
-
-```{r}
-y
-```
-
-
-
-
-
-```{r}
-yred=y[,2:54]
-cols = colora(size(yred)[1],56,0)
-for(i in 1:size(yred)[1]){
-   if(i==1){
-     plot(1:size(yred)[2],yred[i,],col=cols[i],ylim=extrema(yred),type='l',xlab='weeks',ylab='pm10')
- 	  } 
-	  else{
-		  lines(1:size(yred)[2],yred[i,],col=cols[i])
-	  }
-}
-```
-
-
-
-```{r}
-drpm1 <- drpm_fit(y[,2:54], 
-         M=1,
-         initial_partition = NULL,
-         starting_alpha = 0.5,
-         unit_specific_alpha = FALSE,
-         time_specific_alpha = TRUE,
-         alpha_0=FALSE,
-         eta1_0=FALSE,
-         phi1_0=FALSE,
-         modelPriors=c(40,100^2,1,1,1,1),
-         alphaPriors=rbind(c(1,1)),
-         simpleModel = 0,
-         theta_tau2 = c(0, 2),
-         SpatialCohesion=4,
-         cParms=c(0, 1, 2, 1),
-         mh=c(0.5, 1, 0.1, 0.1, 0.1),
-         verbose=TRUE,
-         draws=1100,burn=100,thin=1)
-```
 
 
 ```{r}
@@ -294,29 +242,20 @@ names(drpm1)
 ```
 
 
-```{r}
-size(drpm1$Si)
-# questa cos ha le simulazioni dei cluster assegnati
-# ha dimensione 53 righe, 105 colonne, 1000 volte, perché
-# - per ognuna delle 1000 iterazioni delle MCMC
-# - dà i cluster assegnati dalla simulazione per le stazioni in quella simulazione
 
-drpm1$Si
-```
 
-```{r}
-rho <- list()
-for(t in 1:size(y[,2:54])[2]){
-	rho[[t]] <- salso(t(drpm1$Si[t,,]),
-					  #structure="clustering",
-					  loss="binder")
-}
-rho
-```
 
-```{r}
-names(drpm1)
-```
+
+
+
+
+
+
+
+
+
+
+
 
 
 

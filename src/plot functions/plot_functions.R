@@ -1,3 +1,22 @@
+#########################   DEFAULT MAP ###############################
+color_comuni_lombardia = "red"
+color_empty = "white"
+color_station = "yellow"
+color_fill = "forestgreen"
+lombardia_2 = altre_regioni[altre_regioni$NAME_1 == "Lombardia",]
+DefaultPlot <- function(){
+	# crea mappa lombardia
+	mappa_stations <- ggplot() +
+		geom_sf(data = altre_regioni, fill = color_empty ,color = color_fill, linewidth = 0.1,alpha=0.1, show.legend = FALSE) +
+		geom_sf(data = lombardia_2, fill = color_empty, color = color_comuni_lombardia, linewidth = 0.3,alpha=0.7, show.legend = FALSE) +
+		
+		coord_sf(xlim = range(sites$longitude) + pad, ylim = range(sites$latitude) + pad, expand = FALSE)+
+		
+		theme_bw()+
+		theme(panel.grid = element_blank())
+	
+	return(mappa_stations)
+}
 #########################   STATION MAP ###############################
 color_comuni_lombardia = "red"
 color_empty = "white"
@@ -26,6 +45,8 @@ stationPlot <- function(){
 	
 	return(mappa_stations)
 }
+
+
 #########################   GRID MAP ##################################
 cols = colora(2,15,show=F)
 color_low =  cols[2]
