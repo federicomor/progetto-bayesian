@@ -1,40 +1,61 @@
+---
+title: "title: \"Pmmsuite - Curveppm ( Covariates)\""
+output: html_document
+date: "2023-12-05"
+---
+Upload libraries and data
+```{r}
 library(ppmSuite)
 library(tidyverse)
+library(salso)
 load("../data/df_weekly.Rdata")
-
-nobs <- 53 
-nsubject <- length(unique(df_weekly$IDStations))
-
-df_vuoto <- data.frame(matrix(nrow = nsubject, ncol = nobs))
+```
 
 
-y = matrix(nrow = 0, ncol = nobs)
+Fix number of stations, ...
+```{r}
+nobs <- 53 # number of week for each stations
+nsubject <- length(unique(df_weekly$IDStations)) # number of station
+
+# input data for the curve_PPmX function
+y = matrix(nrow = 0, ncol = nobs) 
 for (i in unique(df_weekly$IDStations))
 {
    y <- rbind(y, filter(df_weekly, IDStations == i)$AQ_pm10)
   
 }
- 
+
+# 
 dat <- data.frame(y=c(y),
-                   z=rep(1:nobs, times=nsubject),
+                   z=rep(1:nobs, times=nsubject), # is the time
                    Name=rep(1:nsubject, each=nobs))
 
 subject_obs_vec <- dat$Name
+y <- dat$y
+z <- dat$z
+
+```
+
+Hyperparameters
+```{r}
 nknots <- 15 
-# Small number of iterates for illustrative purposes only
 niter <- 5000
 nburn <- 2000
 nthin <- 3 # we consider every nthin iteartions 
 nout <- (niter-nburn)/nthin # the number of interatio that we coniser from the mcmc
-z <- dat$z
+```
+
+Similarity function parameters
+```{r}
 ## the order here is c(mu0, s20, v, k0, nu0, a0, alpha)
 ## If simularity is N-NIG then k0 and nu0 are used but v is not
 ## If simularity is N-N then v is used but no k0 and nu0
-simparms <- c(0.0, 1.0, 0.1, 1.0, 1.0, 0.1, 1)
-simpars <- c(100, 1.0, 2000, 1.0, 1.0, 0.1, 1)
-fits <- list()
-# fit vgrf only
-y <- dat$y
+
+simparms <- c(0.0, 1.0, 0.1, 1.0, 1.0, 0.1, 1) # WHAT IS THEIR MEANING IF WE DON'T USE COV
+```
+
+Prior:
+```{r}
 modelPriors <- c(0.5, # Asig
                  1000^2, # s2_mu
                  0, # mb0
@@ -43,43 +64,52 @@ modelPriors <- c(0.5, # Asig
                  1, # bs2b0
                  1, # at
                  1.0/0.05) # bt
+```
 
+```{r}
+colnames(df_weekly)
+```
+
+create Xcon and Xcat
+```{r}
+Xcon <- df_weekly %>% group_by(IDStations) %>% 
+  summarise(Altitude = mean(Altitude), pigs = mean(LI_pigs)) %>% ungroup()
+Xcon <- Xcon[,-1]
+#Xcat <- df_weekly %>% group_by(IDStations) %>% 
+  #summarise(WE_mode_wind_direction_100m = mean(WE_mode_wind_direction_100m))[,-1]
+
+```
+
+
+```{r}
+fits <- list()
 fit <- curve_ppmx(y=cbind(y), z=z,
                   subject=subject_obs_vec,
-                  Xcon = NULL, Xcat = NULL,
+                  Xcon = Xcon, Xcat = NULL,
                   Xconp=NULL, Xcatp=NULL,
                   PPM=TRUE, M=1,
                   q=3, rw_order=1, balanced=1,
                   nknots=nknots, npredobs=1,
                   Aparm=100,
                   modelPriors=modelPriors,
-                  #similarity_function=1,
+                  similarity_function=1,
                   consim=1, calibrate=0,
-                  simParms=simpars,
+                  simParms=simparms,
                   mh=c(0.1, 1e-4),
                   draws=niter,
                   burn=nburn,
                   thin=nthin)
+```
 
-clus <- salso(fit$Si, binder(a=NULL), nRuns=4, nCores=1)
-clus2 <- salso(fit$Si, binder(a=NULL), nRuns=4, nCores=1)
+Compute the clusters
+```{r}
+clus <- salso(fit$Si, binder(a=NULL), nRuns=4, nCores=1, maxNClusters = 0)
 
+```
+
+Plot
+```{r}
 plot(summary(clus), 
 	 type = c("heatmap", "mds", "pairs", "dendrogram")[1])
 
-plot(summary(clus2), 
-	 type = c("heatmap", "mds", "pairs", "dendrogram")[1])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```
