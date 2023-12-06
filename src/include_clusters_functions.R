@@ -133,7 +133,7 @@ stations_distance = function(st_1,st_2){
 }
 
 cat(crayon::red("- assemble_edges(clusters)\n"))
-assemble_edges = function(clusters){
+assemble_edges = function(clusters,need_to_debug=0){
 	edges = data.frame(
 		x = c(),
 		y = c(),
@@ -154,6 +154,9 @@ assemble_edges = function(clusters){
 		# define pesi
 		elist = get.edgelist(gg)
 		pesi=c()
+		if(need_to_debug==1){
+			cat("dealing with cluster",cl,"\n")
+		}
 		if(size(elist)[1]>0){
 			for(i in 1:size(elist)[1]){
 				pesi = c(pesi,stations_distance(elist[i,1],elist[i,2]))

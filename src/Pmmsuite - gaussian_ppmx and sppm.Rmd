@@ -1,0 +1,124 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+
+```{r,warning=FALSE}
+source("include.R") # why didnt you use it above, in your code? :'/
+source("include_clusters_functions.R")
+source("plot functions/plotter.R")
+```
+
+```{r}
+library(salso)
+library(ppmSuite)
+```
+
+Sometimes it fails the execution (dont know why). In that case:
+- go to the file include_clusters_function.R and run it all (ctrl+alt+R)
+- come back here and now it should run finely
+
+# gaussian_ppmx
+
+## loop fit
+```{r}
+for (time in 1:10){
+	cat(crayon::red("Time (ie week)",time,"\n"))
+	df_time = df_weekly[which(df_weekly$week==time),]
+	y = df_time$AQ_pm10
+	X = df_time[,-c(1:5,7)]
+
+	fit = gaussian_ppmx(y, X=X, Xpred=NULL,
+	                  meanModel=1,
+	                  cohesion=1,
+	                  M=1,
+	                  PPM = FALSE,
+	                  similarity_function=1,
+	                  consim=1,
+	                  calibrate=0,
+	                  simParms=c(0.0, 1.0, 0.1, 1.0, 2.0, 0.1, 1),
+	                  modelPriors=c(0, 100^2, 1, 1),
+	                  mh=c(0.5, 0.5),
+	                  draws=1100,burn=100,thin=1,
+	                  verbose=FALSE)
+	
+	clusters = salso_out <- salso(fit$Si,loss="binder")
+	df_temp = data.frame(
+		Longitude = unique(df_weekly$Longitude),
+		Latitude = unique(df_weekly$Latitude),
+		clusters = salso_out[1:105]
+	)
+	df_temp$Time = rep(time,dim(df_temp)[1])
+	df_cluster_cut = df_temp
+	
+	clusters = df_cluster_cut$clusters
+	edges = assemble_edges(clusters,need_to_debug=0)
+	# edges
+	
+	p  <-  DefaultPlot()+
+		geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
+											  color = factor(clusters)), size = 2)+
+		labs(title = paste("Cluster map - time",time))+
+		guides(color = guide_legend(title = "Clusters"))
+	
+	q = p + geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
+						 color = cluster),
+					 linewidth=1.2,
+					 data = edges)
+	# print(p)
+	print(q)
+	
+} # end for time
+```
+# sppm
+
+## loop fit
+```{r}
+for (time in 1:10){
+	cat(crayon::red("Time (ie week)",time,"\n"))
+	df_time = df_weekly[which(df_weekly$week==time),]
+	y = df_time$AQ_pm10
+	s = data.frame(
+		lat = unique(df_weekly$Latitude),
+		long = unique(df_weekly$Longitude)
+	)
+
+	fit = sppm(y,s,
+	    s.pred=NULL,
+	    cohesion=3,
+	    M=1,
+	    modelPriors=c(0, 100^2, 10, 10),
+	    cParms=c(1, 1.5, 0, 1, 2, 2),
+	    mh=c(0.5, 0.5),
+	    draws=1100,burn=100,thin=1)
+	
+	clusters = salso_out <- salso(fit$Si,loss="binder")
+	df_temp = data.frame(
+		Longitude = unique(df_weekly$Longitude),
+		Latitude = unique(df_weekly$Latitude),
+		clusters = salso_out[1:105]
+	)
+	df_temp$Time = rep(time,dim(df_temp)[1])
+	df_cluster_cut = df_temp
+	
+	clusters = df_cluster_cut$clusters
+	edges = assemble_edges(clusters,need_to_debug=0)
+	# edges
+	
+	p  <-  DefaultPlot()+
+		geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
+											  color = factor(clusters)), size = 2)+
+		labs(title = paste("Cluster map - time",time))+
+		guides(color = guide_legend(title = "Clusters"))
+	
+	q = p + geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
+						 color = cluster),
+					 linewidth=1.2,
+					 data = edges)
+	# print(p)
+	print(q)
+	
+} # end for time
+```
+
