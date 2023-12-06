@@ -73,14 +73,14 @@ df_weekly$AQ_pm10 = log(df_weekly$AQ_pm10) # here we overwrite df_weekly to be l
 
 cat(crayon::cyan(h,"Loaded weekly divided dataset(s). Available as"),
 	crayon::red("df_weekly"),
-	crayon::cyan("(log-transformed ⚠️) and"),crayon::red("df_weekly_no_log_transf"),
-	crayon::cyan("(the original one ⚠️).\n")
+	crayon::cyan("(⚠️ log-transformed ⚠️) and"),crayon::red("df_weekly_no_log_transf"),
+	crayon::cyan("(⚠️ the original one ⚠️).\n")
 	)
 
 df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0011A")] = "STA.CH0011A"
 df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0033A")] = "STA.CH0033A"
 df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0043A")] = "STA.CH0043A"
-cat(crayon::cyan("⚠️ Uniformed names of stations (some were STA-ecc and some STA.ecc; now are all STA.ecc). Only of df_weekly.\n\n"))
+cat(crayon::cyan(h,"Uniformed names of stations (some were STA-ecc and some STA.ecc; now are all STA.ecc). Only of df_weekly.\n\n"))
 cat(crayon::italic("This name change was also needed for the graph cluster plot.\n"))
 
 
