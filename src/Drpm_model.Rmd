@@ -428,7 +428,7 @@ find_closest_station_in_same_cluster_not_already_connected = function(my_stat,cl
 fix_edges = function(edges_input,clusters){
 	edges = edges_input
 	for(st in stations){
-		st_end = find_closest_station_in_same_cluster(st,clusters)
+		st_end = find_closest_station_in_same_cluster_not_already_connected(st,clusters)
 		# cat("for",st,"found closest stat to be",st_end,"\n")
 		st_end_coords = edges[which(edges$id==st_end), c("x", "y")]
 		edges[which(edges$id==st),"xend"] = st_end_coords$x
