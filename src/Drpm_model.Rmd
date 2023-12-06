@@ -123,6 +123,10 @@ size(drpm1$Si)
 ```
 
 
+# Trace plots?
+```{r}
+
+```
 
 
 # Clusters distribution

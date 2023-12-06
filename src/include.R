@@ -80,8 +80,8 @@ cat(crayon::cyan(h,"Loaded weekly divided dataset(s). Available as"),
 df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0011A")] = "STA.CH0011A"
 df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0033A")] = "STA.CH0033A"
 df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0043A")] = "STA.CH0043A"
-cat(crayon::cyan(h,"Uniformed names of stations (some were STA-ecc and some STA.ecc; now are all STA.ecc). Only of df_weekly.\n\n"))
-cat(crayon::italic("This name change was also needed for the graph cluster plot.\n"))
+cat(crayon::cyan(h,"Uniformed names of stations (some were STA-ecc and some STA.ecc; now are all STA.ecc). Only of df_weekly.\n"))
+cat(crayon::italic("This name change was also needed for the graph cluster plot.\n\n"))
 
 
 
@@ -228,7 +228,7 @@ what_is[["LA_land_use"]] = "Land use across 44 sectors \n[ categorical ]"
 what_is[["LA_soil_use"]] = "Lombardy soil use across 21 sectors \n[ categorical ]"
 
 cat(crayon::cyan(h,"Created utility to explain covariates. Available as"),crayon::red("spiega(string).\n"))
-cat(crayon::italic("Try for example spiega(\"wind\")."))
+cat(crayon::italic("Try for example spiega(\"wind\").\n"))
 
 rm(h)
 
