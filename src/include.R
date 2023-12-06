@@ -59,10 +59,29 @@ cat(crayon::italic("Created DATE_FORMAT = \"%Y-%m-%d\" variable for date compari
 cat(crayon::italic("Usage example: df_agri$Time >= as.Date(\"2017-01-01\",DATE_FORMAT).\n"))
 cat(crayon::italic("Actually also this works: df_agri$Time >= as.Date(\"2017-01-01\").\n\n"))
 
-load("../data/df_weekly.Rdata")
-cat(crayon::cyan(h,"Loaded weekly divided dataset. Available as"),crayon::red("df_weekly.\n"))
-df_weekly$AQ_pm10 = log(df_weekly$AQ_pm10)
-cat(crayon::cyan("⚠️ Log(Ln)-transformed column AQ_pm10 of df_weekly. Only of df_weekly.\n\n"))
+load("../data/df_weekly.Rdata") # here it is not log-trasformed, we asser it
+if(!(min(df_weekly$AQ_pm10)>2 && max(df_weekly$AQ_pm10)>78)){
+	warning("Dataset seems already log-transformed when it shouldn't be.")
+}
+# extrema(df_weekly$AQ_pm10)
+# [1] 2.428571 79.857143
+
+df_weekly_no_log_transf = df_weekly # so here we make a copy of it, the original one
+df_weekly$AQ_pm10 = log(df_weekly$AQ_pm10) # here we overwrite df_weekly to be log-transformed
+# extrema(df_weekly$AQ_pm10)
+# [1] 0.8873032 4.3802393
+
+cat(crayon::cyan(h,"Loaded weekly divided dataset(s). Available as"),
+	crayon::red("df_weekly"),
+	crayon::cyan("(log-transformed ⚠️) and"),crayon::red("df_weekly_no_log_transf"),
+	crayon::cyan("(the original one ⚠️).\n")
+	)
+
+df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0011A")] = "STA.CH0011A"
+df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0033A")] = "STA.CH0033A"
+df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0043A")] = "STA.CH0043A"
+cat(crayon::cyan("⚠️ Uniformed names of stations (some were STA-ecc and some STA.ecc; now are all STA.ecc). Only of df_weekly.\n\n"))
+cat(crayon::italic("This name change was also needed for the graph cluster plot.\n"))
 
 
 
