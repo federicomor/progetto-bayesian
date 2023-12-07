@@ -228,7 +228,7 @@ what_is[["LA_land_use"]] = "Land use across 44 sectors \n[ categorical ]"
 what_is[["LA_soil_use"]] = "Lombardy soil use across 21 sectors \n[ categorical ]"
 
 cat(crayon::cyan(h,"Created utility to explain covariates. Available as"),crayon::red("spiega(string).\n"))
-cat(crayon::italic("Try for example spiega(\"wind\").\n"))
+cat(crayon::italic("Try for example spiega(\"wind\").\n\n"))
 
 rm(h)
 

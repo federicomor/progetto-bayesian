@@ -3,6 +3,11 @@ cat(crayon::cyan("\nGenerated these functions:\n"))
 ################################################################################
 #### mode correction
 mode_correct_clusters = function(cl_old, cl_cur){ # and returns cl_new the updated cl_cur
+	if(is.null(cl_old)){
+		warning("The cluster_old vector is NULL.")
+		return(cl_cur) # nothing to correct
+	}
+	
 	cl_new = cl_cur
 	new_labels = c()
 	tied_labels = c() # solve them later
@@ -14,7 +19,7 @@ mode_correct_clusters = function(cl_old, cl_cur){ # and returns cl_new the updat
 		num_mode = length(better_labels)
 		
 		if(num_mode>=2){ # per risolvere i pareggi
-			warning("Tie case happened.\n")
+			# warning("Tie case happened.\n")
 			
 			tied_labels = c(tied_labels,i)
 		} else{
@@ -52,10 +57,10 @@ mode_correct_clusters = function(cl_old, cl_cur){ # and returns cl_new the updat
 		it = it+1
 	}
 	if(it==max_it){
-		warn("Tie cases not solved :'/")
+		warning("Tie cases not solved :'/")
 		return(cl_cur)
 	} else {
-		message("Tie cases solved :)")
+		warning("Tie cases solved :)")
 		return(cl_new)
 	}
 	
@@ -86,6 +91,11 @@ cat(crayon::red("- mode_correct_clusters(cl_old, cl_cur)\n"))
 # # ora (pareggio) vedere sia il cluster 1 è entrato in 2 ma anche viceversa
 # # e idem per cluster 4 e 5. Vediamo cosa ritorna
 # mode_correct_clusters(cl_old,cl_cur)
+# 
+# cl_old = c(1,1,1,2,2,2,1,1,3,4,4,4,4) 
+# cl_cur = c(1,1,1,1,1,1,1,1,1,2,2,2,2) # case of collapsed clusters
+# mode_correct_clusters(cl_old,cl_cur) # perfect!
+# # it stores the past value, 4, skipping the others; at least, that was my desired beahaviour
 
 
 
