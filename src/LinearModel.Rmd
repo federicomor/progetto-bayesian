@@ -47,7 +47,16 @@ covs=as.data.frame(covs)
 ```
 
 
+```{r}
+par(mar=c(15,9,1,1))
+boxplot(covs,las=2)
 
+for (i in 1:size(covs)[2]){
+	cat(crayon::red(colnames(covs)[i]))
+	cat(" var =",var(covs[,i]),"\n")
+}
+# forse dovremmo standardizzare le variabili
+```
 
 
 
@@ -120,6 +129,7 @@ n.chain # this is the final sample size
 Summary statistics for the posterior - Use either packege CODA, or standard tools in R:
 
 ```{r}
+size(data.out)
 summary(data.out)
 head(data.out)
 ```
@@ -127,6 +137,8 @@ head(data.out)
 Autocorrelation plots
 ```{r}
 par(mfrow=c(1,3))
+par(mar=c(2,2,3,1)) # bottom, left, top, right margins to not cut plot titles
+
 acf(data.out[,'beta0'],lwd=3,col="red3",main="autocorrelation of beta0")
 acf(data.out[,'beta.1.'],lwd=3,col="red3",main="autocorrelation of beta1")
 acf(data.out[,'sigma'],lwd=3,col="red3",main="autocorrelation of sigma_res")
@@ -161,6 +173,7 @@ chain <- beta.post[,30]
 #Divide the plot device in three sub-graph regions
 #two square on the upper and a rectangle on the bottom
 
+par(mar=c(2,2,3,2)) # bottom, left, top, right margins to not cut plot titles
 layout(matrix(c(1,2,3,3),2,2,byrow=T))
 #trace-plot of the posterior chain
 plot(chain,type="l",main="Trace plot of beta0")
@@ -182,11 +195,11 @@ legend("topright",legend=c("posterior median", "95% Credible bounds","kernel den
 
 ```
 
-Can do for all the betas
 Posterior of $\beta_1$
 ```{r}
 chain <- beta.post[,1]
 #Divide the plot device 
+par(mar=c(2,2,3,2)) # bottom, left, top, right margins to not cut plot titles
 layout(matrix(c(1,2,3,3),2,2,byrow=T))
 #trace-plot of the posterior chain
 plot(chain,type="l",main="Trace plot of beta1")
@@ -205,14 +218,40 @@ abline(v=quantile(chain,prob=c(0.5)),col="red",lty=1,lwd=2)
 abline(v=quantile(chain,prob=c(0.975)),col="red",lty=2,lwd=2)
 ## Add the legend to the plot
 legend("topright",legend=c("posterior median", "95% Credible bounds","kernel density smoother"),lwd=c(2,2,2), col=c("red","red","blue"),lty=c(1,2,1))
+```
 
-
+Can do for all the betas
+```{r}
+for (i in 1:29){
+	chain <- beta.post[,i]
+	#Divide the plot device 
+	par(mar=c(2,2,3,2)) # bottom, left, top, right margins to not cut plot titles
+	layout(matrix(c(1,2,3,3),2,2,byrow=T))
+	#trace-plot of the posterior chain
+	plot(chain,type="l",main=paste("Trace plot of beta",i))
+	# autocorrelation plot
+	acf(chain,lwd=3,col="red3",main=paste("autocorrelation of beta",i))
+	#Histogram
+	hist(chain,nclass="fd",freq=F,main=paste("Posterior of beta",i),col="gray") 
+	## Overlap the kernel-density 
+	lines(density(chain),col="blue",lwd=2)
+	#### Posterior credible interval of  beta1
+	# quantile(chain,prob=c(0.025,0.5,0.975))
+	
+	## Display the posterior credible interval on the graph
+	abline(v=quantile(chain,prob=c(0.025)),col="red",lty=2,lwd=2)
+	abline(v=quantile(chain,prob=c(0.5)),col="red",lty=1,lwd=2)
+	abline(v=quantile(chain,prob=c(0.975)),col="red",lty=2,lwd=2)
+	## Add the legend to the plot
+	legend("topright",legend=c("posterior median", "95% Credible bounds","kernel density smoother"),lwd=c(2,2,2), col=c("red","red","blue"),lty=c(1,2,1))
+}
 ```
 Posterior of $\sigma$: 
 ```{r}
 ##Representation of the posterior chain of sigma_res
 chain <-sig.post
 #Divide the plot device 
+par(mar=c(2,2,3,2)) # bottom, left, top, right margins to not cut plot titles
 layout(matrix(c(1,2,3,3),2,2,byrow=T))
 #trace-plot of the posterior chain
 plot(chain,type="l",main="Trace plot of sigma_res")
@@ -257,7 +296,8 @@ frequentist_coefficients <- data.frame()
 
 It's the same code as before, but in a 'for' cycle
 ```{r}
-for (st in stations){
+for (st in stations[1:2]){
+	cat(crayon::red("Station",st,"\n"))
  #covariates and target
   y=df_weekly[which(df_weekly$IDStations==st),7]
   y=as.numeric(y[[1]])
