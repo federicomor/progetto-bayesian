@@ -1,0 +1,335 @@
+### Linear regression ###
+
+
+```{r}
+source("include.R") 
+```
+
+jags to work on R 
+```{r}
+#Load the library
+library(rjags)   # to interface R with JAGS
+#if jags not installed gives error with link and instructions to install it for the first time
+ 
+library(coda)        
+library(plotrix)    # to  plot CIs
+
+```
+
+Start dividing stations
+```{r}
+dati = df_weekly[,c(2,7)]
+df_stat=hash()
+stations = unique(dati$IDStations)
+print(stations)
+```
+
+
+Can stay here to see detailed on one station and plots or jump to for cycle storing betas for each station
+
+# Analysis of one particular station
+Create variables for regression analysis
+```{r}
+#remove column pm_10 (target)
+#for now only using numerical covariates
+st="1264"   #start with an example, then will cycle on all
+
+y=df_weekly[which(df_weekly$IDStations==st),7]
+y=as.numeric(y[[1]])
+
+covs=df_weekly[which(df_weekly$IDStations==st),3:39]
+covs=covs[,-c(3,5,9,19,36)]    #not numerical
+covs=covs[,-c(1,2,3)]   #lat, long and alti constant over same station
+head(covs)
+k=dim(covs)[2]
+
+covs=as.data.frame(covs)
+```
+
+
+
+
+
+
+
+```{r}
+data = list(y=y,
+            x=covs,
+            n=dim(covs)[1],
+            k=k)
+```
+
+
+Let's fix a list of initial value for the MCMC algorithm that JAGS will implement:
+```{r}
+inits = function() {list(beta0=0,
+                         beta=rep(0,k),
+                         sigma=100) }
+```
+
+
+
+FIRST STEP
+```{r echo=T, results='hide'}
+modelRegress=jags.model("LinearReg.bug",data=data,inits=inits,n.adapt=1000,n.chains=1)
+```
+By default n.adapt=1000.
+sigma is Uniform on the interval (0,100)
+
+Prior not conjugate (?)
+
+
+SECOND STEP
+```{r echo=T, results='hide'}
+update(modelRegress,n.iter=5000) #this is the burn-in period
+## this function DOES NOT record the sampled values of parameters
+```
+THIRD STEP: we tell JAGS to generate MCMC samples that we will use to represent the posterior distribution 
+```{r}
+variable.names=c("beta0", "beta", "sigma") #parameters - see the file .bug - that will have 
+                                           # their values recorded
+n.iter=50000 
+thin=10  
+## the final sample size, i.e. the number of iterations to build the ergodic average, will be 5K
+
+```
+
+```{r echo=T, results='hide'}
+outputRegress=coda.samples(model=modelRegress,variable.names=variable.names,n.iter=n.iter,thin=thin)
+```
+
+The OUTPUT is mcmc.list object - coda-formatted object; it needs to be converted into a matrix, in order to be "readable".
+
+
+
+##### OUTPUT ANALYSIS
+```{r}
+#### save(outputRegress,file='Jackman_regr_output.Rdata')
+
+##### upload the output if we have previuosly stored it and we don't want to run the MCMC again
+#### load('Jackman_regr_output.Rdata')
+```
+
+```{r}
+data.out=as.matrix(outputRegress) # trasform the mcmc.list into a matrix,
+data.out=data.frame(data.out)     # or, better, into a dataframe (easiest to handle in R)
+attach(data.out)
+n.chain=dim(data.out)[1] 
+n.chain # this is the final sample size
+```
+Summary statistics for the posterior - Use either packege CODA, or standard tools in R:
+
+```{r}
+summary(data.out)
+head(data.out)
+```
+
+Autocorrelation plots
+```{r}
+par(mfrow=c(1,3))
+acf(data.out[,'beta0'],lwd=3,col="red3",main="autocorrelation of beta0")
+acf(data.out[,'beta.1.'],lwd=3,col="red3",main="autocorrelation of beta1")
+acf(data.out[,'sigma'],lwd=3,col="red3",main="autocorrelation of sigma_res")
+```
+Some nice graph to presents the posterior samples:
+```{r}
+#sub-chain containing the beta sample
+beta.post <- data.out[,1:30]
+#posterior mean of the beta parameters
+beta.bayes  <- apply(beta.post,2,"mean")
+beta.bayes <- c(beta.bayes[30],beta.bayes[1:29])  #just to have beta0 in first position
+beta.bayes
+#sub-chain whit the sigma_res samle
+sig.post= data.out[,'sigma']
+```
+
+Comparison between frequentist and bayesian linear models
+```{r}
+#### MLE estimate
+mod= lm(y ~ covs[,1]+covs[,2]+covs[,3]+covs[,4]+covs[,5]+covs[,6]+covs[,7]+covs[,8]+covs[,9]+covs[,10]+covs[,11]+covs[,12]+
+          covs[,13]+covs[,14]+covs[,15]+covs[,16]+covs[,17]+covs[,18]+covs[,19]+covs[,20]+covs[,21]+covs[,22]+covs[,23]+covs[,24]+
+          covs[,25]+covs[,26]+covs[,27]+covs[,28]+covs[,29])
+summary(mod)
+
+mod$coefficients # Comparison 
+beta.bayes
+```
+Posterior of $\beta_0$
+```{r}
+## Representation of the posterior chain of  beta0
+chain <- beta.post[,30]
+#Divide the plot device in three sub-graph regions
+#two square on the upper and a rectangle on the bottom
+
+layout(matrix(c(1,2,3,3),2,2,byrow=T))
+#trace-plot of the posterior chain
+plot(chain,type="l",main="Trace plot of beta0")
+# autocorrelation plot
+acf(chain,lwd=3,col="red3",main="autocorrelation of beta0")
+#Histogram
+hist(chain,nclass="fd",freq=F,main="Posterior of beta0",col="gray") 
+## Overlap the kernel-density 
+lines(density(chain),col="blue",lwd=2)
+## Posterior credible interval of beta0
+quantile(chain,prob=c(0.025,0.5,0.975))
+
+## Display the posterior credible interval on the graph
+abline(v=quantile(chain,prob=c(0.025)),col="red",lty=2,lwd=2)
+abline(v=quantile(chain,prob=c(0.5)),col="red",lty=1,lwd=2)
+abline(v=quantile(chain,prob=c(0.975)),col="red",lty=2,lwd=2)
+## Add the legend to the plot
+legend("topright",legend=c("posterior median", "95% Credible bounds","kernel density smoother"),lwd=c(2,2,2), col=c("red","red","blue"),lty=c(1,2,1))
+
+```
+
+Can do for all the betas
+Posterior of $\beta_1$
+```{r}
+chain <- beta.post[,1]
+#Divide the plot device 
+layout(matrix(c(1,2,3,3),2,2,byrow=T))
+#trace-plot of the posterior chain
+plot(chain,type="l",main="Trace plot of beta1")
+# autocorrelation plot
+acf(chain,lwd=3,col="red3",main="autocorrelation of beta1")
+#Histogram
+hist(chain,nclass="fd",freq=F,main="Posterior of beta1",col="gray") 
+## Overlap the kernel-density 
+lines(density(chain),col="blue",lwd=2)
+#### Posterior credible interval of  beta1
+quantile(chain,prob=c(0.025,0.5,0.975))
+
+## Display the posterior credible interval on the graph
+abline(v=quantile(chain,prob=c(0.025)),col="red",lty=2,lwd=2)
+abline(v=quantile(chain,prob=c(0.5)),col="red",lty=1,lwd=2)
+abline(v=quantile(chain,prob=c(0.975)),col="red",lty=2,lwd=2)
+## Add the legend to the plot
+legend("topright",legend=c("posterior median", "95% Credible bounds","kernel density smoother"),lwd=c(2,2,2), col=c("red","red","blue"),lty=c(1,2,1))
+
+
+```
+Posterior of $\sigma$: 
+```{r}
+##Representation of the posterior chain of sigma_res
+chain <-sig.post
+#Divide the plot device 
+layout(matrix(c(1,2,3,3),2,2,byrow=T))
+#trace-plot of the posterior chain
+plot(chain,type="l",main="Trace plot of sigma_res")
+# autocorrelation plot
+acf(chain,lwd=3,col="red3",main="autocorrelation of sigma_res")
+#Histogram
+hist(chain,nclass="fd",freq=F,main="Posterior of sigma_res",col="gray") 
+## Overlap the kernel-density 
+lines(density(chain),col="blue",lwd=2)
+## Posterior Credible bound of sigma_res
+quantile(chain,prob=c(0.05,0.5,0.95))
+
+## Display the posterior credible interval on the graph
+abline(v=quantile(chain,prob=c(0.025)),col="red",lty=2,lwd=2)
+abline(v=quantile(chain,prob=c(0.5)),col="red",lty=1,lwd=2)
+abline(v=quantile(chain,prob=c(0.975)),col="red",lty=2,lwd=2)
+## Add the legend to the plot
+legend("topright",legend=c("posterior median", "95% Credible bounds","kernel density smoother"),lwd=c(2,2,2), col=c("red","red","blue"),lty=c(1,2,1))
+```
+```{r}
+detach(data.out)
+```
+
+
+
+
+
+
+
+
+
+# Cycle on all stations saving all betas 
+
+datasets to store the betas
+```{r}
+bayesian_coefficients <- data.frame()
+  
+frequentist_coefficients <- data.frame()
+```
+
+
+
+It's the same code as before, but in a 'for' cycle
+```{r}
+for (st in stations){
+ #covariates and target
+  y=df_weekly[which(df_weekly$IDStations==st),7]
+  y=as.numeric(y[[1]])
+
+  covs=df_weekly[which(df_weekly$IDStations==st),3:39]
+  covs=covs[,-c(3,5,9,19,36)]    #not numerical
+  covs=covs[,-c(1,2,3)]   #lat, long and alti constant over same station
+  head(covs)
+  k=dim(covs)[2]
+
+  covs=as.data.frame(covs)
+
+ #build model
+  data = list(y=y,
+            x=covs,
+            n=dim(covs)[1],
+            k=k)
+  inits = function() {list(beta0=0,
+                         beta=rep(0,k),
+                         sigma=100) }
+
+#run model  
+  modelRegress=jags.model("LinearReg.bug",data=data,inits=inits,n.adapt=1000,n.chains=1)
+  update(modelRegress,n.iter=5000) #this is the burn-in period
+  
+ #save betas and sigma 
+  variable.names=c("beta0", "sigma","beta" ) #parameters 
+  n.iter=50000 
+  thin=10  
+  outputRegress=coda.samples(model=modelRegress,variable.names=variable.names,n.iter=n.iter,thin=thin)
+  
+  data.out=as.matrix(outputRegress) # trasform the mcmc.list into a matrix,
+  data.out=data.frame(data.out)     # or, better, into a dataframe (easiest to handle in R)
+  attach(data.out)
+  n.chain=dim(data.out)[1] 
+
+ #the betas
+  beta.post <- data.out[,1:30]   #posterior mean of the beta parameters
+  beta.bayes  <- apply(beta.post,2,"mean")
+  beta.bayes <- c(beta.bayes[30],beta.bayes[1:29])  #just to put beta0 in first position
+  
+ #linear (frequentist)
+  mod= lm(y ~ covs[,1]+covs[,2]+covs[,3]+covs[,4]+covs[,5]+covs[,6]+covs[,7]+covs[,8]+covs[,9]+covs[,10]+covs[,11]+covs[,12]+
+          covs[,13]+covs[,14]+covs[,15]+covs[,16]+covs[,17]+covs[,18]+covs[,19]+covs[,20]+covs[,21]+covs[,22]+covs[,23]+covs[,24]+
+          covs[,25]+covs[,26]+covs[,27]+covs[,28]+covs[,29])
+
+  
+  bayesian_coefficients <- rbind(bayesian_coefficients,c(st,beta.bayes))
+  
+  frequentist_coefficients <- rbind(frequentist_coefficients,c(st,mod$coefficients))
+  
+    
+  detach(data.out)
+  
+  
+}
+```
+
+
+
+
+```{r}
+#to give columns names
+colnames(bayesian_coefficients)<-c('station',names(beta.bayes))
+colnames(frequentist_coefficients)<-c('station',names(beta.bayes))
+```
+
+
+```{r}
+head(bayesian_coefficients)
+head(frequentist_coefficients)
+```
+
+
+
