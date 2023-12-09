@@ -16,6 +16,10 @@ library(plotrix)    # to  plot CIs
 
 ```
 
+
+
+
+
 Start dividing stations
 ```{r}
 dati = df_weekly[,c(2,7)]
@@ -27,6 +31,7 @@ print(stations)
 
 Can stay here to see detailed on one station and plots or jump to for cycle storing betas for each station
 
+
 # Analysis of one particular station
 Create variables for regression analysis
 ```{r}
@@ -36,14 +41,17 @@ st="1264"   #start with an example, then will cycle on all
 
 y=df_weekly[which(df_weekly$IDStations==st),7]
 y=as.numeric(y[[1]])
+y=scale(y)[1:53]    #normalization on the station
 
 covs=df_weekly[which(df_weekly$IDStations==st),3:39]
 covs=covs[,-c(3,5,9,19,36)]    #not numerical
-covs=covs[,-c(1,2,3)]   #lat, long and alti constant over same station
-head(covs)
+covs=covs[,-c(1,2,3,31)]   #lat, long, alti and land_use constant over same station
 k=dim(covs)[2]
 
 covs=as.data.frame(covs)
+covs=scale(covs)     #normalization on the station
+
+head(covs)
 ```
 
 
@@ -55,7 +63,6 @@ for (i in 1:size(covs)[2]){
 	cat(crayon::red(colnames(covs)[i]))
 	cat(" var =",var(covs[,i]),"\n")
 }
-# forse dovremmo standardizzare le variabili
 ```
 
 
@@ -146,10 +153,10 @@ acf(data.out[,'sigma'],lwd=3,col="red3",main="autocorrelation of sigma_res")
 Some nice graph to presents the posterior samples:
 ```{r}
 #sub-chain containing the beta sample
-beta.post <- data.out[,1:30]
+beta.post <- data.out[,0:k+1]
 #posterior mean of the beta parameters
 beta.bayes  <- apply(beta.post,2,"mean")
-beta.bayes <- c(beta.bayes[30],beta.bayes[1:29])  #just to have beta0 in first position
+beta.bayes <- c(beta.bayes[k+1],beta.bayes[1:k])  #just to have beta0 in first position 
 beta.bayes
 #sub-chain whit the sigma_res samle
 sig.post= data.out[,'sigma']
@@ -160,7 +167,7 @@ Comparison between frequentist and bayesian linear models
 #### MLE estimate
 mod= lm(y ~ covs[,1]+covs[,2]+covs[,3]+covs[,4]+covs[,5]+covs[,6]+covs[,7]+covs[,8]+covs[,9]+covs[,10]+covs[,11]+covs[,12]+
           covs[,13]+covs[,14]+covs[,15]+covs[,16]+covs[,17]+covs[,18]+covs[,19]+covs[,20]+covs[,21]+covs[,22]+covs[,23]+covs[,24]+
-          covs[,25]+covs[,26]+covs[,27]+covs[,28]+covs[,29])
+          covs[,25]+covs[,26]+covs[,27]+covs[,28])
 summary(mod)
 
 mod$coefficients # Comparison 
@@ -169,7 +176,7 @@ beta.bayes
 Posterior of $\beta_0$
 ```{r}
 ## Representation of the posterior chain of  beta0
-chain <- beta.post[,30]
+chain <- beta.post[,k+1]
 #Divide the plot device in three sub-graph regions
 #two square on the upper and a rectangle on the bottom
 
@@ -222,7 +229,7 @@ legend("topright",legend=c("posterior median", "95% Credible bounds","kernel den
 
 Can do for all the betas
 ```{r}
-for (i in 1:29){
+for (i in 1:k+1){
 	chain <- beta.post[,i]
 	#Divide the plot device 
 	par(mar=c(2,2,3,2)) # bottom, left, top, right margins to not cut plot titles
@@ -271,6 +278,8 @@ abline(v=quantile(chain,prob=c(0.975)),col="red",lty=2,lwd=2)
 ## Add the legend to the plot
 legend("topright",legend=c("posterior median", "95% Credible bounds","kernel density smoother"),lwd=c(2,2,2), col=c("red","red","blue"),lty=c(1,2,1))
 ```
+
+
 ```{r}
 detach(data.out)
 ```
@@ -294,6 +303,7 @@ frequentist_coefficients <- data.frame()
 
 
 
+
 It's the same code as before, but in a 'for' cycle
 ```{r}
 for (st in stations[1:2]){
@@ -301,14 +311,16 @@ for (st in stations[1:2]){
  #covariates and target
   y=df_weekly[which(df_weekly$IDStations==st),7]
   y=as.numeric(y[[1]])
+  y=scale(y)[1:53]    #normalization on each single station
 
   covs=df_weekly[which(df_weekly$IDStations==st),3:39]
   covs=covs[,-c(3,5,9,19,36)]    #not numerical
-  covs=covs[,-c(1,2,3)]   #lat, long and alti constant over same station
-  head(covs)
+  covs=covs[,-c(1,2,3,31)]   #lat, long, alti and land_use constant over same station
+  
   k=dim(covs)[2]
 
   covs=as.data.frame(covs)
+  covs=scale(covs)     #normalization on each single station
 
  #build model
   data = list(y=y,
@@ -335,14 +347,14 @@ for (st in stations[1:2]){
   n.chain=dim(data.out)[1] 
 
  #the betas
-  beta.post <- data.out[,1:30]   #posterior mean of the beta parameters
+  beta.post <- data.out[,0:k+1]   #posterior mean of the beta parameters
   beta.bayes  <- apply(beta.post,2,"mean")
-  beta.bayes <- c(beta.bayes[30],beta.bayes[1:29])  #just to put beta0 in first position
+  beta.bayes <- c(beta.bayes[k+1],beta.bayes[1:k])  #just to put beta0 in first position
   
  #linear (frequentist)
   mod= lm(y ~ covs[,1]+covs[,2]+covs[,3]+covs[,4]+covs[,5]+covs[,6]+covs[,7]+covs[,8]+covs[,9]+covs[,10]+covs[,11]+covs[,12]+
           covs[,13]+covs[,14]+covs[,15]+covs[,16]+covs[,17]+covs[,18]+covs[,19]+covs[,20]+covs[,21]+covs[,22]+covs[,23]+covs[,24]+
-          covs[,25]+covs[,26]+covs[,27]+covs[,28]+covs[,29])
+          covs[,25]+covs[,26]+covs[,27]+covs[,28])
 
   
   bayesian_coefficients <- rbind(bayesian_coefficients,c(st,beta.bayes))
