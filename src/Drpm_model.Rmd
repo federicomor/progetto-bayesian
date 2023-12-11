@@ -9,7 +9,6 @@ library(salso)
 
 # preparation
 source("include.R") # for having df_agri
-source("include_clusters_functions.R")
 source("plot functions/plotter.R")
 
 sites = data.frame(
@@ -17,6 +16,10 @@ sites = data.frame(
 	latitude = unique(df_weekly$Latitude))
 ```
 
+better to leave this alone (less buggy but dont know why).
+```{r}
+source("include_clusters_functions.R")
+```
 
 
 # create a pm10 table (station x time)
@@ -39,6 +42,7 @@ y
 # Trend plots
 ```{r}
 hist(df_weekly$AQ_pm10)
+cat(extrema(df_weekly$AQ_pm10))
 ```
 
 ```{r}
@@ -90,7 +94,9 @@ trendYearStation_week("None")
 
 # Model fit
 ```{r}
-drpm1 <- drpm_fit(y[,2:20], # use log trasnsformed values, as we should
+time_span = 1:5 # low time span for quick testing, real one will be 1:53
+
+drpm1 <- drpm_fit(y[,1+time_span], # use log trasnformed values, as we should
 # drpm1 <- drpm_fit(exp(y[,-1])[,1:20], # use original values, but should be a wrong approach
 		 s_coords = sites,
          M=1,
@@ -99,18 +105,44 @@ drpm1 <- drpm_fit(y[,2:20], # use log trasnsformed values, as we should
          unit_specific_alpha = FALSE,
          time_specific_alpha = TRUE,
          alpha_0=FALSE,
-         eta1_0=FALSE,
+         eta1_0=TRUE,
          phi1_0=FALSE,
          modelPriors=c(0,100^2,1,1,1,1),
-         alphaPriors=rbind(c(1,1)),
+
+         alphaPriors=rbind(c(1,1)), # if time_specific_alpha == TRUE
+         # alphaPriors=matrix(rep(c(1,1),105),105,2), # if unit_specific_alpha == TRUE
+         # alphaPriors=matrix(rep(c(1,1),105),105,2), # if both the above are TRUE
+
          simpleModel = 0,
          theta_tau2 = c(0, 2),
          SpatialCohesion=4,
          cParms=c(0, 1, 2, 1),
          mh=c(0.5, 1, 0.1, 0.1, 0.1),
          verbose=TRUE,
-         draws=1100,burn=100,thin=1)
+
+         draws=1100,burn=100,thin=1) # quick one
+         # draws=10100,burn=100,thin=2) # more serious one
 ```
+
+
+
+```{r}
+# the row dimensione will be 53, for now is time_span limit (like 5)
+cat("Si     size = ",size(drpm1$Si),"\n")
+cat("gamma  size = ",size(drpm1$gamma),"\n")
+cat("mu     size = ",size(drpm1$mu),"\n")
+cat("sig2   size = ",size(drpm1$sig2),"\n")
+cat("alpha  size = ",size(drpm1$alpha),"\n")
+cat("theta  size = ",size(drpm1$theta),"\n")
+cat("tau2   size = ",size(drpm1$tau2),"\n")
+cat("eta1   size = ",size(drpm1$eta1),"\n")
+cat("phi0   size = ",size(drpm1$phi0),"\n")
+cat("phi1   size = ",size(drpm1$phi1),"\n")
+cat("lam2   size = ",size(drpm1$lam2),"\n")
+cat("llike  size = ",size(drpm1$llike),"\n")
+cat("fitted size = ",size(drpm1$fitted),"\n")
+```
+
 
 ```{r}
 names(drpm1)
@@ -125,6 +157,24 @@ size(drpm1$Si)
 
 # Trace plots?
 ```{r}
+example_unit = 10
+
+if(len(size(drpm1$alpha))==2){ # alpha is only time dependent
+	for (time in time_span){
+	plot(drpm1$alpha[,time],type="l",
+		 main=bquote("Trace plot of " * alpha[.(time-1)]),
+		 xlab = "MCMC iterations",ylab="values")	
+	}
+}
+
+if(len(size(drpm1$alpha))==3){ # alpha is time dependent and unit dependent
+	for (time in time_span){
+	plot(drpm1$alpha[time,example_unit,],type="l",
+		 main=bquote("Trace plot of " * alpha[.(time-1)] * " for unit" * .(example_unit)),
+		 xlab = "MCMC iterations",ylab="values")
+	}
+}
+
 
 ```
 
@@ -134,7 +184,6 @@ Sembra ci siano molti cluster piccoli, quindi forse occorre capire le prior/i pa
 Update: dopo la log transformazione non più. Ma anzi ora forse ce ne sono troppi pochi di cluster.
 
 ```{r,warning=FALSE}
-time_span = 1:10
 for(time in time_span){
 
 	salso_out <- salso(t(drpm1$Si[time,,]),loss="binder")
@@ -169,7 +218,8 @@ for(time in time_span){
 ```
 
 
-
+"pochi ma buoni per ora"
+Cioè almeno nel mio notebook sono usciti sempre due soli cluster ma ben divisi
 
 
 
@@ -231,28 +281,80 @@ for( time in time_span){
 ## Version 2 - final
 all the functions are in the include_clusters_function. Here is the code to plot.
 ```{r}
-for(time in time_span){
+cols = colora(5,"div") # divergent palette
+
+clusters_old = NULL
+for(time in time_span[1:4]){
 # time = 4
-	
+cat(crayon::red("Time",time,"\n"))
 df_cluster_cut = df_cluster[df_cluster$Time==time,]
-edges = assemble_edges(df_cluster_cut$clusters)
-# edges
+clusters_now = df_cluster_cut$clusters
+clusters_now = mode_correct_clusters(clusters_old,clusters_now)
+df_cluster_cut$clusters = clusters_now
+
+edges_list = assemble_edges_list(clusters_now)
 
 p  <-  DefaultPlot()+
 	geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
-										  color = factor(clusters)), size = 1)+
-	labs(title = paste("Cluster map - time",time))+
-	guides(color = guide_legend(title = "Clusters"))
+										  # color = cols[factor(clusters)]), size = 2)+
+										  color = cols[clusters_now]), size = 2)+
+	labs(title = paste("Cluster map - time",time))
 
-q = p + geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
-					 color = cluster),
+q = p
+for(cl in 1:len(edges_list)){
+	edges_to_plot = edges_list[[cl]]
+	q = q + geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
+					 color = cols[as.numeric(cluster)]),
+					 # color = paste0("cl",cl)),
 				 linewidth=1.2,
-				 data = edges)
-print(q)
+				 data = edges_to_plot,show.legend = TRUE)+
+		guides(color = guide_legend(title = "Clusters"))
+}
 
+q = q +
+	scale_colour_identity(guide="legend",labels=paste0("cl",1:len(edges_list)),
+						  breaks=cols[1:len(edges_list)])
+
+print(q)
+clusters_old = clusters_now
 }
 ```
 
 
+```{r}
+ggplot(luv_colours, aes(u, v)) +
+  geom_point(aes(colour = col), size = 3) +
+  scale_color_identity() +
+  coord_fixed()
+
+df <- data.frame(
+  x = 1:4,
+  y = 1:4,
+  colour = c("AAA"="red", "B"="green", "BL"="blue", "YE"="yellow")
+)
+ggplot(df, aes(x, y)) + geom_tile(aes(fill = colour))
+ggplot(df, aes(x, y)) +
+  geom_tile(aes(fill = colour)) +
+  scale_fill_identity()
+
+# To get a legend guide, specify guide = "legend"
+ggplot(df, aes(x, y)) +
+  geom_tile(aes(fill = colour)) +
+  scale_fill_identity(guide = "legend")
+# But you'll typically also need to supply breaks and labels:
+ggplot(df, aes(x, y)) +
+  geom_tile(aes(fill = colour)) +
+  scale_fill_identity("trt", labels = letters[1:4], breaks = df$colour,
+  guide = "legend")
+
+# cyl scaled to appropriate size
+ggplot(mtcars, aes(mpg, wt)) +
+  geom_point(aes(size = cyl))
+
+# cyl used as point size
+ggplot(mtcars, aes(mpg, wt)) +
+  geom_point(aes(size = cyl)) +
+  scale_size_identity()
+```
 
 
