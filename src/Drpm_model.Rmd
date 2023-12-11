@@ -95,6 +95,7 @@ trendYearStation_week("None")
 # Model fit
 ```{r}
 time_span = 1:5 # low time span for quick testing, real one will be 1:53
+tempo_inizio <- Sys.time()
 
 drpm1 <- drpm_fit(y[,1+time_span], # use log trasnformed values, as we should
 # drpm1 <- drpm_fit(exp(y[,-1])[,1:20], # use original values, but should be a wrong approach
@@ -105,7 +106,7 @@ drpm1 <- drpm_fit(y[,1+time_span], # use log trasnformed values, as we should
          unit_specific_alpha = FALSE,
          time_specific_alpha = TRUE,
          alpha_0=FALSE,
-         eta1_0=TRUE,
+         eta1_0=FALSE, # TRUE?
          phi1_0=FALSE,
          modelPriors=c(0,100^2,1,1,1,1),
 
@@ -120,10 +121,31 @@ drpm1 <- drpm_fit(y[,1+time_span], # use log trasnformed values, as we should
          mh=c(0.5, 1, 0.1, 0.1, 0.1),
          verbose=TRUE,
 
-         draws=1100,burn=100,thin=1) # quick one
-         # draws=10100,burn=100,thin=2) # more serious one
+         # draws=1100,burn=100,thin=1) # quick one
+         draws=10100,burn=1500,thin=5) # more serious one
+
+tempo_fine <- Sys.time()
 ```
 
+```{r}
+differenza_tempo <- tempo_fine - tempo_inizio
+cat(crayon::red("Fit took\n",
+				 differenza_tempo, "seconds, ie\n",
+				 as.numeric(differenza_tempo,units="mins"), "minutes, ie\n",
+				 as.numeric(differenza_tempo,units="hours"), "hours\n"))
+```
+
+
+
+```{r}
+names(drpm1)
+size(drpm1$Si)
+# questa cos ha le simulazioni dei cluster assegnati
+# ha dimensione 53 righe (o meno se fittiamo su meno tempi per dei test),
+# poi ha 105 colonne, e 1000 "volte", perché
+# - per ognuna delle 1000 iterazioni delle MCMC
+# - dà i cluster assegnati dalla simulazione per le stazioni in quella simulazione
+```
 
 
 ```{r}
@@ -144,38 +166,74 @@ cat("fitted size = ",size(drpm1$fitted),"\n")
 ```
 
 
-```{r}
-names(drpm1)
-size(drpm1$Si)
-# questa cos ha le simulazioni dei cluster assegnati
-# ha dimensione 53 righe (o meno se fittiamo su meno tempi per dei test),
-# poi ha 105 colonne, e 1000 "volte", perché
-# - per ognuna delle 1000 iterazioni delle MCMC
-# - dà i cluster assegnati dalla simulazione per le stazioni in quella simulazione
-```
-
 
 # Trace plots?
 ```{r}
-example_unit = 10
+sampled_station = floor(runif(1,0,105))
+```
+
+## Si
+Sparse dots means that the algorithm is confused about which partition attribute to that station.
+But for now the sparse dots are few, and in the initial iterations of the MCMC, so this seems good.
+```{r}
+for (time in time_span){
+	plot(drpm1$Si[time,sampled_station,],type="l",
+		 main=bquote("Trace plot of partition at time (=week) " * .(time) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+}
+```
+
+## gamma
+```{r}
+for (time in time_span){
+	plot(drpm1$gamma[time,sampled_station,],type="l",
+		 main=bquote("Trace plot of " * gamma * " at time (=week) " * .(time-1) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+}
+```
+
+## mu
+```{r}
+for (time in time_span){
+	plot(drpm1$mu[time,sampled_station,],type="l",
+		 main=bquote("Trace plot of " * mu * " at time (=week) " * .(time) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+}
+```
+
+## sigma2
+```{r}
+for (time in time_span){
+	plot(drpm1$sig2[time,sampled_station,],type="l",
+		 main=bquote("Trace plot of "* sigma^2 * " at time (=week) " * .(time) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+}
+
+```
+
+## alpha
+```{r}
+sampled_station = floor(runif(1,0,105))
 
 if(len(size(drpm1$alpha))==2){ # alpha is only time dependent
 	for (time in time_span){
 	plot(drpm1$alpha[,time],type="l",
-		 main=bquote("Trace plot of " * alpha[.(time-1)]),
+		 main=bquote("Trace plot of " * alpha[.(time)] * " - station " * .(sampled_station)),
 		 xlab = "MCMC iterations",ylab="values")	
 	}
 }
 
 if(len(size(drpm1$alpha))==3){ # alpha is time dependent and unit dependent
 	for (time in time_span){
-	plot(drpm1$alpha[time,example_unit,],type="l",
-		 main=bquote("Trace plot of " * alpha[.(time-1)] * " for unit" * .(example_unit)),
+	plot(drpm1$alpha[time,sampled_station,],type="l",
+		 main=bquote("Trace plot of " * alpha[.(time-1)] * " - station" * .(sampled_station)),
 		 xlab = "MCMC iterations",ylab="values")
 	}
 }
-
-
 ```
 
 
@@ -275,16 +333,16 @@ for( time in time_span){
 ```
 
 
-
 # Fede: graph cluster plot
 
 ## Version 2 - final
 all the functions are in the include_clusters_function. Here is the code to plot.
 ```{r}
-cols = colora(5,"div") # divergent palette
+cols = colora(3,112)
+# cols = colora(5,"div") # divergent palette
 
 clusters_old = NULL
-for(time in time_span[1:4]){
+for(time in time_span){
 # time = 4
 cat(crayon::red("Time",time,"\n"))
 df_cluster_cut = df_cluster[df_cluster$Time==time,]

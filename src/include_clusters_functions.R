@@ -69,28 +69,34 @@ mode_correct_clusters = function(cl_old, cl_cur,verbose=0){ # and returns cl_new
 	}
 	for(i in already_taken_labels){
 		indici_label_i = which(cl_cur == i)
+		# cat(indici_label_i,"\n")
 		for(k in 1:length(unique(cl_cur))){
+			# cat(k,"\n")
 			if( !(k %in% new_labels) ){
 				new_labels = c(new_labels,k)
 				cl_new[indici_label_i] = k
+				break
 			}
 		}
 	}
-	
-	
-	if(it==max_it){
-		warning("Something went wrong. Returning original clustering.\n")
-		return(cl_Cur)
-	}
-	if (length(unique(cl_new))!=length(unique(cl_new))){
-		warning("Something went wrong. Returning original clustering.\n")
-		return(cl_Cur)
-	}
-	
 	if(verbose==1){
 		cat("cl_old =",cl_old,"\n")
 		cat("cl_cur =",cl_cur,"\n")
 		cat("cl_new =",cl_new,"\n")
+	}
+	
+	if(it==max_it){
+		warning("Something went wrong. Returning original clustering.\n")
+		return(cl_cur)
+	}
+	if (length(unique(cl_new))!=length(unique(cl_new)) ||
+		length(levels(factor(cl_new)))!=length(levels(factor(cl_cur))) ){
+		warning("Something went wrong. Returning original clustering.\n")
+		return(cl_cur)
+	}
+
+	if(!all(cl_new==cl_cur)){
+		cat(crayon::italic("Some change was made!\n"))
 	}
 	return(cl_new)
 	
@@ -106,6 +112,11 @@ cl_cur = c(1,1,2,2,1,1,3,3)
 check_ = c(2,2,1,1,2,2,3,3)
 mode_correct_clusters(cl_old,cl_cur,verbose=1)
 # mode_correct_clusters(cl_old,cl_cur) == check_
+
+cat(crayon::blue("- No change case\n"))
+cl_old = c(1,2,1,1,2,2,3,3)
+cl_cur = c(1,2,1,1,2,2,3,3)
+mode_correct_clusters(cl_old,cl_cur,verbose=1)
 
 
 cat(crayon::blue("- Tie case\n"))
@@ -140,6 +151,12 @@ cat(crayon::blue("- orphan value test\n"))
 cl_old = c(1,1,1,1,1,2,2,2,2,2,2,2)
 cl_cur = c(2,2,2,2,2,1,1,1,1,1,1,3)
 mode_correct_clusters(cl_old,cl_cur,verbose=1)
+
+cat(crayon::blue("- complex case of cl_old\n"))
+cl_old = c(2,2,2,2,2,2,2,2,2,2,2,2)
+cl_cur = c(2,2,2,2,2,1,1,1,1,1,1,3)
+mode_correct_clusters(cl_old,cl_cur,verbose=1)
+
 
 
 ################################################################################
