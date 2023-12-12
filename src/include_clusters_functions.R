@@ -264,6 +264,7 @@ assemble_edges = function(clusters,need_to_debug=0){
 	return(edges)
 }
 
+cat(crayon::red("- assemble_edges_list(clusters)\n"))
 assemble_edges_list = function(clusters,need_to_debug=0){
 	edges_temp_list = NULL
 	edges = data.frame(

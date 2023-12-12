@@ -122,14 +122,15 @@ drpm1 <- drpm_fit(y[,1+time_span], # use log trasnformed values, as we should
          verbose=TRUE,
 
          # draws=1100,burn=100,thin=1) # quick one
-         draws=10100,burn=1500,thin=5) # more serious one
+         draws=6100,burn=500,thin=2) # a bit more serious seriou one
+         # draws=10100,burn=1500,thin=5) # more serious one
 
 tempo_fine <- Sys.time()
 ```
 
 ```{r}
 differenza_tempo <- tempo_fine - tempo_inizio
-cat(crayon::red("Fit took\n",
+cat(crayon::cyan("Fit took:\n",
 				 differenza_tempo, "seconds, ie\n",
 				 as.numeric(differenza_tempo,units="mins"), "minutes, ie\n",
 				 as.numeric(differenza_tempo,units="hours"), "hours\n"))
@@ -185,6 +186,9 @@ for (time in time_span){
 ```
 
 ## gamma
+Gamma is not really a parameter but the collection of the alphas.
+So it is normal that gamma does not have a "good" trace plot.
+
 ```{r}
 for (time in time_span){
 	plot(drpm1$gamma[time,sampled_station,],type="l",
@@ -238,9 +242,18 @@ if(len(size(drpm1$alpha))==3){ # alpha is time dependent and unit dependent
 
 
 # Clusters distribution
+
 Sembra ci siano molti cluster piccoli, quindi forse occorre capire le prior/i parametri di drpm_fit per aggiustare questo fenomeno.
 Update: dopo la log transformazione non più. Ma anzi ora forse ce ne sono troppi pochi di cluster.
 
+```{r}
+# choose wisely
+# this will be from now on the color palette decision
+cols = colora(5,"div")[-2]
+```
+
+
+## continuos
 ```{r,warning=FALSE}
 for(time in time_span){
 
@@ -259,26 +272,129 @@ for(time in time_span){
 	clust_vals = salso_out[1:105]
 	df_temp = data.frame(clust_vals=clust_vals,ycurrent=ycurrent)
 
-	# per ora stiamo lavorando sui valori del dataset,
-	# ma dobbiamo ricordarci che li dobbiamo log-trasformare in realtà
-
 	pad = 2	
-	p = ggplot(df_temp, aes(ycurrent, fill = factor(clust_vals))) +
+	# p = ggplot(df_temp, aes(ycurrent, fill = factor(clust_vals))) +
+	p = ggplot(df_temp, aes(ycurrent, fill = cols[clust_vals])) +
 
-		scale_fill_manual(values = colora(n_clusters,77,0),name="Cluster")+
+		# scale_fill_manual(values = colora(n_clusters,77,0),name="Cluster")+
+		scale_fill_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+							breaks=cols[1:max(clust_vals)])+
+		guides(fill = guide_legend(title = "Clusters"))+
+
 		geom_density(alpha = 0.3)+
 		ggtitle(paste("Time",time))+
-		theme_classic()+
-		xlim(extrema(ycurrent)+c(-pad,pad))
+		theme_bw()+
+		xlab("log(PM10) values")+
+		ylab("")+
+		xlim(extrema(df_weekly$AQ_pm10))
+	
 	print(p)
 
 } # end for(time in eccc)
 ```
 
+## histogram v1 - no fill
+```{r,warning=FALSE}
+for(time in time_span){
 
-"pochi ma buoni per ora"
-Cioè almeno nel mio notebook sono usciti sempre due soli cluster ma ben divisi
+	salso_out <- salso(t(drpm1$Si[time,,]),loss="binder")
+		
+	n_clusters = max(salso_out)
+	ycurrent = y[,paste0("w",time)]
+	# cat(crayon::red("Time",time,"\n"))
+	# for (cl in 1:n_clusters){
+	# 
+	# 	cat("Cluster",cl,"- size",length(ycurrent[which(salso_out==cl)]),
+	# 		"- mean",mean(ycurrent[which(salso_out==cl)]),"\n")
+	# 
+	# }
 
+	clust_vals = salso_out[1:105]
+	df_temp = data.frame(clusters=clust_vals,ycurrent=ycurrent)
+
+	pad = 2	
+	p = ggplot(df_temp, aes(ycurrent,
+							# fill = cols[clust_vals]
+							color = cols[clust_vals]
+							))+
+		
+		geom_histogram(alpha=0.5,
+					   fill="white",
+					   position="identity")+ # to have histograms
+		# geom_density(alpha = 0.3)+ # to have the kernel/density estimation
+	
+		ggtitle(paste("Time",time))+
+		# labs(title = paste("Cluster map - time",time))+
+		guides(color = guide_legend(title = "Clusters"))+
+		
+		# theme_classic()
+		theme_bw()+
+		# xlim(extrema(ycurrent)+c(-pad,pad))+
+		
+		# scale_fill_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+							# breaks=cols[1:max(clust_vals)])
+		scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+							breaks=cols[1:max(clust_vals)])+
+		xlab("log(PM10) values")+
+		xlim(extrema(df_weekly$AQ_pm10))
+
+	
+	print(p)
+
+
+} # end for(time in eccc)
+```
+
+## histogram v2 - fill
+```{r,warning=FALSE}
+for(time in time_span){
+
+	salso_out <- salso(t(drpm1$Si[time,,]),loss="binder")
+		
+	n_clusters = max(salso_out)
+	ycurrent = y[,paste0("w",time)]
+	# cat(crayon::red("Time",time,"\n"))
+	# for (cl in 1:n_clusters){
+	# 
+	# 	cat("Cluster",cl,"- size",length(ycurrent[which(salso_out==cl)]),
+	# 		"- mean",mean(ycurrent[which(salso_out==cl)]),"\n")
+	# 
+	# }
+
+	clust_vals = salso_out[1:105]
+	df_temp = data.frame(clusters=clust_vals,ycurrent=ycurrent)
+
+	pad = 2	
+	p = ggplot(df_temp, aes(ycurrent,
+							fill = cols[clust_vals]
+							# color = cols[clust_vals]
+							))+
+		
+		geom_histogram(alpha=0.3,
+					   # fill="white",
+					   position="identity")+ # to have histograms
+		# geom_density(alpha = 0.3)+ # to have the kernel/density estimation
+	
+		ggtitle(paste("Time",time))+
+		# labs(title = paste("Cluster map - time",time))+
+		guides(fill = guide_legend(title = "Clusters"))+
+		
+		# theme_classic()
+		theme_bw()+
+		# xlim(extrema(ycurrent)+c(-pad,pad))+
+		
+		scale_fill_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+							breaks=cols[1:max(clust_vals)])+
+		# scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+							# breaks=cols[1:max(clust_vals)])
+		xlab("log(PM10) values")+
+		xlim(extrema(df_weekly$AQ_pm10))
+	
+	print(p)
+
+
+} # end for(time in eccc)
+```
 
 
 # Map cluster plots
@@ -338,7 +454,7 @@ for( time in time_span){
 ## Version 2 - final
 all the functions are in the include_clusters_function. Here is the code to plot.
 ```{r}
-cols = colora(3,112)
+# cols = colora(3,112)
 # cols = colora(5,"div") # divergent palette
 
 clusters_old = NULL
@@ -377,42 +493,70 @@ print(q)
 clusters_old = clusters_now
 }
 ```
+Forse possiamo fare insieme questa mappa con quella degli istogrammi sopra.
+Così ad ogni istante temporale, e poi nell'animazione, vediamo sia i cluster sia quanto sono diversi in termini di "densità".
 
-
+Del tipo
 ```{r}
-ggplot(luv_colours, aes(u, v)) +
-  geom_point(aes(colour = col), size = 3) +
-  scale_color_identity() +
-  coord_fixed()
+library(gridExtra)
 
-df <- data.frame(
-  x = 1:4,
-  y = 1:4,
-  colour = c("AAA"="red", "B"="green", "BL"="blue", "YE"="yellow")
-)
-ggplot(df, aes(x, y)) + geom_tile(aes(fill = colour))
-ggplot(df, aes(x, y)) +
-  geom_tile(aes(fill = colour)) +
-  scale_fill_identity()
+clusters_old = NULL
+for(time in time_span){
 
-# To get a legend guide, specify guide = "legend"
-ggplot(df, aes(x, y)) +
-  geom_tile(aes(fill = colour)) +
-  scale_fill_identity(guide = "legend")
-# But you'll typically also need to supply breaks and labels:
-ggplot(df, aes(x, y)) +
-  geom_tile(aes(fill = colour)) +
-  scale_fill_identity("trt", labels = letters[1:4], breaks = df$colour,
-  guide = "legend")
+# GRAPH #######################
+cat(crayon::red("Time",time,"\n"))
+df_cluster_cut = df_cluster[df_cluster$Time==time,]
+clusters_now = df_cluster_cut$clusters
+clusters_now = mode_correct_clusters(clusters_old,clusters_now)
+df_cluster_cut$clusters = clusters_now
+edges_list = assemble_edges_list(clusters_now)
+p  <-  DefaultPlot()+
+	geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
+										  # color = cols[factor(clusters)]), size = 2)+
+										  color = cols[clusters_now]), size = 2)+
+	labs(title = paste("Cluster map - time",time))
+q = p
+for(cl in 1:len(edges_list)){
+	edges_to_plot = edges_list[[cl]]
+	q = q + geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
+					 color = cols[as.numeric(cluster)]),
+					 # color = paste0("cl",cl)),
+				 linewidth=1.2,
+				 data = edges_to_plot,show.legend = TRUE)+
+		guides(color = guide_legend(title = "Clusters"))
+}
+q = q +
+	scale_colour_identity(guide="legend",labels=paste0("cl",1:len(edges_list)),
+						  breaks=cols[1:len(edges_list)])
+clusters_old = clusters_now
+q_graph=q
 
-# cyl scaled to appropriate size
-ggplot(mtcars, aes(mpg, wt)) +
-  geom_point(aes(size = cyl))
+# HIST #######################
+salso_out <- salso(t(drpm1$Si[time,,]),loss="binder")
+n_clusters = max(salso_out)
+ycurrent = y[,paste0("w",time)]
+clust_vals = salso_out[1:105]
+df_temp = data.frame(clusters=clust_vals,ycurrent=ycurrent)
+p = ggplot(df_temp, aes(ycurrent,
+						color = cols[clust_vals]
+						))+
+	geom_histogram(alpha=0.5,
+				   fill="white",
+				   position="identity")+ 
+	ggtitle(paste("Time",time))+
+	# guides(color = guide_legend(title = "Clusters"))+
+	theme_bw()+
+	theme(legend.position = "none")+
+	scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+						breaks=cols[1:max(clust_vals)])+
+	xlab("log(PM10) values")+
+	xlim(c(0,5))
+	# xlim(extrema(df_weekly$AQ_pm10))
+p_hist = p
 
-# cyl used as point size
-ggplot(mtcars, aes(mpg, wt)) +
-  geom_point(aes(size = cyl)) +
-  scale_size_identity()
+grid.arrange(q_graph, p_hist, ncol=2,widths=c(1.5,1))
+}
 ```
+
 
 
