@@ -334,3 +334,161 @@ assemble_edges_list = function(clusters,need_to_debug=0){
 # edges = assemble_edges(clusters)
 
 
+cat(crayon::bold("plotter library required!\n"))
+
+
+cat(crayon::red("- get_graph_plot(df_cluster_cut)\n"))
+get_graph_plot = function(df_cluster_cut){ # already mode_corrected
+	clusters_now = df_cluster_cut$clusters
+	edges_list = assemble_edges_list(clusters_now)
+	
+	p  <-  DefaultPlot()+
+		geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
+											  # color = cols[factor(clusters)]), size = 2)+
+											  color = cols[clusters_now]), size = 2)+
+		labs(title = paste("Cluster map - time",time))
+	
+	q = p
+	for(cl in 1:len(edges_list)){
+		edges_to_plot = edges_list[[cl]]
+		q = q + geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
+								 color = cols[as.numeric(cluster)]),
+							 # color = paste0("cl",cl)),
+							 linewidth=1.2,
+							 data = edges_to_plot,show.legend = TRUE)+
+			guides(color = guide_legend(title = "Clusters"))
+	}
+	
+	q = q +
+		scale_colour_identity(guide="legend",labels=paste0("cl",1:len(edges_list)),
+							  breaks=cols[1:len(edges_list)])
+}
+
+
+cat(crayon::red("- get_hist_fill_plot(df_cluster_cut)\n"))
+get_hist_fill_plot = function(df_cluster_cut,verbose=0){
+	clusters_now = df_cluster_cut$clusters
+	n_clusters = max(clusters_now)
+	ycurrent = y[,paste0("w",time)]
+	
+	if(verbose==1){
+	cat(crayon::red("Time",time,"\n"))
+		for (cl in 1:n_clusters){
+			cat("Cluster",cl,"- size",length(ycurrent[which(clusters_now==cl)]),
+				"- mean",mean(ycurrent[which(clusters_now==cl)]),"\n")
+			
+		}
+	}
+	
+	clust_vals = clusters_now[1:105]
+	df_temp = data.frame(clusters=clust_vals,ycurrent=ycurrent)
+	
+	pad = 2	
+	p = ggplot(df_temp, aes(ycurrent,
+							fill = cols[clust_vals]
+							# color = cols[clust_vals]
+	))+
+		
+		geom_histogram(alpha=0.3,
+					   # fill="white",
+					   position="identity")+ # to have histograms
+		# geom_density(alpha = 0.3)+ # to have the kernel/density estimation
+		
+		ggtitle(paste("Time",time))+
+		# labs(title = paste("Cluster map - time",time))+
+		guides(fill = guide_legend(title = "Clusters"))+
+		
+		# theme_classic()
+		theme_bw()+
+		# xlim(extrema(ycurrent)+c(-pad,pad))+
+		
+		scale_fill_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+							breaks=cols[1:max(clust_vals)])+
+		# scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+		# breaks=cols[1:max(clust_vals)])
+		xlab("log(PM10) values")+
+		xlim(c(0.5,5))
+	
+}
+
+
+cat(crayon::red("- get_hist_color_plot(df_cluster_cut)\n"))
+get_hist_color_plot = function(df_cluster_cut,verbose=0){
+	clusters_now = df_cluster_cut$clusters
+	n_clusters = max(clusters_now)
+	ycurrent = y[,paste0("w",time)]
+	
+	if(verbose==1){
+	cat(crayon::red("Time",time,"\n"))
+		for (cl in 1:n_clusters){
+			cat("Cluster",cl,"- size",length(ycurrent[which(clusters_now==cl)]),
+				"- mean",mean(ycurrent[which(clusters_now==cl)]),"\n")
+			
+		}
+	}
+	
+	clust_vals = clusters_now[1:105]
+	df_temp = data.frame(clusters=clust_vals,ycurrent=ycurrent)
+	
+	pad = 2	
+	p = ggplot(df_temp, aes(ycurrent,
+							# fill = cols[clust_vals]
+							color = cols[clust_vals]
+	))+
+		
+		geom_histogram(alpha=0.5,
+					   fill="white",
+					   position="identity")+ # to have histograms
+		# geom_density(alpha = 0.3)+ # to have the kernel/density estimation
+		
+		ggtitle(paste("Time",time))+
+		# labs(title = paste("Cluster map - time",time))+
+		guides(color = guide_legend(title = "Clusters"))+
+		
+		# theme_classic()
+		theme_bw()+
+		# xlim(extrema(ycurrent)+c(-pad,pad))+
+		
+		# scale_fill_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+		# breaks=cols[1:max(clust_vals)])
+		scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+							 breaks=cols[1:max(clust_vals)])+
+		xlab("log(PM10) values")+
+		xlim(c(0.5,5))
+}
+
+
+cat(crayon::red("- get_hist_continuos_plot(df_cluster_cut)\n"))
+get_hist_continuos_plot = function(df_cluster_cut,verbose=1){
+	clusters_now = df_cluster_cut$clusters
+	n_clusters = max(clusters_now)
+	ycurrent = y[,paste0("w",time)]
+	cat(crayon::red("Time",time,"\n"))
+	
+	if(verbose==1){
+		for (cl in 1:n_clusters){
+			cat("Cluster",cl,"- size",length(ycurrent[which(clusters_now==cl)]),
+				"- mean",mean(ycurrent[which(clusters_now==cl)]),"\n")
+			
+		}
+	}
+	
+	clust_vals = clusters_now[1:105]
+	df_temp = data.frame(clust_vals=clust_vals,ycurrent=ycurrent)
+	
+	pad = 2	
+	# p = ggplot(df_temp, aes(ycurrent, fill = factor(clust_vals))) +
+	p = ggplot(df_temp, aes(ycurrent, fill = cols[clust_vals])) +
+		
+		# scale_fill_manual(values = colora(n_clusters,77,0),name="Cluster")+
+		scale_fill_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+							breaks=cols[1:max(clust_vals)])+
+		guides(fill = guide_legend(title = "Clusters"))+
+		
+		geom_density(alpha = 0.3)+
+		ggtitle(paste("Time",time))+
+		theme_bw()+
+		xlab("log(PM10) values")+
+		ylab("")+
+		xlim(c(0.5,5))
+}
