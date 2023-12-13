@@ -3,14 +3,35 @@ title: "Pmmsuite - Curveppm ( No covariates)"
 output: html_document
 date: "2023-12-05"
 ---
-Upload libraries and data
-```{r}
-library(ppmSuite)
-library(tidyverse)
-library(salso)
-load("../data/df_weekly.Rdata")
+
+```{r,warning=FALSE}
+source("include.R") # why didnt you use it above, in your code? :'/
+source("plot functions/plotter.R")
 ```
 
+If we include this alone seems to work better (dont know why).
+```{r}
+source("include_clusters_functions.R")
+```
+
+# cluster plots stuff
+Stuff needed for the plot functions to work
+```{r}
+cols = colora(10,"div")[-2] # divergent palette; togliamo il giallino
+
+y=data.frame()
+
+for(st in stations){
+  y_we_pm10=cbind(as.data.frame(st),t(df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]))
+  y=rbind(y,y_we_pm10)
+}
+
+rownames(y) = NULL
+colnames(y)<- c("id",paste0("w", 1:53))
+df_weekly
+y
+# this y needs to not be overwritten
+```
 
 Fix number of stations, ...
 ```{r}
