@@ -492,3 +492,36 @@ get_hist_continuos_plot = function(df_cluster_cut,verbose=1){
 		ylab("")+
 		xlim(c(0.5,5))
 }
+
+
+cat(crayon::red("- plot_graph_and_hist(df_cluster_cut)\n"))
+plot_graph_and_hist = function(df_cluster_cut){
+	
+# GRAPH #######################
+q_graph = get_graph_plot(df_cluster_cut)
+
+# HIST #######################
+# by hand as we have to remove the legend here, while the function produces it
+n_clusters = max(clusters_now)
+ycurrent = y[,paste0("w",time)]
+clust_vals = clusters_now[1:105]
+df_temp = data.frame(clusters=clust_vals,ycurrent=ycurrent)
+p = ggplot(df_temp, aes(ycurrent,
+						color = cols[clust_vals]
+))+
+	geom_histogram(alpha=0.5,
+				   fill="white",
+				   position="identity")+ 
+	ggtitle(paste("Time",time))+
+	# guides(color = guide_legend(title = "Clusters"))+
+	theme_bw()+
+	theme(legend.position = "none")+
+	scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+						 breaks=cols[1:max(clust_vals)])+
+	xlab("log(PM10) values")+
+	xlim(c(0,5))
+# xlim(extrema(df_weekly$AQ_pm10))
+p_hist = p
+
+grid.arrange(q_graph, p_hist, ncol=2,widths=c(1.5,1))
+}

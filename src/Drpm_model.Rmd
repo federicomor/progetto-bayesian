@@ -105,35 +105,43 @@ drpm1 <- drpm_fit(y[,1+time_span], # use log trasnformed values, as we should
          starting_alpha = 0.5,
          unit_specific_alpha = FALSE,
          time_specific_alpha = TRUE,
+
          alpha_0=FALSE,
          eta1_0=FALSE, # TRUE?
          phi1_0=FALSE,
-         modelPriors=c(0,100^2,1,1,1,1),
+
+         modelPriors=c(0,100^2,1,1,1,1), # original default one
+         # modelPriors=c(0,100^2,3,3,3,1),
 
          alphaPriors=rbind(c(1,1)), # if time_specific_alpha == TRUE
          # alphaPriors=matrix(rep(c(1,1),105),105,2), # if unit_specific_alpha == TRUE
          # alphaPriors=matrix(rep(c(1,1),105),105,2), # if both the above are TRUE
 
          simpleModel = 0,
-         theta_tau2 = c(0, 2),
-         SpatialCohesion=4,
+         theta_tau2 = c(0, 2), # only used if simpleModel=1
+
+         # SpatialCohesion=3, # auxiliary similarity
+         SpatialCohesion=4, # double dipper similarity, default one
+
          cParms=c(0, 1, 2, 1),
          mh=c(0.5, 1, 0.1, 0.1, 0.1),
          verbose=TRUE,
 
          # draws=1100,burn=100,thin=1) # quick one
-         draws=6100,burn=500,thin=2) # a bit more serious seriou one
+         draws=9000,burn=1000,thin=2) # a bit more serious seriou one
          # draws=10100,burn=1500,thin=5) # more serious one
+         # draws=30000,burn=3000,thin=5) # really serious one
 
 tempo_fine <- Sys.time()
 ```
 
 ```{r}
 differenza_tempo <- tempo_fine - tempo_inizio
-cat(crayon::cyan("Fit took:\n",
-				 differenza_tempo, "seconds, ie\n",
-				 as.numeric(differenza_tempo,units="mins"), "minutes, ie\n",
-				 as.numeric(differenza_tempo,units="hours"), "hours\n"))
+cat(crayon::cyan("Fit took:\n"))
+print(round(differenza_tempo,digits = 4))
+
+cat(crayon::blue("That was for fitting",max(time_span),"time steps.\nSo for fitting all 53 weeks the expected time with these parameters will be:\n"))
+print(round(differenza_tempo/max(time_span)*53,digits=4))
 ```
 
 
@@ -171,6 +179,8 @@ cat("fitted size = ",size(drpm1$fitted),"\n")
 # Trace plots?
 ```{r}
 sampled_station = floor(runif(1,0,105))
+cat("sampled_station =",sampled_station,"- that is station called",unique(df_weekly$IDStations)[sampled_station])
+
 ```
 
 ## Si
@@ -342,6 +352,9 @@ p
 
 # Save png(s) for animation
 ```{r}
+save_pngs = 0
+
+if(save_pngs==1){
 for( time in time_span){
 	df_cluster_cut = df_cluster[df_cluster$Time==time,]
 	
@@ -356,7 +369,9 @@ for( time in time_span){
 	  plot = p
 	)
 }
-
+} else {
+	cat("Not saving pngs for now.")
+}
 ```
 
 
@@ -397,32 +412,9 @@ df_cluster_cut = df_cluster[df_cluster$Time==time,]
 clusters_now = df_cluster_cut$clusters
 clusters_now = mode_correct_clusters(clusters_old,clusters_now)
 df_cluster_cut$clusters = clusters_now
-q_graph = get_graph_plot(df_cluster_cut)
 
-# HIST #######################
-# by hand as we have to remove the legend here, while the function produces it
-n_clusters = max(clusters_now)
-ycurrent = y[,paste0("w",time)]
-clust_vals = clusters_now[1:105]
-df_temp = data.frame(clusters=clust_vals,ycurrent=ycurrent)
-p = ggplot(df_temp, aes(ycurrent,
-						color = cols[clust_vals]
-						))+
-	geom_histogram(alpha=0.5,
-				   fill="white",
-				   position="identity")+ 
-	ggtitle(paste("Time",time))+
-	# guides(color = guide_legend(title = "Clusters"))+
-	theme_bw()+
-	theme(legend.position = "none")+
-	scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
-						breaks=cols[1:max(clust_vals)])+
-	xlab("log(PM10) values")+
-	xlim(c(0,5))
-	# xlim(extrema(df_weekly$AQ_pm10))
-p_hist = p
+	plot_graph_and_hist(df_cluster_cut)
 
-grid.arrange(q_graph, p_hist, ncol=2,widths=c(1.5,1))
 clusters_old = clusters_now
 }
 ```

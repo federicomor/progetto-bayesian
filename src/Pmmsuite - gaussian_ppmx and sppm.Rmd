@@ -14,6 +14,25 @@ If we include this alone seems to work better (dont know why).
 source("include_clusters_functions.R")
 ```
 
+# cluster plots stuff
+Stuff needed for the plot functions to work
+```{r}
+cols = colora(10,"div")[-2] # divergent palette; togliamo il giallino
+
+y=data.frame()
+
+for(st in stations){
+  y_we_pm10=cbind(as.data.frame(st),t(df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]))
+  y=rbind(y,y_we_pm10)
+}
+
+rownames(y) = NULL
+colnames(y)<- c("id",paste0("w", 1:53))
+df_weekly
+y
+# this y needs to not be overwritten
+```
+
 
 ```{r}
 library(salso)
@@ -28,15 +47,15 @@ Sometimes it fails the execution (dont know why). In that case:
 
 ## loop fit
 ```{r}
-clusters_tm1 = NULL
+clusters_old = NULL
 
 for (time in 1:6){
 	cat(crayon::red("Time (ie week)",time,"\n"))
 	df_time = df_weekly[which(df_weekly$week==time),]
-	y = df_time$AQ_pm10
+	y_fit = df_time$AQ_pm10
 	X = df_time[,-c(1:5,7)]
 
-	fit = gaussian_ppmx(y, X=X, Xpred=NULL,
+	fit = gaussian_ppmx(y_fit, X=X, Xpred=NULL,
 	                  meanModel=1,
 	                  cohesion=1,
 	                  M=1,
@@ -50,71 +69,51 @@ for (time in 1:6){
 	                  draws=1100,burn=100,thin=1,
 	                  verbose=FALSE)
 	
-	clusters = salso(fit$Si,loss="binder")
-	clusters = clusters[1:105]
+	clusters_now = salso(fit$Si,loss="binder")
+	clusters_now = clusters_now[1:105]
 	### Mode correct clusters
-	clusters_new = mode_correct_clusters(clusters_tm1,clusters)
+	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
 	
 	df_temp = data.frame(
 		Longitude = unique(df_weekly$Longitude),
 		Latitude = unique(df_weekly$Latitude),
-		clusters = clusters[1:105]
+		clusters = clusters_now[1:105]
 	)
 	df_temp$Time = rep(time,dim(df_temp)[1])
 	df_cluster_cut = df_temp
 	
 	
-	
 	### Hist plot
-	df_hist = data.frame(clust_vals=clusters[1:105],ycurrent=y)
-	my_pad = 2
-	n_clusters = max(clusters)
-	p = ggplot(df_hist, aes(ycurrent, fill = factor(clust_vals)))+
-		scale_fill_manual(values = colora(n_clusters,77,0),name="Cluster")+
-		geom_density(alpha = 0.3)+
-		ggtitle(paste("Time",time))+
-		theme_classic()+
-		xlim(extrema(y)+c(-my_pad,my_pad))
+	# p = get_hist_color_plot(df_cluster_cut)
+	p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
 	print(p)
 	
-	
-	
 	### Graph plot
-	clusters = df_cluster_cut$clusters
-	edges = assemble_edges(clusters,need_to_debug=0)
-	# edges
-	p  <-  DefaultPlot()+
-		geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
-											  color = factor(clusters)), size = 2)+
-		labs(title = paste("Cluster map - time",time))+
-		guides(color = guide_legend(title = "Clusters"))
-	
-	q = p + geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
-						 color = cluster),
-					 linewidth=1.2,
-					 data = edges)
-	# print(p)
+	q = get_graph_plot(df_cluster_cut)
 	print(q)
 	
-	clusters_tm1 = clusters
+	# or both together with
+	# plot_graph_and_hist(df_cluster_cut)
+	
+	clusters_old = clusters_now
 } # end for time
 ```
 # Model sppm
 
 ## loop fit
 ```{r}
-clusters_tm1 = NULL
+clusters_old = NULL
 
 for (time in 1:5){
 	cat(crayon::red("Time (ie week)",time,"\n"))
 	df_time = df_weekly[which(df_weekly$week==time),]
-	y = df_time$AQ_pm10
+	y_fit = df_time$AQ_pm10
 	s = data.frame(
 		lat = unique(df_weekly$Latitude),
 		long = unique(df_weekly$Longitude)
 	)
 
-	fit = sppm(y,s,
+	fit = sppm(y_fit,s,
 	    s.pred=NULL,
 	    cohesion=3,
 	    M=1,
@@ -123,59 +122,39 @@ for (time in 1:5){
 	    mh=c(0.5, 0.5),
 	    draws=1100,burn=100,thin=1)
 	
-	clusters = salso(fit$Si,loss="binder")
-	clusters = clusters[1:105]
+	clusters_now = salso(fit$Si,loss="binder")
+	clusters_now = clusters_now[1:105]
 	### Mode correct clusters
-	clusters = mode_correct_clusters(clusters_tm1,clusters)
+	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
 	
 	df_temp = data.frame(
 		Longitude = unique(df_weekly$Longitude),
 		Latitude = unique(df_weekly$Latitude),
-		clusters = clusters[1:105]
+		clusters = clusters_now[1:105]
 	)
 	df_temp$Time = rep(time,dim(df_temp)[1])
 	df_cluster_cut = df_temp
 	
 	
-	
 	### Hist plot
-	df_hist = data.frame(clust_vals=clusters[1:105],ycurrent=y)
-	my_pad = 2
-	n_clusters = max(clusters)
-	p = ggplot(df_hist, aes(ycurrent, fill = factor(clust_vals)))+
-		scale_fill_manual(values = colora(n_clusters,77,0),name="Cluster")+
-		geom_density(alpha = 0.3)+
-		ggtitle(paste("Time",time))+
-		theme_classic()+
-		xlim(extrema(y)+c(-my_pad,my_pad))
-	print(p)
-	
-	
+	# p = get_hist_color_plot(df_cluster_cut)
+	# p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
+	# print(p)
 	
 	### Graph plot
-	clusters = df_cluster_cut$clusters
-	edges = assemble_edges(clusters,need_to_debug=0)
-	# edges
-	p  <-  DefaultPlot()+
-		geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
-											  color = factor(clusters)), size = 2)+
-		labs(title = paste("Cluster map - time",time))+
-		guides(color = guide_legend(title = "Clusters"))
+	# q = get_graph_plot(df_cluster_cut)
+	# print(q)
 	
-	q = p + geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
-						 color = cluster),
-					 linewidth=1.2,
-					 data = edges)
-	# print(p)
-	print(q)
+	# or both together with
+	plot_graph_and_hist(df_cluster_cut)
 	
-	clusters_tm1 = clusters
-	
+	clusters_old = clusters_now
 } # end for time
 ```
 
 # curve_ppmx
-## on the package example
+
+## time management considerations
 ```{r}
 # Example with balanced data.
 # generate data for two clusters with 10 subjects each.
@@ -185,18 +164,16 @@ nsubject <- 2*10
 
 set.seed(101)
 xx <- seq(0,2*pi, length=nobs)
-y <- cbind(replicate(n=10, 3*sin(xx)*as.numeric(xx<=pi) + rnorm(nobs,0,0.5)),
+y_fit <- cbind(replicate(n=10, 3*sin(xx)*as.numeric(xx<=pi) + rnorm(nobs,0,0.5)),
            replicate(n=10, 3*cos(xx)*as.numeric(xx<=pi) + rnorm(nobs,0,0.5)))
 
-dat <- data.frame(y=c(y),
+dat <- data.frame(y_fit=c(y_fit),
                   z=rep(1:nobs, times=nsubject),
                   Name=rep(1:nsubject, each=nobs))
 
 subject_obs_vec <- dat$Name
 
 nknots <- 15
-
-
 
 # Small number of iterates for illustrative purposes only
 niter <- 5000
@@ -214,7 +191,7 @@ simparms <- c(0.0, 1.0, 0.1, 1.0, 1.0, 0.1, 1)
 fits <- list()
 
 # fit vgrf only
-y <- dat$y
+y_fit <- dat$y_fit
 
 modelPriors <- c(0.5,      # Asig
                  1000^2,   # s2_mu
@@ -229,18 +206,18 @@ dat
 
 for(subj in 1:20){
 	if(subj==1){
-		plot(1:100,dat[which(dat$Name==subj),"y"],type="l",col="red",ylim=c(-4,4))
+		plot(1:100,dat[which(dat$Name==subj),"y_fit"],type="l",col="red",ylim=c(-4,4))
 	} else {
-		lines(dat[which(dat$Name==subj),"y"],type="l",col="red")
+		lines(dat[which(dat$Name==subj),"y_fit"],type="l",col="red")
 	}
 }
 for(i in 11:20){
-	lines(dat[which(dat$Name==i),"y"],type="l",col="blue")
+	lines(dat[which(dat$Name==i),"y_fit"],type="l",col="blue")
 }
 ```
 
 ```{r}
-fit <- curve_ppmx(y=cbind(y), z=z,
+fit <- curve_ppmx(y=cbind(y_fit), z=z,
              subject=subject_obs_vec,
              Xcon = NULL, Xcat = NULL,
              Xconp=NULL, Xcatp=NULL,
@@ -268,9 +245,7 @@ p.est <- fit$Si[1,]
 
 nc <- length(unique(p.est))
 
-
 oldpar <- par(no.readonly = TRUE)
-
 
 # Plot individual subject fits.
 
@@ -280,7 +255,7 @@ for(j in tmp){
   bmn <- apply(fit$beta[j,,],1,mean)
   b0mn <- mean(fit$beta0[,j])
 
-  ytmp <- y[dat$Name==j]
+  ytmp <- y_fit[dat$Name==j]
 
   b0vec <- rep(b0mn, nobs)
 
@@ -296,7 +271,7 @@ for(j in tmp){
 # plot all curves in one plot
 par(mfrow=c(1,1))
 
-plot(dat$z, dat$y, type="n",ylab="",xlab="Time")
+plot(dat$z, dat$y_fit, type="n",ylab="",xlab="Time")
 
 for(j in 1:nsubject){
 
@@ -336,16 +311,16 @@ modelPriors <- c(0.5, # Asig
                  1, # at
                  1.0/0.05) # bt
 
-clusters_tm1 = NULL
+clusters_old = NULL
 
 for (time in 1:4){
 	cat(crayon::red("Time (ie week)",time,"\n"))
 	df_time = df_weekly[which(df_weekly$week==time),]
-	y = df_time$AQ_pm10
+	y_fit = df_time$AQ_pm10
 	z = rep(time,105)
 	subject = unique(df_weekly$IDStations)
 
-	fit <- curve_ppmx(y=cbind(y), z, subject,
+	fit <- curve_ppmx(y=cbind(y_fit), z, subject,
                   Xcon = NULL, Xcat = NULL,
                   Xconp=NULL, Xcatp=NULL,
                   PPM=TRUE, M=1,
@@ -361,54 +336,32 @@ for (time in 1:4){
                   burn=nburn,
                   thin=nthin)
 	
-	clusters = salso(fit$Si,loss="binder")
-	clusters = clusters[1:105]
+	clusters_now = salso(fit$Si,loss="binder")
+	clusters_now = clusters_now[1:105]
 	### Mode correct clusters
-	clusters = mode_correct_clusters(clusters_tm1,clusters)
+	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
 	
 	df_temp = data.frame(
 		Longitude = unique(df_weekly$Longitude),
 		Latitude = unique(df_weekly$Latitude),
-		clusters = clusters[1:105]
+		clusters = clusters_now[1:105]
 	)
 	df_temp$Time = rep(time,dim(df_temp)[1])
 	df_cluster_cut = df_temp
 	
-	
-	
 	### Hist plot
-	df_hist = data.frame(clust_vals=clusters[1:105],ycurrent=y)
-	my_pad = 2
-	n_clusters = max(clusters)
-	p = ggplot(df_hist, aes(ycurrent, fill = factor(clust_vals)))+
-		scale_fill_manual(values = colora(n_clusters,77,0),name="Cluster")+
-		geom_density(alpha = 0.3)+
-		ggtitle(paste("Time",time))+
-		theme_classic()+
-		xlim(extrema(y)+c(-my_pad,my_pad))
-	print(p)
-	
-	
+	# p = get_hist_color_plot(df_cluster_cut)
+	# p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
+	# print(p)
 	
 	### Graph plot
-	clusters = df_cluster_cut$clusters
-	edges = assemble_edges(clusters,need_to_debug=0)
-	# edges
-	p  <-  DefaultPlot()+
-		geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
-											  color = factor(clusters)), size = 2)+
-		labs(title = paste("Cluster map - time",time))+
-		guides(color = guide_legend(title = "Clusters"))
+	# q = get_graph_plot(df_cluster_cut)
+	# print(q)
 	
-	q = p + geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
-						 color = cluster),
-					 linewidth=1.2,
-					 data = edges)
-	# print(p)
-	print(q)
+	# or both together with
+	plot_graph_and_hist(df_cluster_cut)
 	
-	clusters_tm1 = clusters
-	
+	clusters_old = clusters_now
 } # end for time
 ```
 
