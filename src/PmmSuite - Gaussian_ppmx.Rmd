@@ -1,0 +1,113 @@
+---
+title: "PmmSuite - Gaussian_Ppmx"
+output: html_document
+date: "2023-12-15"
+---
+---
+title: "Untitled"
+output: html_document
+---
+
+
+```{r,warning=FALSE}
+source("include.R") # why didnt you use it above, in your code? :'/
+source("plot functions/plotter.R")
+```
+
+If we include this alone seems to work better (dont know why).
+```{r}
+source("include_clusters_functions.R")
+```
+
+# cluster plots stuff
+Stuff needed for the plot functions to work
+```{r}
+cols = colora(10,"div")[-2] # divergent palette; togliamo il giallino
+
+y=data.frame()
+
+for(st in stations){
+  y_we_pm10=cbind(as.data.frame(st),t(df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]))
+  y=rbind(y,y_we_pm10)
+}
+
+rownames(y) = NULL
+colnames(y)<- c("id",paste0("w", 1:53))
+df_weekly
+y
+# this y needs to not be overwritten
+```
+
+
+```{r}
+library(salso)
+library(ppmSuite)
+```
+
+Sometimes it fails the execution (dont know why). In that case:
+- go to the file include_clusters_function.R and run it all (ctrl+alt+R)
+- come back here and now it should run finely
+
+# gaussian_ppmx
+
+## loop fit
+```{r}
+clusters_old = NULL
+
+for (time in 1:6){
+	cat(crayon::red("Time (ie week)",time,"\n"))
+	df_time = df_weekly[which(df_weekly$week==time),]
+	y_fit = df_time$AQ_pm10
+	X = df_time[,-c(1:5,7)]
+
+	fit = gaussian_ppmx(y_fit, X=X, Xpred=NULL,
+	                  meanModel=1,
+	                  cohesion=1,
+	                  M=1,
+	                  PPM = FALSE,
+	                  similarity_function=1,
+	                  consim=1,
+	                  calibrate=0,
+	                  simParms=c(0.0, 1.0, 0.1, 1.0, 2.0, 0.1, 1),
+	                  modelPriors=c(0, 100^2, 1, 1),
+	                  mh=c(0.5, 0.5),
+	                  draws=1100,burn=100,thin=1,
+	                  verbose=FALSE)
+	
+	clusters_now = salso(fit$Si,loss="binder")
+	clusters_now = clusters_now[1:105]
+	### Mode correct clusters
+	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
+	
+	df_temp = data.frame(
+		Longitude = unique(df_weekly$Longitude),
+		Latitude = unique(df_weekly$Latitude),
+		clusters = clusters_now[1:105]
+	)
+	df_temp$Time = rep(time,dim(df_temp)[1])
+	df_cluster_cut = df_temp
+	
+	
+	### Hist plot
+	# p = get_hist_color_plot(df_cluster_cut)
+	p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
+	print(p)
+	
+	### Graph plot
+	q = get_graph_plot(df_cluster_cut)
+	print(q)
+	
+	# or both together with
+	# plot_graph_and_hist(df_cluster_cut)
+	
+	clusters_old = clusters_now
+} # end for time
+```
+AGGIUNGI TRACE PLOTS
+
+PRIORS:
+- REFERENCE PRIORS
+- INFORMATIVE PRIORS 
+
+
+AGGIUNGI COVARIATE
