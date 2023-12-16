@@ -1,5 +1,8 @@
-### Linear regression ###
+---
+title: "R Notebook"
+---
 
+# Linear regression
 
 ```{r}
 source("include.R") 
@@ -20,7 +23,7 @@ library(plotrix)    # to  plot CIs
 
 
 
-Start dividing stations
+# Start dividing stations
 ```{r}
 dati = df_weekly[,c(2,7)]
 df_stat=hash()
@@ -54,7 +57,7 @@ covs=scale(covs)     #normalization on the station
 head(covs)
 ```
 
-
+# exploration
 ```{r}
 par(mar=c(15,9,1,1))
 boxplot(covs,las=2)
@@ -67,7 +70,7 @@ for (i in 1:size(covs)[2]){
 
 
 
-
+# prepare data
 ```{r}
 data = list(y=y,
             x=covs,
@@ -75,7 +78,7 @@ data = list(y=y,
             k=k)
 ```
 
-
+### jags stuff
 Let's fix a list of initial value for the MCMC algorithm that JAGS will implement:
 ```{r}
 inits = function() {list(beta0=0,
@@ -85,7 +88,7 @@ inits = function() {list(beta0=0,
 
 
 
-FIRST STEP
+# FIRST STEP
 ```{r echo=T, results='hide'}
 modelRegress=jags.model("LinearReg.bug",data=data,inits=inits,n.adapt=1000,n.chains=1)
 ```
@@ -95,12 +98,13 @@ sigma is Uniform on the interval (0,100)
 Prior not conjugate (?)
 
 
-SECOND STEP
+# SECOND STEP
 ```{r echo=T, results='hide'}
 update(modelRegress,n.iter=5000) #this is the burn-in period
 ## this function DOES NOT record the sampled values of parameters
 ```
-THIRD STEP: we tell JAGS to generate MCMC samples that we will use to represent the posterior distribution 
+# THIRD STEP 
+we tell JAGS to generate MCMC samples that we will use to represent the posterior distribution 
 ```{r}
 variable.names=c("beta0", "beta", "sigma") #parameters - see the file .bug - that will have 
                                            # their values recorded
@@ -110,6 +114,7 @@ thin=10
 
 ```
 
+## output regression
 ```{r echo=T, results='hide'}
 outputRegress=coda.samples(model=modelRegress,variable.names=variable.names,n.iter=n.iter,thin=thin)
 ```
@@ -118,30 +123,29 @@ The OUTPUT is mcmc.list object - coda-formatted object; it needs to be converted
 
 
 
-##### OUTPUT ANALYSIS
+# OUTPUT ANALYSIS
 ```{r}
 #### save(outputRegress,file='Jackman_regr_output.Rdata')
 
 ##### upload the output if we have previuosly stored it and we don't want to run the MCMC again
 #### load('Jackman_regr_output.Rdata')
-```
 
-```{r}
 data.out=as.matrix(outputRegress) # trasform the mcmc.list into a matrix,
 data.out=data.frame(data.out)     # or, better, into a dataframe (easiest to handle in R)
 attach(data.out)
 n.chain=dim(data.out)[1] 
 n.chain # this is the final sample size
 ```
-Summary statistics for the posterior - Use either packege CODA, or standard tools in R:
 
+# Summary statistics for the posterior 
+Use either packege CODA, or standard tools in R:
 ```{r}
 size(data.out)
 summary(data.out)
 head(data.out)
 ```
 
-Autocorrelation plots
+## Autocorrelation plots
 ```{r}
 par(mfrow=c(1,3))
 par(mar=c(2,2,3,1)) # bottom, left, top, right margins to not cut plot titles
@@ -150,7 +154,7 @@ acf(data.out[,'beta0'],lwd=3,col="red3",main="autocorrelation of beta0")
 acf(data.out[,'beta.1.'],lwd=3,col="red3",main="autocorrelation of beta1")
 acf(data.out[,'sigma'],lwd=3,col="red3",main="autocorrelation of sigma_res")
 ```
-Some nice graph to presents the posterior samples:
+## nice graphs posterior
 ```{r}
 #sub-chain containing the beta sample
 beta.post <- data.out[,0:k+1]
@@ -162,7 +166,7 @@ beta.bayes
 sig.post= data.out[,'sigma']
 ```
 
-Comparison between frequentist and bayesian linear models
+## Comparison frequentist- bayesian
 ```{r}
 #### MLE estimate
 mod= lm(y ~ covs[,1]+covs[,2]+covs[,3]+covs[,4]+covs[,5]+covs[,6]+covs[,7]+covs[,8]+covs[,9]+covs[,10]+covs[,11]+covs[,12]+
@@ -173,7 +177,7 @@ summary(mod)
 mod$coefficients # Comparison 
 beta.bayes
 ```
-Posterior of $\beta_0$
+# Posterior of $\beta_0$
 ```{r}
 ## Representation of the posterior chain of  beta0
 chain <- beta.post[,k+1]
@@ -202,7 +206,7 @@ legend("topright",legend=c("posterior median", "95% Credible bounds","kernel den
 
 ```
 
-Posterior of $\beta_1$
+# Posterior of $\beta_1$
 ```{r}
 chain <- beta.post[,1]
 #Divide the plot device 
@@ -227,7 +231,7 @@ abline(v=quantile(chain,prob=c(0.975)),col="red",lty=2,lwd=2)
 legend("topright",legend=c("posterior median", "95% Credible bounds","kernel density smoother"),lwd=c(2,2,2), col=c("red","red","blue"),lty=c(1,2,1))
 ```
 
-Can do for all the betas
+## Posterior of $\beta_i$
 ```{r}
 for (i in 1:k+1){
 	chain <- beta.post[,i]
@@ -253,7 +257,7 @@ for (i in 1:k+1){
 	legend("topright",legend=c("posterior median", "95% Credible bounds","kernel density smoother"),lwd=c(2,2,2), col=c("red","red","blue"),lty=c(1,2,1))
 }
 ```
-Posterior of $\sigma$: 
+# Posterior of $\sigma$: 
 ```{r}
 ##Representation of the posterior chain of sigma_res
 chain <-sig.post
@@ -292,20 +296,15 @@ detach(data.out)
 
 
 
-# Cycle on all stations saving all betas 
-
-datasets to store the betas
+# saving all betas all stations
 ```{r}
 bayesian_coefficients <- data.frame()
   
 frequentist_coefficients <- data.frame()
-```
 
 
+# It's the same code as before, but in a 'for' cycle
 
-
-It's the same code as before, but in a 'for' cycle
-```{r}
 for (st in stations[1:2]){
 	cat(crayon::red("Station",st,"\n"))
  #covariates and target
@@ -375,10 +374,7 @@ for (st in stations[1:2]){
 #to give columns names
 colnames(bayesian_coefficients)<-c('station',names(beta.bayes))
 colnames(frequentist_coefficients)<-c('station',names(beta.bayes))
-```
 
-
-```{r}
 head(bayesian_coefficients)
 head(frequentist_coefficients)
 ```
