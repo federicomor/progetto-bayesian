@@ -96,7 +96,7 @@ mode_correct_clusters = function(cl_old, cl_cur,verbose=0){ # and returns cl_new
 	}
 
 	if(!all(cl_new==cl_cur)){
-		cat(crayon::italic("Some change was made!\n"))
+		cat(crayon::italic("Some change was made!"))
 	}
 	return(cl_new)
 	

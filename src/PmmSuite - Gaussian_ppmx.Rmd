@@ -10,11 +10,13 @@ output: html_document
 
 
 ```{r,warning=FALSE}
-source("include.R") # why didnt you use it above, in your code? :'/
+source("include.R") 
+```
+Plot
+```{r}
 source("plot functions/plotter.R")
 ```
 
-If we include this alone seems to work better (dont know why).
 ```{r}
 source("include_clusters_functions.R")
 ```
@@ -53,8 +55,9 @@ Sometimes it fails the execution (dont know why). In that case:
 ## loop fit
 ```{r}
 clusters_old = NULL
+time_span = 1:6
 
-for (time in 1:6){
+for (time in time_span){
 	cat(crayon::red("Time (ie week)",time,"\n"))
 	df_time = df_weekly[which(df_weekly$week==time),]
 	y_fit = df_time$AQ_pm10
@@ -65,19 +68,33 @@ for (time in 1:6){
 	                  cohesion=1,
 	                  M=1,
 	                  PPM = FALSE,
-	                  similarity_function=1,
-	                  consim=1,
+	                  similarity_function=1, # auxiliarity function
+	                  consim=1, 
 	                  calibrate=0,
-	                  simParms=c(0.0, 1.0, 0.1, 1.0, 2.0, 0.1, 1),
-	                  modelPriors=c(0, 100^2, 1, 1),
+					  # c(m0, s20, v2,k0,nu0,a0,alpha)
+						# "PRIOR" DELLA SIMILARITY FUNCTION USATA
+						# se cosim = 1 -> (q fun = N) m0 prior per media normale, s20 prior per varianza normale
+						# se cosim = 2 -> (q fun = N -IG) m0, v0 are a priori “guesses” for mj and vj  and k0, n0 the corresponding a priori                                                           “sample sizes”
+	                  simParms=c(0.0, 1.0, 0.1, 1.0, 2.0, 0.1, 1),  # Priors per similarity function
+					  # c(m,s2,A,A0)
+						# VEDI PAGINA 1016 DEL PAPER 6 PER CAPIRE MODELLO
+						# m = mean della normale della prior per la media della likelihood
+						# s2 = varianza della normale della prior della media della likelihood
+						# A = UpperBound dela sigma della normale della likelihood
+						# A0 = upperbound della sigma della normale della prior per la media della likelihood
+	                  modelPriors=c(0, 100^2, 1, 1), # Prior del modello
 	                  mh=c(0.5, 0.5),
-	                  draws=1100,burn=100,thin=1,
+	                  draws=1100, # itaration totali
+					  burn=100, # burnin
+					  thin=1, # considero un valore della catena ogi thin salti
 	                  verbose=FALSE)
 	
 	clusters_now = salso(fit$Si,loss="binder")
-	clusters_now = clusters_now[1:105]
+	clusters_now = clusters_now[1:105] # 105 numero max di cluster che possiamo avere
 	### Mode correct clusters
-	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
+	#clusters_now = mode_correct_clusters(clusters_old,clusters_now) dà errore Error in str2expression(strsplit(x, ",")[[1]]) : 
+                                                                               #<text>:2:0: unexpected end of input
+                                                                               # 1:  -- 
 	
 	df_temp = data.frame(
 		Longitude = unique(df_weekly$Longitude),
@@ -87,6 +104,7 @@ for (time in 1:6){
 	df_temp$Time = rep(time,dim(df_temp)[1])
 	df_cluster_cut = df_temp
 	
+
 	
 	### Hist plot
 	# p = get_hist_color_plot(df_cluster_cut)
@@ -103,11 +121,89 @@ for (time in 1:6){
 	clusters_old = clusters_now
 } # end for time
 ```
-AGGIUNGI TRACE PLOTS
 
-PRIORS:
-- REFERENCE PRIORS
-- INFORMATIVE PRIORS 
+# Trace plots
+```{r}
+sampled_station = floor(runif(1,0,105))
+cat("sampled_station =",sampled_station,"- that is station called",unique(df_weekly$IDStations)[sampled_station])
+
+```
+
+## Si
+Per controllare come cambia cluster per una stazione nelle 1000 iterazioni
+```{r}
+time = time_span[length(time_span)] # se voglio guardare nel tempo devo fare ciclo for in gaussian_ppmx
+plot(fit$Si[sampled_station,],type="l",
+		 main=bquote("Trace plot of partition at time (=week) " * .(time) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+```
+
+
+## mu (Posterior mean of mu relativa a soggetto si)  -> associata a mj
+```{r}
+plot(fit$mu[,sampled_station],type="l",
+		 main=bquote("Trace plot of " * mu * " at time (=week) " * .(time-1) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+
+```
+
+## mu0 (Posterior values of mu0) --> associata a mu0
+```{r}
+plot(fit$mu0,type="l",
+		 main=bquote("Trace plot of " * mu * " at time (=week) " * .(time) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+
+```
+
+## sigma2 (posterior of sigma^2 relativa a soggetto si) --> associata a sigmasi
+```{r}
+plot(fit$sig2[,sampled_station],type="l",
+		 main=bquote("Trace plot of "* sigma^2 * " at time (=week) " * .(time) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+
+
+```
+
+## sig20 (Posterior value of sigma0^2)  --> associata sigma0
+```{r}
+plot(fit$sig20,type="l",
+		 main=bquote("Trace plot of " * sigma^2 * " at time (=week) " * .(time) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+
+
+```
+
+## Valutiamo number of cluster
+```{r}
+plot(fit$nclus,type="l",
+		 main=bquote("Trace plot of " * "number of clusters" * " at time (=week) " * .(time)),
+		 xlab = "MCMC iterations",ylab="values")
+# numeri di cluster nell'istante di tempo considerato per ogni iterazione
+
+```
+
+
+
+
+## Bontà modello  (che senso hanno nei clustering)  -> meglio ARI
+WAIC :quando utilizzi il WAIC per confrontare modelli in statistica bayesiana, un valore più basso di WAIC indica un modello che offre un miglior equilibrio tra adattamento ai dati e complessità rispetto agli altri modelli considerati.
+Qui però non ho un modello che deve spiegare dati o fare previsione... -> ha senso nella regressione
+```{r}
+fit$WAIC
+```
+
+lpml: Un valore più basso della lpml indica che il modello è migliore nel predire i dati osservati. In altre parole, un modello con una lpml più bassa sta producendo previsioni più accurate o una migliore adattabilità ai dati.
+```{r}
+fit$lpml
+```
+
+
+
 
 
 AGGIUNGI COVARIATE
