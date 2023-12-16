@@ -93,25 +93,60 @@ trendYearStation_week("None")
 
 
 # Model fit
-```{r}
-time_span = 1:5 # low time span for quick testing, real one will be 1:53
-tempo_inizio <- Sys.time()
 
-drpm1 <- drpm_fit(y[,1+time_span], # use log trasnformed values, as we should
-# drpm1 <- drpm_fit(exp(y[,-1])[,1:20], # use original values, but should be a wrong approach
-		 s_coords = sites,
+```{r}
+time_span = 1:8 # low time span for quick testing, real one will be 1:53
+
+### authors suggested to/did scale the spatial locations and also centered the observations
+y_fit = y[,1+time_span]
+y_fit = scale(y_fit,center=TRUE, scale=FALSE)
+y
+
+medie = apply(y[,1+time_span],2,mean)
+head(t(t(y[,1+time_span])-medie)) # scale hand computed, to check
+
+y_fit = data.frame(y_fit)
+colnames(y_fit) = colnames(y)[1+time_span]
+
+y_fit
+
+### and for the scaling of spatial locations
+std_sites = sites
+	
+smn <- apply(std_sites,2,mean)
+ssd <- apply(std_sites,2,sd)
+std_sites <- t((t(std_sites) - smn)/ssd)
+
+sites
+std_sites = data.frame(std_sites)
+colnames(std_sites) = colnames(sites)
+std_sites
+```
+
+
+```{r}
+tempo_inizio <- Sys.time()
+drpm1 <- drpm_fit(y=y_fit, 
+		 s_coords = std_sites,
          M=1,
          initial_partition = NULL,
          starting_alpha = 0.5,
          unit_specific_alpha = FALSE,
-         time_specific_alpha = TRUE,
+         time_specific_alpha = FALSE, # meaning a bit ambiguos
+		# Ok after experimenting it means that:
+		# - if true we let alpha be a param that changes over time. 
+		#	At time 1 we have a chain with some behaviour, 
+		#	at time 2 another chain with another behaviour, ecc
+		# - if false we instead fix alpha, ie all chains of all times
+		#	will be the same, as they refer to the same parameter estimation
+		# The authors in their tests set it to false, ie the fixed alpha
 
          alpha_0=FALSE,
-         eta1_0=FALSE, # TRUE?
+         eta1_0=FALSE,
          phi1_0=FALSE,
 
-         modelPriors=c(0,100^2,1,1,1,1), # original default one
-         # modelPriors=c(0,100^2,3,3,3,1),
+         # modelPriors=c(0,100^2,1,1,1,1), # original default one
+         modelPriors=c(0,100,10,5,5,2,2,1), # author suggestion/used one
 
          alphaPriors=rbind(c(1,1)), # if time_specific_alpha == TRUE
          # alphaPriors=matrix(rep(c(1,1),105),105,2), # if unit_specific_alpha == TRUE
@@ -124,18 +159,18 @@ drpm1 <- drpm_fit(y[,1+time_span], # use log trasnformed values, as we should
          SpatialCohesion=4, # double dipper similarity, default one
 
          cParms=c(0, 1, 2, 1),
-         mh=c(0.5, 1, 0.1, 0.1, 0.1),
+		
+         # mh=c(0.5, 1, 0.1, 0.1, 0.1), # default one
+		 mh=c(1,1, 1, 0.1, 0.1), # author suggestion/used one
+
          verbose=TRUE,
 
-         # draws=1100,burn=100,thin=1) # quick one
-         draws=9000,burn=1000,thin=2) # a bit more serious seriou one
+         draws=1100,burn=100,thin=1) # quick one
+         # draws=9000,burn=1000,thin=2) # a bit more serious seriou one
          # draws=10100,burn=1500,thin=5) # more serious one
-         # draws=30000,burn=3000,thin=5) # really serious one
+         # draws=10000,burn=2000,thin=10) # really serious one
 
 tempo_fine <- Sys.time()
-```
-
-```{r}
 differenza_tempo <- tempo_fine - tempo_inizio
 cat(crayon::cyan("Fit took:\n"))
 print(round(differenza_tempo,digits = 4))
@@ -143,6 +178,7 @@ print(round(differenza_tempo,digits = 4))
 cat(crayon::blue("That was for fitting",max(time_span),"time steps.\nSo for fitting all 53 weeks the expected time with these parameters will be:\n"))
 print(round(differenza_tempo/max(time_span)*53,digits=4))
 ```
+
 
 
 
@@ -178,9 +214,29 @@ cat("fitted size = ",size(drpm1$fitted),"\n")
 
 # Trace plots?
 ```{r}
-sampled_station = floor(runif(1,0,105))
+sampled_station = floor(runif(1,1,105))
 cat("sampled_station =",sampled_station,"- that is station called",unique(df_weekly$IDStations)[sampled_station])
+sampled_station_name = unique(df_weekly$IDStations)[sampled_station]
 
+```
+
+## alpha
+```{r}
+if(len(size(drpm1$alpha))==2){ # alpha is only time dependent
+	for (time in time_span){
+	plot(drpm1$alpha[,time],type="l",
+		 main=bquote("Trace plot of " * alpha[.(time)] * " - station " * .(sampled_station_name)),
+		 xlab = "MCMC iterations",ylab="values")	
+	}
+}
+
+if(len(size(drpm1$alpha))==3){ # alpha is time dependent and unit dependent
+	for (time in time_span){
+	plot(drpm1$alpha[time,sampled_station,],type="l",
+		 main=bquote("Trace plot of " * alpha[.(time-1)] * " - station" * .(sampled_station_name)),
+		 xlab = "MCMC iterations",ylab="values")
+	}
+}
 ```
 
 ## Si
@@ -190,20 +246,20 @@ But for now the sparse dots are few, and in the initial iterations of the MCMC, 
 for (time in time_span){
 	plot(drpm1$Si[time,sampled_station,],type="l",
 		 main=bquote("Trace plot of partition at time (=week) " * .(time) * 
-		 				" - station " * .(sampled_station)),
+		 				" - station " * .(sampled_station_name)),
 		 xlab = "MCMC iterations",ylab="values")
 }
 ```
 
 ## gamma
 Gamma is not really a parameter but the collection of the alphas.
-So it is normal that gamma does not have a "good" trace plot.
+So we dont care abouth her trace plot.
 
 ```{r}
 for (time in time_span){
 	plot(drpm1$gamma[time,sampled_station,],type="l",
 		 main=bquote("Trace plot of " * gamma * " at time (=week) " * .(time-1) * 
-		 				" - station " * .(sampled_station)),
+		 				" - station " * .(sampled_station_name)),
 		 xlab = "MCMC iterations",ylab="values")
 }
 ```
@@ -213,7 +269,7 @@ for (time in time_span){
 for (time in time_span){
 	plot(drpm1$mu[time,sampled_station,],type="l",
 		 main=bquote("Trace plot of " * mu * " at time (=week) " * .(time) * 
-		 				" - station " * .(sampled_station)),
+		 				" - station " * .(sampled_station_name)),
 		 xlab = "MCMC iterations",ylab="values")
 }
 ```
@@ -223,32 +279,12 @@ for (time in time_span){
 for (time in time_span){
 	plot(drpm1$sig2[time,sampled_station,],type="l",
 		 main=bquote("Trace plot of "* sigma^2 * " at time (=week) " * .(time) * 
-		 				" - station " * .(sampled_station)),
+		 				" - station " * .(sampled_station_name)),
 		 xlab = "MCMC iterations",ylab="values")
 }
 
 ```
 
-## alpha
-```{r}
-sampled_station = floor(runif(1,0,105))
-
-if(len(size(drpm1$alpha))==2){ # alpha is only time dependent
-	for (time in time_span){
-	plot(drpm1$alpha[,time],type="l",
-		 main=bquote("Trace plot of " * alpha[.(time)] * " - station " * .(sampled_station)),
-		 xlab = "MCMC iterations",ylab="values")	
-	}
-}
-
-if(len(size(drpm1$alpha))==3){ # alpha is time dependent and unit dependent
-	for (time in time_span){
-	plot(drpm1$alpha[time,sampled_station,],type="l",
-		 main=bquote("Trace plot of " * alpha[.(time-1)] * " - station" * .(sampled_station)),
-		 xlab = "MCMC iterations",ylab="values")
-	}
-}
-```
 
 
 
@@ -402,6 +438,7 @@ Così ad ogni istante temporale, e poi nell'animazione, vediamo sia i cluster si
 Del tipo
 ```{r}
 library(gridExtra)
+library(grDevices) # for png saving
 
 clusters_old = NULL
 for(time in time_span){
@@ -413,10 +450,42 @@ clusters_now = df_cluster_cut$clusters
 clusters_now = mode_correct_clusters(clusters_old,clusters_now)
 df_cluster_cut$clusters = clusters_now
 
+	png(filename=paste0("./cluster_plots/test/graph_plot_",time,".png"), width=1000, height=600)
 	plot_graph_and_hist(df_cluster_cut)
+	dev.off()
+	# ggsave(file=paste("./cluster_plots/test/graph_plot_",time,".png"), width=4, height=4, dpi=300)
+
 
 clusters_old = clusters_now
 }
+```
+
+
+
+# Gif creation in R test
+```{r}
+# Carica i pacchetti
+library(magick)
+library(animation)
+
+## list file names and read in
+percorso = "./cluster_plots/test/"
+imgs <- list.files(path = percorso, pattern = ".png", full.names = TRUE)
+img_list <- lapply(imgs, image_read)
+
+## join the images together
+img_joined <- image_join(img_list)
+
+## animate at 2 frames per second
+img_animated <- image_animate(img_joined, fps = 2)
+
+## view animated image
+img_animated
+
+## save to disk
+image_write(image = img_animated,
+            path = paste0(percorso,"test.gif"))
+
 ```
 
 

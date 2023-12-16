@@ -59,8 +59,9 @@ simstudy3_rev.R -
   study output and those to which plots are saved need to be customized. 
 
 
+🏷️ TAKE A LOOK AT THIS :)
+for the model tests with different params, the ARI matrices plotted, ecc
 PM10DependentPartitionFullModel_rev - 
-
   This file fits the 16 models detailed in Sections 4.1 and 4.2 of the main document
   and produces Table 3 and Figures 5 - 8. 
 
