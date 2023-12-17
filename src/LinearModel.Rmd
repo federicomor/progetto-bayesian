@@ -304,7 +304,7 @@ bayesian_coefficients <- data.frame()
   
 frequentist_coefficients <- data.frame()
 
-vars_names = colnames(covs)[-28]
+vars_names = colnames(covs)
 
 # stuff for lasso
 formula <- " y ~ ."
