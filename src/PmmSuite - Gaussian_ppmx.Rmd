@@ -13,7 +13,7 @@ output: html_document
 source("include.R") 
 ```
 Plot
-```{r}
+```{r,warning=FALSE}
 source("plot functions/plotter.R")
 ```
 
@@ -92,9 +92,9 @@ for (time in time_span){
 	clusters_now = salso(fit$Si,loss="binder")
 	clusters_now = clusters_now[1:105] # 105 numero max di cluster che possiamo avere
 	### Mode correct clusters
-	#clusters_now = mode_correct_clusters(clusters_old,clusters_now) dà errore Error in str2expression(strsplit(x, ",")[[1]]) : 
-                                                                               #<text>:2:0: unexpected end of input
-                                                                               # 1:  -- 
+	# dava errore Error in str2expression(strsplit(x, ",")[[1]]) : 
+	clusters_now = mode_correct_clusters(clusters_old,clusters_now,verbose=0)
+	# ora funziona, se vuoi controllare meglio che succede dietro le quinte metti verbose=1
 	
 	df_temp = data.frame(
 		Longitude = unique(df_weekly$Longitude),

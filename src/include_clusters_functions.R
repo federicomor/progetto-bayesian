@@ -13,9 +13,14 @@ mode_correct_clusters = function(cl_old, cl_cur,verbose=0){ # and returns cl_new
 	tied_labels = c() # solve them later
 	already_taken_labels = c() # solve them later
 	
-	for (i in 1:max(cl_cur)){
+	# for (i in 1:max(cl_cur)){
+	for (i in unique(cl_cur)){
 		indici_label_i = which(cl_cur == i)
 		freq = table(cl_old[indici_label_i])
+		if(verbose==1){
+			cat("Cur label i =",i,"has mode table (^=index, _=occurences)")
+			print(freq)
+		}
 		better_labels = as.numeric(names(freq[freq == max(freq)]))
 		num_mode = length(better_labels)
 		
@@ -29,6 +34,9 @@ mode_correct_clusters = function(cl_old, cl_cur,verbose=0){ # and returns cl_new
 				better_label = better_labels
 				new_labels = c(new_labels,better_label)
 				cl_new[indici_label_i] = better_label
+				if(verbose==1){
+					cat("Assigning cur label",i,"to new label",better_label,"\n")
+				}
 			} else {
 				already_taken_labels = c(already_taken_labels,i)
 			}
@@ -83,6 +91,8 @@ mode_correct_clusters = function(cl_old, cl_cur,verbose=0){ # and returns cl_new
 		cat("cl_old =",cl_old,"\n")
 		cat("cl_cur =",cl_cur,"\n")
 		cat("cl_new =",cl_new,"\n")
+		cat("Cur clusters values = ",unique(cl_cur),"\n")
+		cat("New clusters values = ",unique(cl_new),"\n")
 	}
 	
 	if(it==max_it){
@@ -96,7 +106,7 @@ mode_correct_clusters = function(cl_old, cl_cur,verbose=0){ # and returns cl_new
 	}
 
 	if(!all(cl_new==cl_cur)){
-		cat(crayon::italic("Some change was made!"))
+		cat(crayon::italic("Some change was made!\n"))
 	}
 	return(cl_new)
 	
@@ -212,7 +222,8 @@ assemble_edges = function(clusters,need_to_debug=0){
 		yend = c(),
 		cluster = c()
 	)
-	for(cl in 1:max(clusters)){
+	# for(cl in 1:max(clusters)){
+	for(cl in unique(clusters)){
 		stations_here = stations[which(clusters==cl)]
 		
 		# graph_from_literal( A:B:C:D -- A:B:C:D )
@@ -274,7 +285,10 @@ assemble_edges_list = function(clusters,need_to_debug=0){
 		yend = c(),
 		cluster = c()
 	)
-	for(cl in 1:max(clusters)){
+	# for(cl in 1:max(clusters)){ # non max perché alcuni cluster potrebbero sparire
+	# nel senso che ci possono essere salti, dati dalla cluster mode correction
+	# tipo 1 2 3 5 6, manca il cluster 4. Ma ora con unique funziona perché evita quelli mancanti
+	for(cl in unique(clusters)){
 		stations_here = stations[which(clusters==cl)]
 		
 		# graph_from_literal( A:B:C:D -- A:B:C:D )
@@ -349,31 +363,37 @@ get_graph_plot = function(df_cluster_cut){ # already mode_corrected
 		labs(title = paste("Cluster map - time",time))
 	
 	q = p
+	actual_clusters = c()
 	for(cl in 1:len(edges_list)){
 		edges_to_plot = edges_list[[cl]]
+		if(!is.null(edges_to_plot)){
+			actual_clusters = c(actual_clusters,cl)
 		q = q + geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
 								 color = cols[as.numeric(cluster)]),
 							 # color = paste0("cl",cl)),
 							 linewidth=1.2,
 							 data = edges_to_plot,show.legend = TRUE)+
 			guides(color = guide_legend(title = "Clusters"))
+		}
 	}
 	
 	q = q +
-		scale_colour_identity(guide="legend",labels=paste0("cl",1:len(edges_list)),
-							  breaks=cols[1:len(edges_list)])
+		scale_colour_identity(guide="legend",labels=paste0("cl",actual_clusters),
+							  breaks=cols[actual_clusters])
 }
 
 
 cat(crayon::red("- get_hist_fill_plot(df_cluster_cut)\n"))
 get_hist_fill_plot = function(df_cluster_cut,verbose=0){
-	clusters_now = df_cluster_cut$clusters
-	n_clusters = max(clusters_now)
+	clusters_now = df_cluster_cut$clusters # needs to be already mode corrected if wanted
+	# n_clusters = max(clusters_now)
+	n_clusters = unique(clusters_now)
 	ycurrent = y[,paste0("w",time)]
 	
 	if(verbose==1){
 	cat(crayon::red("Time",time,"\n"))
-		for (cl in 1:n_clusters){
+		# for (cl in 1:n_clusters){
+		for (cl in n_clusters){
 			cat("Cluster",cl,"- size",length(ycurrent[which(clusters_now==cl)]),
 				"- mean",mean(ycurrent[which(clusters_now==cl)]),"\n")
 			
@@ -402,8 +422,10 @@ get_hist_fill_plot = function(df_cluster_cut,verbose=0){
 		theme_bw()+
 		# xlim(extrema(ycurrent)+c(-pad,pad))+
 		
-		scale_fill_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
-							breaks=cols[1:max(clust_vals)])+
+		# scale_fill_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+							# breaks=cols[1:max(clust_vals)])+
+		scale_fill_identity(guide="legend",labels=paste0("cl",n_clusters),
+							breaks=cols[n_clusters])+
 		# scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
 		# breaks=cols[1:max(clust_vals)])
 		xlab("log(PM10) values")+
@@ -414,13 +436,15 @@ get_hist_fill_plot = function(df_cluster_cut,verbose=0){
 
 cat(crayon::red("- get_hist_color_plot(df_cluster_cut)\n"))
 get_hist_color_plot = function(df_cluster_cut,verbose=0){
-	clusters_now = df_cluster_cut$clusters
-	n_clusters = max(clusters_now)
+	clusters_now = df_cluster_cut$clusters # needs to be already mode corrected if wanted
+	# n_clusters = max(clusters_now)
+	n_clusters = unique(clusters_now)
 	ycurrent = y[,paste0("w",time)]
 	
 	if(verbose==1){
 	cat(crayon::red("Time",time,"\n"))
-		for (cl in 1:n_clusters){
+		# for (cl in 1:n_clusters){
+		for (cl in n_clusters){
 			cat("Cluster",cl,"- size",length(ycurrent[which(clusters_now==cl)]),
 				"- mean",mean(ycurrent[which(clusters_now==cl)]),"\n")
 			
@@ -451,8 +475,10 @@ get_hist_color_plot = function(df_cluster_cut,verbose=0){
 		
 		# scale_fill_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
 		# breaks=cols[1:max(clust_vals)])
-		scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
-							 breaks=cols[1:max(clust_vals)])+
+		# scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+							 # breaks=cols[1:max(clust_vals)])+
+		scale_color_identity(guide="legend",labels=paste0("cl",n_clusters),
+							 breaks=cols[n_clusters])+
 		xlab("log(PM10) values")+
 		xlim(c(0.5,5))
 }
@@ -461,12 +487,14 @@ get_hist_color_plot = function(df_cluster_cut,verbose=0){
 cat(crayon::red("- get_hist_continuos_plot(df_cluster_cut)\n"))
 get_hist_continuos_plot = function(df_cluster_cut,verbose=1){
 	clusters_now = df_cluster_cut$clusters
-	n_clusters = max(clusters_now)
+	# n_clusters = max(clusters_now)
+	n_clusters = unique(clusters_now)
 	ycurrent = y[,paste0("w",time)]
 	cat(crayon::red("Time",time,"\n"))
 	
 	if(verbose==1){
-		for (cl in 1:n_clusters){
+		# for (cl in 1:n_clusters){
+		for (cl in n_clusters){
 			cat("Cluster",cl,"- size",length(ycurrent[which(clusters_now==cl)]),
 				"- mean",mean(ycurrent[which(clusters_now==cl)]),"\n")
 			
@@ -481,8 +509,10 @@ get_hist_continuos_plot = function(df_cluster_cut,verbose=1){
 	p = ggplot(df_temp, aes(ycurrent, fill = cols[clust_vals])) +
 		
 		# scale_fill_manual(values = colora(n_clusters,77,0),name="Cluster")+
-		scale_fill_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
-							breaks=cols[1:max(clust_vals)])+
+		# scale_fill_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+							# breaks=cols[1:max(clust_vals)])+
+		scale_fill_identity(guide="legend",labels=paste0("cl",n_clusters),
+							breaks=cols[n_clusters])+
 		guides(fill = guide_legend(title = "Clusters"))+
 		
 		geom_density(alpha = 0.3)+
@@ -502,7 +532,8 @@ q_graph = get_graph_plot(df_cluster_cut)
 
 # HIST #######################
 # by hand as we have to remove the legend here, while the function produces it
-n_clusters = max(clusters_now)
+# n_clusters = max(clusters_now)
+n_clusters = unique(clusters_now)
 ycurrent = y[,paste0("w",time)]
 clust_vals = clusters_now[1:105]
 df_temp = data.frame(clusters=clust_vals,ycurrent=ycurrent)
@@ -516,8 +547,10 @@ p = ggplot(df_temp, aes(ycurrent,
 	# guides(color = guide_legend(title = "Clusters"))+
 	theme_bw()+
 	theme(legend.position = "none")+
-	scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
-						 breaks=cols[1:max(clust_vals)])+
+	# scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+						 # breaks=cols[1:max(clust_vals)])+
+	scale_color_identity(guide="legend",labels=paste0("cl",n_clusters),
+						 breaks=cols[n_clusters])+
 	xlab("log(PM10) values")+
 	xlim(c(0,5))
 # xlim(extrema(df_weekly$AQ_pm10))
