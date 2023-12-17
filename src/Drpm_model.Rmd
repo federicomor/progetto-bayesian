@@ -94,6 +94,7 @@ trendYearStation_week("None")
 
 # Model fit
 
+## Scaling/Centering update
 ```{r}
 time_span = 1:8 # low time span for quick testing, real one will be 1:53
 
