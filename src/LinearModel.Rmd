@@ -43,7 +43,7 @@ Create variables for regression analysis
 ```{r}
 #remove column pm_10 (target)
 #for now only using numerical covariates
-st="1264"   #start with an example, then will cycle on all
+st="1269"   #start with an example, then will cycle on all
 
 y=df_weekly[which(df_weekly$IDStations==st),7]
 y=as.numeric(y[[1]])
@@ -55,7 +55,14 @@ covs=covs[,-c(1,2,3,31)]   #lat, long, alti and land_use constant over same stat
 k=dim(covs)[2] # number of covariates
 
 covs=as.data.frame(covs)
-covs=scale(covs)     #normalization on the station
+covariates=scale(covs)     #normalization on the station
+#jitter to avoid nans in constant columns
+for(i in 1:k){
+  if(sum(is.na(covariates[,i]))>0)
+    covs[,i]=jitter(covs[,i],0.01)
+}
+covs=scale(covs)
+
 
 head(covs)
 ```
@@ -321,7 +328,7 @@ best_variables_lasso <- data.frame(variables = c("(Intercept)",vars_names), chec
 ```{r}
 # It's the same code as before, but in a 'for' cycle
 
-for (st in stations[1:4]){
+for (st in stations){
 	cat(crayon::red("Station",st,"\n"))
  #covariates and target
   y=df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]
@@ -331,9 +338,16 @@ for (st in stations[1:4]){
 
   covs=df_weekly[which(df_weekly$IDStations==st),vars_names]
   k=dim(covs)[2]
-
+  
   covs=as.data.frame(covs)
-  covs=scale(covs)     #normalization on each single station
+  covariates=scale(covs)     #normalization on each single station
+  #jitter to avoid nans in constant columns
+  for(i in 1:k){
+    if(sum(is.na(covariates[,i]))>0)
+      covs[,i]=jitter(covs[,i],0.01)
+  }
+  covs=scale(covs)
+
 
  #build model
   data = list(y=y,
