@@ -311,18 +311,23 @@ formula <- " y ~ ."
 lambda.grid <- 10^seq(5,-3,length=100)
 soglia = 0.001
 best_lasso_vect = c()
+
+best_variables_lasso <- data.frame(variables = c("(Intercept)",vars_names), checked = rep(0,(length(vars_names)+1)))
+
+
 ```
 
 
 ```{r}
 # It's the same code as before, but in a 'for' cycle
 
-for (st in stations[1:2]){
+for (st in stations[1:4]){
 	cat(crayon::red("Station",st,"\n"))
  #covariates and target
   y=df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]
   y=as.numeric(y[[1]])
-  y=scale(y)[1:53]    #normalization on each single station
+  y=scale(y)[1:53]    #normalization on each single station ( 53 weeks)
+  cat(crayon::blue(all(y>0)))
 
   covs=df_weekly[which(df_weekly$IDStations==st),vars_names]
   k=dim(covs)[2]
@@ -366,6 +371,7 @@ for (st in stations[1:2]){
   
   # LASSO
   y = df_weekly$AQ_pm10[which(df_weekly$IDStations==st)]
+  x <- model.matrix(as.formula(formula),data.frame(covs))[,-1]
   fit.lasso <- glmnet(x,y, lambda = lambda.grid) 
   cv.lasso <- cv.glmnet(x,y,lambda=lambda.grid)
 
@@ -378,23 +384,27 @@ for (st in stations[1:2]){
   colnames(coef.lasso)[1] = "coeff"
   final_coeff = coef.lasso[which(abs(coef.lasso$coeff)>soglia),"variables"]
   
+  best_variables_lasso[which(best_variables_lasso$variables%in%final_coeff),"checked"] = best_variables_lasso[which(best_variables_lasso$variables%in%final_coeff),"checked"] +1
+  
     
   detach(data.out)
   
   
 }
+#to give columns names
+colnames(bayesian_coefficients)<-c('station',names(beta.bayes))
+colnames(frequentist_coefficients)<-c('station',names(beta.bayes))
+
 ```
 
 
 
 #present results
 ```{r}
-#to give columns names
-colnames(bayesian_coefficients)<-c('station',names(beta.bayes))
-colnames(frequentist_coefficients)<-c('station',names(beta.bayes))
-
 head(bayesian_coefficients)
 head(frequentist_coefficients)
+best_lasso_vect
+best_variables_lasso
 ```
 # Lasso regression classic model
 ```{r}
