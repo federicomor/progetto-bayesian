@@ -52,16 +52,40 @@ Sometimes it fails the execution (dont know why). In that case:
 
 # gaussian_ppmx
 
+## Scaling/Centering update
+```{r}
+time_span = 1:6 # low time span for quick testing, real one will be 1:53
+
+### authors suggested to/did scale the spatial locations and also centered the observations
+y_fit = y[,1+time_span]
+y_fit = scale(y_fit,center=TRUE, scale=FALSE)  # rescal pm10 values
+y
+
+medie = apply(y[,1+time_span],2,mean)
+head(t(t(y[,1+time_span])-medie)) # scale hand computed, to check
+
+y_fit = data.frame(y_fit)
+colnames(y_fit) = colnames(y)[1+time_span]
+
+y_fit
+
+```
+
+## Scale covariates ?? 
+```{r}
+?? 
+```
+
+
 ## loop fit
 ```{r}
 clusters_old = NULL
-time_span = 1:6
 
 for (time in time_span){
 	cat(crayon::red("Time (ie week)",time,"\n"))
 	df_time = df_weekly[which(df_weekly$week==time),]
 	y_fit = df_time$AQ_pm10
-	X = df_time[,-c(1:5,7)]
+	X = df_time[,-c(1:5,7)]  # è inclusa longitudine e latitudine?
 
 	fit = gaussian_ppmx(y_fit, X=X, Xpred=NULL,
 	                  meanModel=1,
@@ -202,8 +226,6 @@ lpml: Un valore più basso della lpml indica che il modello è migliore nel pred
 fit$lpml
 ```
 
-
-
-
-
-AGGIUNGI COVARIATE
+- Prova diverse priors
+- Scale covariates
+- Che cov usare  -> similarity function
