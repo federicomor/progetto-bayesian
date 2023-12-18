@@ -1,6 +1,7 @@
 model{  
 	for(i in 1:n){   ## regression model for y  #loop 
-	      mu[i] <- beta0 + beta[1]*x[i,1] + beta[2]*x[i,2] + beta[3]*x[i,3] + beta[4]*x[i,4] + beta[5]*x[i,5] + beta[6]*x[i,6] + beta[7]*x[i,7] + beta[8]*x[i,8] + beta[9]*x[i,9] + beta[10]*x[i,10] + beta[11]*x[i,11] + beta[12]*x[i,12] + beta[13]*x[i,13] + beta[14]*x[i,14] + beta[15]*x[i,15] + beta[16]*x[i,16] + beta[17]*x[i,17] + beta[18]*x[i,18] + beta[19]*x[i,19] + beta[20]*x[i,20] + beta[21]*x[i,21] + beta[22]*x[i,22] + beta[23]*x[i,23] + beta[24]*x[i,24] + beta[25]*x[i,25] + beta[26]*x[i,26] + beta[27]*x[i,27] + beta[28]*x[i,28] 
+	      mu[i] <- beta0 + beta[1]*x[i,1] + beta[2]*x[i,2] + beta[3]*x[i,3] 
+#	      + beta[4]*x[i,4] + beta[5]*x[i,5] + beta[6]*x[i,6] + beta[7]*x[i,7] + beta[8]*x[i,8] + beta[9]*x[i,9] + 	#			beta[10]*x[i,10] + beta[11]*x[i,11] + beta[12]*x[i,12] + beta[13]*x[i,13] + beta[14]*x[i,14] + 			#			beta[15]*x[i,15] + beta[16]*x[i,16] + beta[17]*x[i,17] + beta[18]*x[i,18] + beta[19]*x[i,19] + 			#			beta[20]*x[i,20] + beta[21]*x[i,21] + beta[22]*x[i,22] + beta[23]*x[i,23] + beta[24]*x[i,24] + 		#			beta[25]*x[i,25] + beta[26]*x[i,26] + beta[27]*x[i,27] + beta[28]*x[i,28] 
 
 	      y[i] ~ dnorm(mu[i],tau)  
               

@@ -308,9 +308,11 @@ detach(data.out)
 # saving all betas all stations
 ```{r}
 bayesian_coefficients <- data.frame()
-  
 frequentist_coefficients <- data.frame()
 
+covs=df_weekly[which(df_weekly$IDStations==st),3:39]
+covs=covs[,-c(3,5,9,19,36)]    #not numerical
+covs=covs[,-c(1,2,3,31)]   #lat, long, alti and land_use constant over same station
 vars_names = colnames(covs)
 
 # stuff for lasso
@@ -324,17 +326,89 @@ best_variables_lasso <- data.frame(variables = c("(Intercept)",vars_names), chec
 
 ```
 
-
+# LASSO for variable selection
 ```{r}
-# It's the same code as before, but in a 'for' cycle
-
 for (st in stations){
-	cat(crayon::red("Station",st,"\n"))
  #covariates and target
   y=df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]
   y=as.numeric(y[[1]])
   y=scale(y)[1:53]    #normalization on each single station ( 53 weeks)
-  cat(crayon::blue(all(y>0)))
+
+  covs=df_weekly[which(df_weekly$IDStations==st),vars_names]
+  k=dim(covs)[2]
+  
+  covs=as.data.frame(covs)
+  covariates=scale(covs)     #normalization on each single station
+
+
+  
+  data.out=as.matrix(outputRegress) # trasform the mcmc.list into a matrix,
+  data.out=data.frame(data.out)     # or, better, into a dataframe (easiest to handle in R)
+
+  
+ #linear (frequentist)
+  linear_model_classic= lm(y ~ .,data = data.frame(covs))
+  frequentist_coefficients <- rbind(frequentist_coefficients,c(st,linear_model_classic$coefficients))
+  
+  # LASSO
+  #y = df_weekly$AQ_pm10[which(df_weekly$IDStations==st)]
+  x <- model.matrix(as.formula(formula),data.frame(covs))[,-1]
+  fit.lasso <- glmnet(x,y, lambda = lambda.grid) 
+  cv.lasso <- cv.glmnet(x,y,lambda=lambda.grid)
+
+  bestlam.lasso <- cv.lasso$lambda.min
+  best_lasso_vect = c(best_lasso_vect,bestlam.lasso)
+
+  coef.lasso <- predict(fit.lasso, s=bestlam.lasso, type = 'coefficients')
+  coef.lasso =  data.frame(coef.lasso[,1])
+  coef.lasso$variables = rownames(coef.lasso)
+  colnames(coef.lasso)[1] = "coeff"
+  final_coeff = coef.lasso[which(abs(coef.lasso$coeff)>soglia),"variables"]
+  
+  best_variables_lasso[which(best_variables_lasso$variables%in%final_coeff),"checked"] =
+  	best_variables_lasso[which(best_variables_lasso$variables%in%final_coeff),"checked"] +1
+  
+}
+#to give columns names
+colnames(frequentist_coefficients)<-c('station',names(beta.bayes))
+```
+
+# present results
+```{r}
+head(frequentist_coefficients)
+mean(best_lasso_vect)
+var(best_lasso_vect)
+best_variables_lasso
+hist(best_variables_lasso$checked,breaks = 29)
+
+
+num_variables_included = c()
+for(i in 1:105){
+	chosen_variables = best_variables_lasso[best_variables_lasso$checked>i,"variables"]
+	num_variables_included = c(num_variables_included,length(chosen_variables))
+}
+num_variables_included_soglia = 4
+soglia_lasso = 45
+plot(num_variables_included,type="l")
+abline(h = num_variables_included_soglia,col= "red")
+abline(v = soglia_lasso,col= "blue")
+```
+# restrict number of variables
+```{r}
+vars_names = best_variables_lasso[best_variables_lasso$checked>soglia_lasso,"variables"]
+vars_names = vars_names[2:num_variables_included_soglia]
+```
+
+```{r}
+# It's the same code as before, but in a 'for' cycle
+indexx = 1
+for (st in stations){
+	cat(crayon::red("Station",st,index,"\n"))
+	indexx = indexx+1
+ #covariates and target
+  y=df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]
+  y=as.numeric(y[[1]])
+  y=scale(y)[1:53]    #normalization on each single station ( 53 weeks)
 
   covs=df_weekly[which(df_weekly$IDStations==st),vars_names]
   k=dim(covs)[2]
@@ -379,36 +453,12 @@ for (st in stations){
   beta.bayes <- c(beta.bayes[k+1],beta.bayes[1:k])  #just to put beta0 in first position
   bayesian_coefficients <- rbind(bayesian_coefficients,c(st,beta.bayes))
   
- #linear (frequentist)
-  linear_model_classic= lm(y ~ .,data = data.frame(covs))
-  frequentist_coefficients <- rbind(frequentist_coefficients,c(st,linear_model_classic$coefficients))
-  
-  # LASSO
-  y = df_weekly$AQ_pm10[which(df_weekly$IDStations==st)]
-  x <- model.matrix(as.formula(formula),data.frame(covs))[,-1]
-  fit.lasso <- glmnet(x,y, lambda = lambda.grid) 
-  cv.lasso <- cv.glmnet(x,y,lambda=lambda.grid)
-
-  bestlam.lasso <- cv.lasso$lambda.min
-  best_lasso_vect = c(best_lasso_vect,bestlam.lasso)
-
-  coef.lasso <- predict(fit.lasso, s=bestlam.lasso, type = 'coefficients')
-  coef.lasso =  data.frame(coef.lasso[,1])
-  coef.lasso$variables = rownames(coef.lasso)
-  colnames(coef.lasso)[1] = "coeff"
-  final_coeff = coef.lasso[which(abs(coef.lasso$coeff)>soglia),"variables"]
-  
-  best_variables_lasso[which(best_variables_lasso$variables%in%final_coeff),"checked"] = best_variables_lasso[which(best_variables_lasso$variables%in%final_coeff),"checked"] +1
-  
-    
   detach(data.out)
   
   
 }
 #to give columns names
 colnames(bayesian_coefficients)<-c('station',names(beta.bayes))
-colnames(frequentist_coefficients)<-c('station',names(beta.bayes))
-
 ```
 
 
@@ -416,10 +466,12 @@ colnames(frequentist_coefficients)<-c('station',names(beta.bayes))
 #present results
 ```{r}
 head(bayesian_coefficients)
-head(frequentist_coefficients)
-best_lasso_vect
-best_variables_lasso
 ```
+# SAVE THE BETA!
+```{r}
+
+```
+
 # Lasso regression classic model
 ```{r}
 formula <- " y ~ ."
