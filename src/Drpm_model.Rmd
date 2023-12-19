@@ -96,7 +96,7 @@ trendYearStation_week("None")
 
 ## Scaling/Centering update
 ```{r}
-time_span = 1:8 # low time span for quick testing, real one will be 1:53
+time_span = 1:10 # low time span for quick testing, real one will be 1:53
 
 ### authors suggested to/did scale the spatial locations and also centered the observations
 y_fit = y[,1+time_span]
@@ -127,6 +127,7 @@ std_sites
 
 ```{r}
 tempo_inizio <- Sys.time()
+cat("mcmc iter = 0 ===========================================\n",date(),"\n")
 drpm1 <- drpm_fit(y=y_fit, 
 		 s_coords = std_sites,
          M=1,
@@ -168,8 +169,8 @@ drpm1 <- drpm_fit(y=y_fit,
 
          draws=1100,burn=100,thin=1) # quick one
          # draws=9000,burn=1000,thin=2) # a bit more serious seriou one
-         # draws=10100,burn=1500,thin=5) # more serious one
          # draws=10000,burn=2000,thin=10) # really serious one
+         # draws=20000,burn=8000,thin=10) # more serious one
 
 tempo_fine <- Sys.time()
 differenza_tempo <- tempo_fine - tempo_inizio
@@ -317,7 +318,7 @@ Update: dopo la log transformazione non più. Ma anzi ora forse ce ne sono tropp
 ```{r}
 # choose wisely
 # this will be from now on the color palette decision
-cols = colora(5,"div")[-2] # togliamo il giallino
+cols = colora(12,"div")[-2] # togliamo il giallino
 ```
 
 
@@ -366,6 +367,23 @@ for(time in time_span){
 	df_cluster_cut$clusters = clusters_now
 	
 	p = get_hist_fill_plot(df_cluster_cut)
+	
+	print(p)
+	clusters_old = clusters_now
+} # end for(time in eccc)
+```
+
+## boxplot
+```{r}
+clusters_old = NULL
+for(time in time_span){
+
+	df_cluster_cut = df_cluster[df_cluster$Time==time,]
+	clusters_now = df_cluster_cut$clusters
+	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
+	df_cluster_cut$clusters = clusters_now
+	
+	p = get_boxplot_plot(df_cluster_cut)
 	
 	print(p)
 	clusters_old = clusters_now
@@ -424,7 +442,27 @@ for(time in time_span){
 	
 	df_cluster_cut = df_cluster[df_cluster$Time==time,]
 	clusters_now = df_cluster_cut$clusters
-	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
+	# clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
+	df_cluster_cut$clusters = clusters_now
+	
+	q = get_graph_plot(df_cluster_cut)
+	
+	print(q)
+	clusters_old = clusters_now
+}
+```
+
+
+
+```{r}
+# cols chosen previously
+clusters_old = NULL
+for(time in time_span){
+	cat(crayon::red("Time",time,"\n"))
+	
+	df_cluster_cut = df_cluster[df_cluster$Time==time,]
+	clusters_now = df_cluster_cut$clusters
+	clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
 	df_cluster_cut$clusters = clusters_now
 	
 	q = get_graph_plot(df_cluster_cut)
@@ -451,7 +489,8 @@ clusters_now = df_cluster_cut$clusters
 clusters_now = mode_correct_clusters(clusters_old,clusters_now)
 df_cluster_cut$clusters = clusters_now
 
-	png(filename=paste0("./cluster_plots/test/graph_plot_",time,".png"), width=1000, height=600)
+	cur_num = sprintf("%02d", time)
+	png(filename=paste0("./cluster_plots/test/graph_plot_",cur_num,".png"), width=1000, height=600)
 	plot_graph_and_hist(df_cluster_cut)
 	dev.off()
 	# ggsave(file=paste("./cluster_plots/test/graph_plot_",time,".png"), width=4, height=4, dpi=300)
@@ -481,12 +520,11 @@ img_joined <- image_join(img_list)
 img_animated <- image_animate(img_joined, fps = 2)
 
 ## view animated image
-img_animated
+# img_animated
 
 ## save to disk
 image_write(image = img_animated,
             path = paste0(percorso,"test.gif"))
-
 ```
 
 

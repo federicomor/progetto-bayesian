@@ -2,10 +2,13 @@ cat(crayon::cyan("\nGenerated these functions:\n"))
 
 ################################################################################
 #### mode correction
-mode_correct_clusters = function(cl_old, cl_cur,verbose=0){ # and returns cl_new the updated cl_cur
+mode_correct_clusters = function(cl_old, cl_cur,verbose=0,very_verbose=0){ # and returns cl_new the updated cl_cur
 	if(is.null(cl_old)){
 		warning("The cl_old vector is NULL (probably it's just iteration 1 initialization).\nReturning original clustering.\n")
 		return(cl_cur) # nothing to correct
+	}
+	if(very_verbose==1){
+		verbose=1
 	}
 	
 	cl_new = cl_cur
@@ -13,95 +16,121 @@ mode_correct_clusters = function(cl_old, cl_cur,verbose=0){ # and returns cl_new
 	tied_labels = c() # solve them later
 	already_taken_labels = c() # solve them later
 	
+	################################
+	### Main loop ##################
+	################################
 	# for (i in 1:max(cl_cur)){
 	for (i in unique(cl_cur)){
 		indici_label_i = which(cl_cur == i)
 		freq = table(cl_old[indici_label_i])
-		if(verbose==1){
+		if(very_verbose==1){
 			cat("Cur label i =",i,"has mode table (^=index, _=occurences)")
 			print(freq)
 		}
 		better_labels = as.numeric(names(freq[freq == max(freq)]))
 		num_mode = length(better_labels)
 		
-		
 		if(num_mode>=2){ # per risolvere i pareggi
 			# warning("Tie case happened.\n")
 			tied_labels = c(tied_labels,i)
+			if(very_verbose==1){
+				cat(crayon::magenta("Tied label case. Soving it later.\n"))
+			}
 			
 		} else { # una sola moda, ma c'è da vedere se non è già presa
 			if( !(better_labels %in% new_labels) ){
 				better_label = better_labels
 				new_labels = c(new_labels,better_label)
 				cl_new[indici_label_i] = better_label
-				if(verbose==1){
+				if(very_verbose==1){
 					cat("Assigning cur label",i,"to new label",better_label,"\n")
 				}
 			} else {
 				already_taken_labels = c(already_taken_labels,i)
+				if(very_verbose==1){
+					cat(crayon::magenta("Already taken label case. Soving it later.\n"))
+				}
 			}
 		}
 		# cat(new_labels,"\n")
 	}
-	max_it = 100
-	it = 1
 	if(verbose==1){
+		cat(crayon::green("##############\n"))
 		cat("tied_labels =",tied_labels,"\n")
 		cat("already_taken_labels =",already_taken_labels,"\n")
+		cat("Available labels =",setdiff(unique(cl_cur),new_labels),"\n")
+		cat(crayon::green("##############\n"))
 	}
 	
-	while(length(tied_labels)!=0 && it<max_it){
+	
+	################################
+	### Tied labels ################
+	################################
+	if(very_verbose==1){
+		cat(crayon::cyan("Solving tied labels\n"))
+	}
+	something_changed = 1
+	while(length(tied_labels)!=0 && something_changed==1){
+		something_changed = 0
 		for(i in tied_labels){
 			indici_label_i = which(cl_cur == i)
 			freq = table(cl_old[indici_label_i])
 			better_labels = as.numeric(names(freq[freq == max(freq)]))
 			
 			better_labels = setdiff(better_labels,new_labels)
-			if(length(better_labels)==1){
+			if(length(better_labels)>=1){
 				# risolvi il pareggio ed eilimina label i da tied_labels
-				better_label = better_labels
-				new_labels = c(new_labels,better_label)
-				cl_new[indici_label_i] = better_label
-				tied_labels = setdiff(tied_labels,i)
-			}
-			else{
-				# prendi il primo label, tanto comunque non c'erano in new_labels
-				# perché abbiam fatto prima il set diff, quindi sono label liberi
 				better_label = better_labels[1]
 				new_labels = c(new_labels,better_label)
 				cl_new[indici_label_i] = better_label
 				tied_labels = setdiff(tied_labels,i)
+				if(very_verbose==1){
+					cat("Assigning tied-label",i,"to new label",better_label,"\n")
+					something_changed=1
+				}
+			}
+			if(length(better_labels)==0){
+				if(very_verbose==1){
+					cat("Already taken label case. Soving it later.\n")
+				}
+				already_taken_labels = c(already_taken_labels,i)
 			}
 		}
-		it = it+1
+	}
+	
+	
+	################################
+	### Already taken labels #######
+	################################
+	if(very_verbose==1){
+		cat(crayon::cyan("Solving already taken labels\n"))
 	}
 	for(i in already_taken_labels){
 		indici_label_i = which(cl_cur == i)
 		# cat(indici_label_i,"\n")
-		for(k in 1:length(unique(cl_cur))){
+		# for(k in 1:length(unique(cl_cur))){
+		for(k in 1:max(cl_cur)){
 			# cat(k,"\n")
 			if( !(k %in% new_labels) ){
 				new_labels = c(new_labels,k)
 				cl_new[indici_label_i] = k
+				if(very_verbose==1){
+					cat("Assigning already-taken-label",i,"to new label",k,"\n")
+				}
 				break
 			}
 		}
 	}
 	if(verbose==1){
+		cat("Cur clusters values = ",unique(cl_cur),"\n")
+		cat("New clusters values = ",unique(cl_new),"\n")
 		cat("cl_old =",cl_old,"\n")
 		cat("cl_cur =",cl_cur,"\n")
 		cat("cl_new =",cl_new,"\n")
-		cat("Cur clusters values = ",unique(cl_cur),"\n")
-		cat("New clusters values = ",unique(cl_new),"\n")
-	}
-	
-	if(it==max_it){
-		warning("Something went wrong. Returning original clustering.\n")
-		return(cl_cur)
 	}
 	if (length(unique(cl_new))!=length(unique(cl_new)) ||
 		length(levels(factor(cl_new)))!=length(levels(factor(cl_cur))) ){
-		warning("Something went wrong. Returning original clustering.\n")
+		cat(crayon::red("Something went wrong. Returning original clustering.\n"))
 		return(cl_cur)
 	}
 
@@ -149,7 +178,7 @@ cl_cur = c(1,1,2,2,1,1,3,3,4,5,4,5)
 # e idem per cluster 4 e 5. Vediamo cosa ritorna
 mode_correct_clusters(cl_old,cl_cur,verbose=1)
 
-cat(crayon::blue("- collapsed clusters test\n"))
+cat(crayon::blue("- disappeared clusters test\n"))
 # case of collapsed clusters
 cl_old = c(1,1,1,2,2,2,1,1,3,4,4,4,4)
 cl_cur = c(1,1,1,1,1,1,1,1,1,2,2,2,2) 
@@ -168,6 +197,16 @@ cl_cur = c(2,2,2,2,2,1,1,1,1,1,1,3)
 mode_correct_clusters(cl_old,cl_cur,verbose=1)
 
 
+cat(crayon::blue("- appeared clusters test\n"))
+cl_old = c(6,6,6,6,5,5,5,5,3,3,3,3,3)
+cl_cur = c(1,1,1,2,2,2,3,3,3,4,4,4,5)
+mode_correct_clusters(cl_old,cl_cur,verbose=1)
+
+
+cat(crayon::blue("- another edge case?\n"))
+cl_old = c(1,2,2,3,2,3,3,3,4,3,3,3,3,3,3,3,1,3,1,1,1,3,5,3,3,6,3,3,2,2,2,2,7,2,2,2,8,8,5,9,3,5,5,2,2,5,2,8,3,2,3,1,3,3,3,8,8,5,2,2,3,3,3,8,1,1,1,2,1,2,1,8,2,1,2,2,8,2,2,1,5,3,1,1,3,5,8,3,2,8,3,10,2,2,2,2,2,2,2,5,10,1,1,2,5)
+cl_cur = c(1,8,8,9,2,3,3,3,8,3,8,3,3,3,3,3,3,3,1,4,1,3,5,3,3,3,3,3,2,8,8,2,3,2,8,6,8,8,5,3,3,5,5,2,2,7,2,8,3,2,3,1,3,1,3,8,8,7,2,2,3,3,8,8,1,1,1,2,4,2,1,8,2,1,2,2,10,2,2,1,7,8,3,3,8,7,8,8,2,8,8,10,2,2,2,2,2,2,2,7,10,9,3,2,7)
+mode_correct_clusters(cl_old,cl_cur,very_verbose = 1)
 
 ################################################################################
 ### graph plot
@@ -524,6 +563,42 @@ get_hist_continuos_plot = function(df_cluster_cut,verbose=1){
 }
 
 
+cat(crayon::red("- get_boxplot_plot(df_cluster_cut)\n"))
+get_boxplot_plot = function(df_cluster_cut){
+	clusters_now = df_cluster_cut$clusters # needs to be already mode corrected if wanted
+	# n_clusters = max(clusters_now)
+	n_clusters = unique(clusters_now)
+	ycurrent = y[,paste0("w",time)]
+	
+	clust_vals = clusters_now[1:105]
+	df_temp = data.frame(clusters=clust_vals,ycurrent=ycurrent)
+	
+	pad = 2	
+	p = ggplot(df_temp, aes(as.factor(clusters),ycurrent,
+							fill = cols[clusters]
+							# color = cols[clust_vals]
+	))+
+		geom_boxplot()+
+		# geom_jitter(width=0.2)+
+		ggtitle(paste("Time",time))+
+		labs(title = paste("Cluster map - time",time))+
+		guides(fill = guide_legend(title = "Clusters"))+
+		
+		# theme_classic()
+		theme_bw()+
+		xlab("")+
+		ylab("log(PM10) values")+
+		ylim(c(0.5,5))+
+		# xlim(extrema(ycurrent)+c(-pad,pad))+
+		# scale_fill_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+		# breaks=cols[1:max(clust_vals)])+
+		scale_fill_identity(guide="legend",labels=paste0("cl",n_clusters),
+							breaks=cols[n_clusters])
+	# scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+	# breaks=cols[1:max(clust_vals)])
+}
+
+
 cat(crayon::red("- plot_graph_and_hist(df_cluster_cut)\n"))
 plot_graph_and_hist = function(df_cluster_cut){
 	
@@ -538,10 +613,11 @@ ycurrent = y[,paste0("w",time)]
 clust_vals = clusters_now[1:105]
 df_temp = data.frame(clusters=clust_vals,ycurrent=ycurrent)
 p = ggplot(df_temp, aes(ycurrent,
-						color = cols[clust_vals]
+						fill = cols[clust_vals] # case FILL
+						# color = cols[clust_vals] # case COLOR
 ))+
 	geom_histogram(alpha=0.5,
-				   fill="white",
+				   # fill="white", # case COLOR
 				   position="identity")+ 
 	ggtitle(paste("Time",time))+
 	# guides(color = guide_legend(title = "Clusters"))+
@@ -549,7 +625,8 @@ p = ggplot(df_temp, aes(ycurrent,
 	theme(legend.position = "none")+
 	# scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
 						 # breaks=cols[1:max(clust_vals)])+
-	scale_color_identity(guide="legend",labels=paste0("cl",n_clusters),
+	scale_fill_identity(guide="legend",labels=paste0("cl",n_clusters), # case FILL
+	# scale_color_identity(guide="legend",labels=paste0("cl",n_clusters), # case COLOR
 						 breaks=cols[n_clusters])+
 	xlab("log(PM10) values")+
 	xlim(c(0,5))
