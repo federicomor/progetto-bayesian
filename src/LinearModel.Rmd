@@ -401,7 +401,7 @@ vars_names = vars_names[2:num_variables_included_soglia]
 
 ```{r}
 # It's the same code as before, but in a 'for' cycle
-indexx = 1
+index = 1
 for (st in stations){
 	cat(crayon::red("Station",st,index,"\n"))
 	indexx = indexx+1
