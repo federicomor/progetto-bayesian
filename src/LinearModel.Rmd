@@ -310,7 +310,7 @@ detach(data.out)
 bayesian_coefficients <- data.frame()
 frequentist_coefficients <- data.frame()
 
-covs=df_weekly[which(df_weekly$IDStations==st),3:39]
+covs=df_weekly[,3:39]
 covs=covs[,-c(3,5,9,19,36)]    #not numerical
 covs=covs[,-c(1,2,3,31)]   #lat, long, alti and land_use constant over same station
 vars_names = colnames(covs)
@@ -324,9 +324,44 @@ best_lasso_vect = c()
 best_variables_lasso <- data.frame(variables = c("(Intercept)",vars_names), checked = rep(0,(length(vars_names)+1)))
 
 
+
+yy=df_weekly$AQ_pm10
+
+linear_model_classic <- lm(yy ~.,data = data.frame(covs))
+summary(linear_model_classic)
+
+```
+# LASSO all stations
+```{r}
+y=df_weekly[,"AQ_pm10"]
+y=as.numeric(y[[1]])
+y=scale(y)
+
+covs=df_weekly[,vars_names]
+k=dim(covs)[2]
+
+covs=as.data.frame(covs)
+covariates=scale(covs)     #normalization on each single station
+
+
+x <- model.matrix(as.formula(formula),data.frame(covs))[,-1]
+fit.lasso <- glmnet(x,y, lambda = lambda.grid) 
+cv.lasso <- cv.glmnet(x,y,lambda=lambda.grid)
+
+bestlam.lasso <- cv.lasso$lambda.min
+
+coef.lasso <- predict(fit.lasso, s=bestlam.lasso, type = 'coefficients')
+coef.lasso =  data.frame(coef.lasso[,1])
+coef.lasso$variables = rownames(coef.lasso)
+colnames(coef.lasso)[1] = "coeff"
+soglia = 0.01
+final_coeff = coef.lasso[which(abs(coef.lasso$coeff)>soglia),"variables"]
+  
+final_coeff
 ```
 
 # LASSO for variable selection
+loop across stations
 ```{r}
 for (st in stations){
  #covariates and target
@@ -339,12 +374,6 @@ for (st in stations){
   
   covs=as.data.frame(covs)
   covariates=scale(covs)     #normalization on each single station
-
-
-  
-  data.out=as.matrix(outputRegress) # trasform the mcmc.list into a matrix,
-  data.out=data.frame(data.out)     # or, better, into a dataframe (easiest to handle in R)
-
   
  #linear (frequentist)
   linear_model_classic= lm(y ~ .,data = data.frame(covs))
@@ -393,12 +422,31 @@ plot(num_variables_included,type="l")
 abline(h = num_variables_included_soglia,col= "red")
 abline(v = soglia_lasso,col= "blue")
 ```
-# restrict number of variables
+
+## summary linear model 
+with new vars all station all time
+```{r}
+dataframe_cut =df_weekly[,vars_names]
+yy=df_weekly$AQ_pm10
+
+linear_model_classic <- lm(yy ~.,data = data.frame(dataframe_cut))
+summary(linear_model_classic)
+```
+## set variables for the loop
 ```{r}
 vars_names = best_variables_lasso[best_variables_lasso$checked>soglia_lasso,"variables"]
 vars_names = vars_names[2:num_variables_included_soglia]
+
+covs=df_weekly[which(df_weekly$IDStations==st),vars_names]
+k=dim(covs)[2]
+#save betas and sigma 
+variable.names=c("beta0", "sigma","beta" ) #parameters 
+n.iter=50000 
+thin=10  
 ```
 
+
+# BAYESIAN LM all stations
 ```{r}
 # It's the same code as before, but in a 'for' cycle
 indexx = 1
@@ -410,8 +458,7 @@ for (st in stations){
   y=as.numeric(y[[1]])
   y=scale(y)[1:53]    #normalization on each single station ( 53 weeks)
 
-  covs=df_weekly[which(df_weekly$IDStations==st),vars_names]
-  k=dim(covs)[2]
+  covs=df_weekly[which(df_weekly$IDStations==st),]
   
   covs=as.data.frame(covs)
   covariates=scale(covs)     #normalization on each single station
@@ -436,10 +483,7 @@ for (st in stations){
   modelRegress=jags.model("LinearReg.bug",data=data,inits=inits,n.adapt=1000,n.chains=1)
   update(modelRegress,n.iter=5000) #this is the burn-in period
   
- #save betas and sigma 
-  variable.names=c("beta0", "sigma","beta" ) #parameters 
-  n.iter=50000 
-  thin=10  
+
   outputRegress=coda.samples(model=modelRegress,variable.names=variable.names,n.iter=n.iter,thin=thin)
   
   data.out=as.matrix(outputRegress) # trasform the mcmc.list into a matrix,
@@ -454,8 +498,6 @@ for (st in stations){
   bayesian_coefficients <- rbind(bayesian_coefficients,c(st,beta.bayes))
   
   detach(data.out)
-  
-  
 }
 #to give columns names
 colnames(bayesian_coefficients)<-c('station',names(beta.bayes))
