@@ -183,7 +183,7 @@ for(s in c("0","1")){
 		
 		tempo_fine <- Sys.time()
 		cat(crayon::red("##############################\n"))
-		cat("Model is", h, "ie:",
+		cat("Model is",paste0(h,"_S",s),"ie:",
 			"\neta1_bool =",eta1_bool,"-",
 			"phi1_bool =",phi1_bool,"-",
 			"alpha_bool =",alpha_bool,"-",
@@ -276,8 +276,14 @@ s1_order
 # Figure 5
 Lagged ARI plots for models that include time BUT NOT space.
 
-```{r}
+```{r,warning=FALSE}
 library(fields)
+library(salso)
+library(drpm)
+library(MCMCpack)
+library(mclust)
+library(gstat)
+
 # Compute the lagged partitions for all 16 models
 ARImats <- vector("list", length(models.out))
 for (i in 1:length(models.out)) {
@@ -306,24 +312,28 @@ ord2 = s0_order
 
 	par(mfrow=c(2,4),mar=c(2,2,2,2), mgp=c(1.5,0.5,0))
 	for(h in ord2){
-		m.n <- as.numeric(do.call(c, strsplit(strsplit(names(models.out)[h], "t|\\_")[[1]][c(2,3)], "")))
+		m.n <- as.numeric(do.call(c, strsplit(strsplit(names(models.out)[h], "t|\\_")
+											  [[1]][c(2,3)], ""))[c(2,4,6)])
 		header <- bquote(eta[1]*  .(ifelse(m.n[1]==1,":Yes",":No"))*","~
 	    	             phi[1]*  .(ifelse(m.n[2]==1,":Yes",":No"))*","~
 	        	         alpha[t]*.(ifelse(m.n[3]==1,":Yes",":No")))
 		image.plot(ARImats[[h]], main=header, zlim=range(do.call(c,ARImats),na.rm=TRUE), axes=FALSE)
-		mtext(text=c(paste("",1:tps)), side=2, line=0.3, at=seq(0,1,length=12), las=1, cex=0.8)
-		mtext(text=c(paste("",1:tps)), side=1, line=0.3, at=seq(0,1,length=12), las=2, cex=0.8)
+		mtext(text=c(paste("",1:tps)), side=2, line=0.3,
+			  at=seq(0,1,length=max(time_span)), las=1, cex=0.8)
+		mtext(text=c(paste("",1:tps)), side=1, line=0.3,
+			  at=seq(0,1,length=max(time_span)), las=2, cex=0.8)
 	}
 # dev.off()
 ```
 
-# Figure 6
-Questa non ci interessa/piace, anche perché noi abbiamo molte più stazioni quindi quel plot uscirebbe molto incasinato.
+Figure 6
+Questa non ci interessa/piace, anche perché noi abbiamo molte più stazioni quindi quel plot uscirebbe molto incasinato. E poi abbiamo già i nostri plot.
+
 
 # Figure 7
 Lagged ARI plots for models that include time AND space.
 
-```{r}
+```{r,warning=FALSE}
 # This is Figure 7 in the paper.
 # Lagged-ARI plots for models that include space in the partition
 ord2 <- s1_order
@@ -332,13 +342,16 @@ ord2 <- s1_order
 
 	par(mfrow=c(2,4),mar=c(2,2,2,2), mgp=c(1.5,0.5,0))
 	for(h in ord2){
-		m.n <- as.numeric(do.call(c, strsplit(strsplit(names(models.out)[h], "t|\\_")[[1]][c(2,3)], "")))
+		m.n <- as.numeric(do.call(c, strsplit(strsplit(names(models.out)[h], "t|\\_")
+											  [[1]][c(2,3)], ""))[c(2,4,6)])
 		header <- bquote(eta[1]*  .(ifelse(m.n[1]==1,"-Yes","-No"))*","~
 	    	             phi[1]*  .(ifelse(m.n[2]==1,"-Yes","-No"))*","~
 	        	         alpha[t]*.(ifelse(m.n[3]==1,"-Yes","-No")))
 		image.plot(ARImats[[h]], main=header, zlim=range(do.call(c,ARImats),na.rm=TRUE), axes=FALSE)
-		mtext(text=c(paste("",1:tps)), side=2, line=0.3, at=seq(0,1,length=12), las=1, cex=0.8)
-		mtext(text=c(paste("",1:tps)), side=1, line=0.3, at=seq(0,1,length=12), las=2, cex=0.8)
+		mtext(text=c(paste("",1:tps)), side=2, line=0.3,
+			  at=seq(0,1,length=max(time_span)), las=1, cex=0.8)
+		mtext(text=c(paste("",1:tps)), side=1, line=0.3,
+			  at=seq(0,1,length=max(time_span)), las=2, cex=0.8)
 	}
 # dev.off()
 ```

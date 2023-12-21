@@ -70,29 +70,70 @@ colnames(y_fit) = colnames(y)[1+time_span]
 y_fit
 
 ```
-
-## Scale covariates ?? 
+## Selection of covariates
 ```{r}
-?? 
+all_cov <- c(
+  "Altitude", "WE_temp_2m", "WE_wind_speed_10m_mean",
+  "WE_wind_speed_10m_max", "WE_mode_wind_direction_10m", "WE_tot_precipitation",
+  "WE_precipitation_t", "WE_surface_pressure", "WE_solar_radiation",
+  "WE_rh_min", "WE_rh_mean", "WE_rh_max",
+  "WE_wind_speed_100m_mean", "WE_wind_speed_100m_max", "WE_mode_wind_direction_100m",
+  "WE_blh_layer_max", "WE_blh_layer_min", "EM_nh3_livestock_mm",
+  "EM_nh3_agr_soils", "EM_nh3_agr_waste_burn", "EM_nh3_sum",
+  "EM_nox_traffic", "EM_nox_sum", "EM_so2_sum",
+  "LI_pigs", "LI_bovine", "LI_pigs_v2",
+  "LI_bovine_v2", "LA_hvi", "LA_lvi",
+  "LA_land_use"
+)
+
+# a selection of variables reduces the execution time of the code but if it is not a good section the trace plot is bad. Since we have a lot of data, it is not so important to use informative priors but a good selection of variables
+
+# alcune variabili selected con lasso ( soglia = 10)
+var_sel <- c(
+  "WE_wind_speed_10m_mean",
+  "WE_wind_speed_10m_max",
+  "WE_tot_precipitation",
+  "WE_precipitation_t",
+  "WE_rh_max",
+  "WE_wind_speed_100m_mean",
+  "WE_wind_speed_100m_max",
+  "WE_blh_layer_min",
+  "EM_nh3_livestock_mm",
+  "EM_nh3_agr_soils",
+  "EM_nh3_agr_waste_burn",
+  "EM_nh3_sum",
+  "EM_nox_traffic",
+  "EM_nox_sum",
+  "EM_so2_sum",
+  "LI_pigs",
+  "LI_bovine",
+  "LI_pigs_v2",
+  "LA_hvi",
+  "LA_lvi"
+)
+# cON QUESTE COVARIATES TROPPI CLUSTERS E TRACE PLOT FANNO SCHIFO
+
+           
 ```
+
 
 
 ## loop fit
 ```{r}
 clusters_old = NULL
-
+timing_result <- system.time({
 for (time in time_span){
 	cat(crayon::red("Time (ie week)",time,"\n"))
-	df_time = df_weekly[which(df_weekly$week==time),]
+	df_time = df_weekly_scaled[which(df_weekly$week==time),]
 	y_fit = df_time$AQ_pm10
-	X = df_time[,-c(1:5,7)]  # è inclusa longitudine e latitudine?
+	X = df_time[,var_sel] # tutte covariate tranne quelle inutili
 
 	fit = gaussian_ppmx(y_fit, X=X, Xpred=NULL,
 	                  meanModel=1,
 	                  cohesion=1,
 	                  M=1,
 	                  PPM = FALSE,
-	                  similarity_function=1, # auxiliarity function
+	                  similarity_function=2, # auxiliarity function
 	                  consim=1, 
 	                  calibrate=0,
 					  # c(m0, s20, v2,k0,nu0,a0,alpha)
@@ -106,7 +147,7 @@ for (time in time_span){
 						# s2 = varianza della normale della prior della media della likelihood
 						# A = UpperBound dela sigma della normale della likelihood
 						# A0 = upperbound della sigma della normale della prior per la media della likelihood
-	                  modelPriors=c(0, 100^2, 1, 1), # Prior del modello
+	                  modelPriors=c(0, 100^2, 10, 10), # Prior del modello
 	                  mh=c(0.5, 0.5),
 	                  draws=1100, # itaration totali
 					  burn=100, # burnin
@@ -143,8 +184,14 @@ for (time in time_span){
 	# plot_graph_and_hist(df_cluster_cut)
 	
 	clusters_old = clusters_now
-} # end for time
+}# end for time
+  })
+
+print(timing_result)
 ```
+
+Per runnare 6 settimane con tutte le covariate ci metto 6 minuti.
+THE TRACE PLOTS CHANGE A LOT RELATED TO THE VARIABLES USED. ALSO IT IS IMPORTANT TO INCLUDE VARIABLES.
 
 # Trace plots
 ```{r}
@@ -164,7 +211,7 @@ plot(fit$Si[sampled_station,],type="l",
 ```
 
 
-## mu (Posterior mean of mu relativa a soggetto si)  -> associata a mj
+## mu (Posterior mean of mu relativa a soggetto si)  -> associata a muj
 ```{r}
 plot(fit$mu[,sampled_station],type="l",
 		 main=bquote("Trace plot of " * mu * " at time (=week) " * .(time-1) * 
@@ -182,7 +229,7 @@ plot(fit$mu0,type="l",
 
 ```
 
-## sigma2 (posterior of sigma^2 relativa a soggetto si) --> associata a sigmasi
+## sigma2 (posterior of sigma^2 relativa a soggetto si) --> associata a sigmaj
 ```{r}
 plot(fit$sig2[,sampled_station],type="l",
 		 main=bquote("Trace plot of "* sigma^2 * " at time (=week) " * .(time) * 
@@ -210,22 +257,9 @@ plot(fit$nclus,type="l",
 # numeri di cluster nell'istante di tempo considerato per ogni iterazione
 
 ```
+### Clusters for season --> we can find somiglianze dei cluster delle settimane appartenenti alla stessa stagione
 
-
-
-
-## Bontà modello  (che senso hanno nei clustering)  -> meglio ARI
-WAIC :quando utilizzi il WAIC per confrontare modelli in statistica bayesiana, un valore più basso di WAIC indica un modello che offre un miglior equilibrio tra adattamento ai dati e complessità rispetto agli altri modelli considerati.
-Qui però non ho un modello che deve spiegare dati o fare previsione... -> ha senso nella regressione
-```{r}
-fit$WAIC
-```
-
-lpml: Un valore più basso della lpml indica che il modello è migliore nel predire i dati osservati. In altre parole, un modello con una lpml più bassa sta producendo previsioni più accurate o una migliore adattabilità ai dati.
-```{r}
-fit$lpml
-```
-
-- Prova diverse priors
-- Scale covariates
-- Che cov usare  -> similarity function
+Winter: 1 - 11, 52, 53
+Spring: 12- 25
+Summer: 26 - 38
+Autumn: 39 - 51

@@ -449,7 +449,7 @@ thin=10
 # BAYESIAN LM all stations
 ```{r}
 # It's the same code as before, but in a 'for' cycle
-indexx = 1
+index = 1
 for (st in stations){
 	cat(crayon::red("Station",st,index,"\n"))
 	indexx = indexx+1
