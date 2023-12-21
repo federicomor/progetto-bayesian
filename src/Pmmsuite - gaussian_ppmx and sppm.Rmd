@@ -159,14 +159,15 @@ for (time in 1:5){
 # Example with balanced data.
 # generate data for two clusters with 10 subjects each.
 
-nobs <- 100
+nobs <- 10
 nsubject <- 2*10
 
 set.seed(101)
 xx <- seq(0,2*pi, length=nobs)
-y_fit <- cbind(replicate(n=10, 3*sin(xx)*as.numeric(xx<=pi) + rnorm(nobs,0,0.5)),
-           replicate(n=10, 3*cos(xx)*as.numeric(xx<=pi) + rnorm(nobs,0,0.5)))
+y_fit <- cbind(replicate(n=10, 3*sin(xx)*as.numeric(xx<=pi) + rnorm(nobs,0,0.4)),
+			   replicate(n=10, 3*cos(xx)*as.numeric(xx<=pi) + rnorm(nobs,0,0.4)))
 
+# lenght(y_fit)
 dat <- data.frame(y_fit=c(y_fit),
                   z=rep(1:nobs, times=nsubject),
                   Name=rep(1:nsubject, each=nobs))
@@ -204,9 +205,9 @@ modelPriors <- c(0.5,      # Asig
 dat
 
 
-for(subj in 1:20){
+for(subj in 1:nsubject){
 	if(subj==1){
-		plot(1:100,dat[which(dat$Name==subj),"y_fit"],type="l",col="red",ylim=c(-4,4))
+		plot(1:nobs,dat[which(dat$Name==subj),"y_fit"],type="l",col="red",ylim=c(-4,4))
 	} else {
 		lines(dat[which(dat$Name==subj),"y_fit"],type="l",col="red")
 	}
@@ -216,6 +217,39 @@ for(i in 11:20){
 }
 ```
 
+Caso problematico in cui ci sono due cluster all'inizio ma ad un certo punto il modello dovrebbe darne solo uno, quando si riuniscono.
+
+Gaussian ppmx non sembra accorgersi, dà anche molti cluster.
+```{r}
+fit = gaussian_ppmx(y_fit, X=NULL, Xpred=NULL,
+                  meanModel=1,
+                  cohesion=1,
+                  M=1,
+                  PPM = FALSE,
+                  similarity_function=1,
+                  consim=1,
+                  calibrate=0,
+                  simParms=c(0.0, 1.0, 0.1, 1.0, 2.0, 0.1, 1),
+                  modelPriors=c(0, 100^2, 1, 1),
+                  mh=c(0.5, 0.5),
+                  draws=1100,burn=100,thin=1,
+                  verbose=FALSE)
+clusters_now = salso(fit$Si,loss="binder",maxNClusters = 8)
+clusters_now
+
+cols = colora(12,"div")[-c(2)]
+for(subj in 1:nsubject){
+	if(subj==1){
+		plot(1:nobs,dat[which(dat$Name==subj),"y_fit"],type="l",col=cols[clusters_now[subj]],ylim=c(-4,4))
+	} else {
+		lines(dat[which(dat$Name==subj),"y_fit"],type="l",col=cols[clusters_now[subj]])
+	}
+}
+```
+
+
+
+Curve ppmx dà due cluster ma perché in effetti ce ne sono due all'inizio, ma non notifica quando si reincontrano.
 ```{r}
 fit <- curve_ppmx(y=cbind(y_fit), z=z,
              subject=subject_obs_vec,
@@ -234,6 +268,8 @@ fit <- curve_ppmx(y=cbind(y_fit), z=z,
              burn=nburn,
              thin=nthin)
 
+clusters_now = salso(fit$Si,loss="binder",maxNClusters = 8)
+clusters_now
 
 Hmat <- fit$Hmat
 
