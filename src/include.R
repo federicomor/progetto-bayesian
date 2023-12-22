@@ -72,34 +72,48 @@ df_weekly$AQ_pm10 = log(df_weekly$AQ_pm10) # here we overwrite df_weekly to be l
 # [1] 0.8873032 4.3802393
 
 cat(crayon::cyan(h,"Loaded weekly divided dataset(s). Available as"),
-	crayon::red("df_weekly"),
-	crayon::cyan("(log-transformed)and"),crayon::red("df_weekly_no_log_transf"),
-	crayon::cyan("(the original one).\n")
-	)
+	crayon::red("df_weekly.\n"))
 
 df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0011A")] = "STA.CH0011A"
 df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0033A")] = "STA.CH0033A"
 df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0043A")] = "STA.CH0043A"
-cat(crayon::italic("Uniformed names of stations (some were STA-ecc and some STA.ecc; now are all STA.ecc). Only of df_weekly.\n"))
-cat(crayon::italic("This name change was also needed for the graph cluster plot.\n\n"))
+cat(crayon::italic("Uniformed names of stations (some were STA-ecc and some STA.ecc; now are all STA.ecc).\nOnly of df_weekly and the following df_weekly_scaled_centered.\n"))
+cat(crayon::italic("This name change was also needed for the graph cluster plot function.\n\n"))
 
-df_weekly_scaled = df_weekly
-numerical_covariates_to_scale = c(6,8:10,12:20,22:37)
-df_weekly_scaled[,numerical_covariates_to_scale] = scale(df_weekly_scaled[,numerical_covariates_to_scale])
+
+
+
+df_weekly_scaled_centered = df_weekly
+# colnames(df_weekly_scaled_centered)
+numerical_covariates_to_scale = c(3,4,6,8:10,12:20,22:37)
+df_weekly_scaled_centered[,numerical_covariates_to_scale] = scale(df_weekly_scaled_centered[,numerical_covariates_to_scale],center=TRUE,scale=TRUE)
+df_weekly_scaled_centered$AQ_pm10 = scale(df_weekly_scaled_centered$AQ_pm10,center=TRUE,scale=FALSE)
 cat(crayon::cyan(h,"Created scaled df_weekly dataset. Available as"),
-	crayon::red("df_weekly_scaled.\n"))
+	crayon::red("df_weekly_scaled_centered.\n")) # add centering on the PM10
 cat(crayon::italic(
-"Scaled variables were all but these:
+	"Scaled variables were c(3,4,6,8:10,12:20,22:37)
+Untouched variables were
    (col 1) X, 
    (col 2) IDStations,
-   (col 3) Latitude,
-   (col 4) Longitude,
    (col 5) Time,
-   (col 7) AQ_pm10, (i dont think target should be scaled)
   (col 11) WE_mode_wind_direction_10m,
   (col 21) WE_mode_wind_direction_100,
   (col 38) day,
-  (col 39) week\n\n"))
+  (col 39) week
+------------------------------------------------------
+  (col 7) AQ_pm10 has been centered, not scaled
+(col 3&4) Latitude and Longitude have also been scaled
+          (fits were better in this way)\n\n"))
+
+# par(mfrow=c(2,2))
+# par(mar=c(9,2,1,1))
+# boxplot(df_weekly_scaled_centered[,c(3,4,6,8:10,12:20,22:37)],title="scaled variables",las=2,cex=0.4)
+# par(mar=c(3,3,2,2))
+# plot(df_weekly_scaled_centered$Latitude,df_weekly_scaled_centered$Longitude,main="std coordinates (look at axes)")
+# boxplot(df_weekly_scaled_centered$AQ_pm10,main="AQ_pm10 values")
+# boxplot(df_weekly_scaled_centered[,c(7,38,39)],title="remained variables",las=2,cex=0.4)
+
+
 
 ########################
 # df_stat split

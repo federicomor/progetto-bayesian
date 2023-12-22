@@ -8,13 +8,14 @@ Data: old https://zenodo.org/records/7563265 new https://zenodo.org/records/7956
 
 
 # Models order
-**Important**: for models fitting let's use `df_weekly_scaled_centered` loaded from `include.R`, which has (or will have, i will update it soon):
+**Important**: for models fitting let's use `df_weekly_scaled_centered` loaded from `include.R`, which has (now it's available on github):
 
 - numerical covariates scaled
 - spatial coordinates also scaled (fitting appears to be better)
 - PM10 just centered, not scaled
 
-And for models evaluation see file `Metrics.Rmd` (i will create it soon).
+And for models evaluation see file `Metrics and workflow.Rmd` (i will create it soon).
+See also that for understand how to create the plots of the clusters.
 
 **Models recap**:
 

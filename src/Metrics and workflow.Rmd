@@ -1,0 +1,102 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+# workflow
+Expected/suggested structure of the notebook should be this.
+
+## setup
+Load stuff and use df_weekly_scaled_centered!
+```{r,warning = FALSE}
+library(drpm)
+library(salso)
+
+# preparation
+source("include.R") # for having df_agri
+source("plot functions/plotter.R")
+
+sites = data.frame(
+	longitude = unique(df_weekly_scaled_centered$Longitude), 
+	latitude = unique(df_weekly_scaled_centered$Latitude))
+```
+better to leave this alone (less buggy but dont know why).
+```{r,warning=F}
+source("include_clusters_functions.R")
+```
+this part is needed for the cluster plots.
+```{r}
+stations = unique(df_weekly_scaled_centered$IDStations)
+y=data.frame()
+
+for(st in stations){
+  y_we_pm10=cbind(as.data.frame(st),t(df_weekly_scaled_centered[which(df_weekly_scaled_centered$IDStations==st),"AQ_pm10"]))
+  y=rbind(y,y_we_pm10)
+}
+
+rownames(y) = NULL
+colnames(y)<- c("id",paste0("w", 1:53))
+df_weekly_scaled_centered
+y
+```
+
+
+## fit
+Then do your fit.
+```{r}
+fit = my_nice_fit()
+```
+
+## trace plots
+Ecc.
+
+## evaluate metric
+I will clarify it soon.
+
+
+## cluster plots
+I need this for the functions to work.
+```{r}
+df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
+for(time in time_span){
+
+	# adapt this line according to what your fit produce
+	salso_out <- salso(t(drpm1$Si[time,,]),loss="binder")
+	
+	df_temp = data.frame(
+		Longitude = sites$longitude,
+		Latitude = sites$latitude,
+		clusters = salso_out[1:105]
+	)
+	df_temp$Time = rep(time,dim(df_temp)[1])
+	df_cluster = rbind(df_cluster,df_temp)
+}
+```
+choose colors.
+```{r}
+cols = colora(12,"div")[-2] # togliamo il giallino
+```
+plots.
+```{r}
+clusters_old = NULL
+for(time in time_span){
+
+	df_cluster_cut = df_cluster[df_cluster$Time==time,]
+	clusters_now = df_cluster_cut$clusters
+	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
+	df_cluster_cut$clusters = clusters_now
+	
+	# choose one of the following functions
+	# p = get_hist_continuos_plot(df_cluster_cut)
+	# p = get_hist_color_plot(df_cluster_cut)
+	# p = get_hist_fill_plot(df_cluster_cut)
+	# p = get_boxplot_plot(df_cluster_cut)
+	p = get_graph_plot(df_cluster_cut)
+	
+	print(p)
+	clusters_old = clusters_now
+}
+```
+
+
+
