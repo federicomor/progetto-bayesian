@@ -43,7 +43,7 @@ Create variables for regression analysis
 ```{r}
 #remove column pm_10 (target)
 #for now only using numerical covariates
-st="1269"   #start with an example, then will cycle on all
+st="1264"   #start with an example, then will cycle on all
 
 y=df_weekly[which(df_weekly$IDStations==st),7]
 y=as.numeric(y[[1]])
@@ -180,7 +180,7 @@ sig.post= data.out[,'sigma']
 ## Comparison frequentist- bayesian
 ```{r}
 #### MLE estimate
-mod= lm(y ~ .,data = data.frame(covs))
+mod = lm(y ~ .,data = data.frame(covs))
 #summary(mod)
 
 mod$coefficients  # Comparison 
@@ -452,7 +452,7 @@ thin=10
 index = 1
 for (st in stations){
 	cat(crayon::red("Station",st,index,"\n"))
-	indexx = indexx+1
+	index = index+1
  #covariates and target
   y=df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]
   y=as.numeric(y[[1]])
@@ -547,6 +547,132 @@ colnames(coef.lasso)[1] = "coeff"
 final_coeff = coef.lasso[which(abs(coef.lasso$coeff)>0.001),"variables"]
 
 
+```
+
+
+
+
+
+# Jags variable selection on one station
+Bayesian variable selection with jags
+https://darrenjw.wordpress.com/2012/11/20/getting-started-with-bayesian-variable-selection-using-jags-and-rjags/
+
+Start by running include, dividing stations and dataset preparation block before this
+```{r}
+data = list(y=y,
+            x=covs,
+            n=dim(covs)[1],
+            k=dim(covs)[2])
+
+inits = function() {list(beta0=0,
+                         beta=rep(0,k),
+                         sigma=100,
+                         betaT=rep(0,k), ind=rep(0,k))}
+
+modelRegress=jags.model("LinearRegSel.bug",data=data,inits=inits,n.adapt=1000,n.chains=1)
+```
+
+```{r}
+update(modelRegress,n.iter=1000)
+output=coda.samples(model=modelRegress,
+        variable.names=c("beta0","beta","ind","tau"),
+        n.iter=10000,thin=1)
+print(summary(output))
+#plot(output)
+```
+
+
+
+
+
+In theory we should just look at quantiles for ind
+  1 if to keep 
+  0 if can remove
+from here it looks like no really important covariates (none significative at 2.5%)
+(in LinearRegSel there is a dbern that is the probability of keeping a covariate, 
+       I put it at 0.75 to bias model to keep more covariates, but feel free to try other values)
+
+
+Can't plot result (error: figure margins too large) 
+It works if from console you input  x11(); plot(output)
+(Careful: it prints and then resets and prints successive on same page)
+
+We could just put a threshold onto ind to save them in a list for each cycle and then choose the ones that appear more often
+
+
+
+
+# On all stations
+Same for as before but with this
+```{r}
+variable.names=c("beta0", "beta", "sigma") 
+n.iter=50000 
+thin=10  
+index = 1
+bayesian_coefficients <- data.frame()
+
+
+for (st in stations){
+	cat(crayon::red("Station",st,index,"\n"))
+	index = index+1
+ #covariates and target
+  y=df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]
+  y=as.numeric(y[[1]])
+  y=scale(y)[1:53]    #normalization on each single station ( 53 weeks)
+
+  covs=df_weekly[which(df_weekly$IDStations==st),3:39]
+  covs=covs[,-c(3,5,9,19,36)]    #not numerical
+  covs=covs[,-c(1,2,3,31)]   #lat, long, alt and land_use constant over same station
+  k=dim(covs)[2] # number of covariates
+
+  covs=as.data.frame(covs)
+  covariates=scale(covs)     #normalization on the station
+  #jitter to avoid nans in constant columns
+  for(i in 1:k){
+    if(sum(is.na(covariates[,i]))>0)
+      covs[,i]=jitter(covs[,i],0.01)
+  }
+  covs=scale(covs)
+
+  
+
+ #build model
+  data = list(y=y,
+            x=covs,
+            n=dim(covs)[1],
+            k=dim(covs)[2])
+
+  inits = function() {list(beta0=0,
+                         beta=rep(0,k),
+                         sigma=100,
+                         betaT=rep(0,k), ind=rep(0,k))}
+
+ #run model  
+  modelRegress=jags.model("LinearRegSel.bug",data=data,inits=inits,n.adapt=1000,n.chains=1)
+  update(modelRegress,n.iter=5000)
+  
+  outputRegress=coda.samples(model=modelRegress,variable.names=c(variable.names,"ind"),n.iter=n.iter,thin=thin)
+  #print(summary(outputRegress))
+  #summary(outputRegress)$quantiles[30:57,]   #print of ind 
+  
+  #HERE NEED THRESHOLD AND TO STORE
+  
+  
+  data.out=as.matrix(outputRegress) # trasform the mcmc.list into a matrix,
+  data.out=data.frame(data.out)     # or, better, into a dataframe (easiest to handle in R)
+  attach(data.out)
+  n.chain=dim(data.out)[1] 
+
+ #the betas
+  beta.post <- data.out[,0:k+1]   #posterior mean of the beta parameters
+  beta.bayes  <- apply(beta.post,2,"mean")
+  beta.bayes <- c(beta.bayes[k+1],beta.bayes[1:k])  #just to put beta0 in first position
+  bayesian_coefficients <- rbind(bayesian_coefficients,c(st,beta.bayes))
+  
+  detach(data.out)
+}
+#to give columns names
+colnames(bayesian_coefficients)<-c('station',names(beta.bayes))
 ```
 
 
