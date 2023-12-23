@@ -8,13 +8,13 @@ Data: old https://zenodo.org/records/7563265 new https://zenodo.org/records/7956
 
 
 # Models order
-**Important**: for models fitting let's use `df_weekly_scaled_centered` loaded from `include.R`, which has (now it's available on github):
+**Important**: for models fitting let's use `df_weekly_scaled_centered` loaded from `include.R`, which has (now it's done):
 
 - numerical covariates scaled
 - spatial coordinates also scaled (fitting appears to be better)
 - PM10 just centered, not scaled
 
-And for models evaluation see file `Metrics and workflow.Rmd` (i will create it soon).
+And for models evaluation see file `Metrics and workflow.Rmd` (now it's done).
 See also that for understand how to create the plots of the clusters.
 
 **Models recap**:
@@ -26,12 +26,22 @@ See also that for understand how to create the plots of the clusters.
 
 | Model             | Time     | Space    | Covariates |
 |-------------------|----------|----------|------------|
-| DRPM (Federico)          |  ✓      | ✓        |  X    |
-| Gaussian PPMx (Federica) |  X        |      X  |    ✓ |
-| SPPM (Oswaldo)           |  X        |       ✓   | X    |
-| Curve PPMx (Aby)         |   ✓     | X      |    ✓   |
+| DRPM (Federico)          |  ✓      | ✓      |  X    |
+| Gaussian PPMx (Federica) |  X       |   X    |  ✓   |
+| SPPM (Oswaldo)           |  X       |    ✓   | X    |
+| Curve PPMx (Aby)         |   ✓     | X       |  ✓   |
 
 
 The models without time means that time is not inside the model. Then we can "force" time to be included by looping or doing some other tricks, but time will never be inside the model.
 
 The models without space could consider to use space as a covariate? like the locations longitude and latitude as numerical covariates.
+
+# Report chapters idea
+1. Data inspection
+2. Models
+	- 2.1. SPPM (as it is just spatial, like the start point)
+	- 2.2. DRPM (space plus time)
+	- 2.3. covariate selection (Ettore and Giulia work, to prepare for the models with covariates)
+	- 2.4. Gaussian PPMx (only covariates)
+	- 2.5. Curve PPMx (covariates and time)
+3. ecc
