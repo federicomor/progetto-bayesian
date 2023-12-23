@@ -16,7 +16,13 @@ library(salso)
 source("include.R") # for having df_agri
 source("plot functions/plotter.R")
 
+# sites needs to stay defined from df_weekly (ie coords not scaled), for plotting functions
 sites = data.frame(
+	longitude = unique(df_weekly$Longitude), 
+	latitude = unique(df_weekly$Latitude))
+
+# so if you need space in your fits use this
+sites_fit = data.frame(
 	longitude = unique(df_wsc$Longitude), 
 	latitude = unique(df_wsc$Latitude))
 ```

@@ -387,10 +387,15 @@ assemble_edges_list = function(clusters,need_to_debug=0){
 # clusters = df_cluster_cut$clusters
 # edges = assemble_edges(clusters)
 
-
 cat(crayon::bold("plotter library required!\n"))
 
 
+
+
+
+
+
+xlims = c(-2.5,1.5)
 cat(crayon::red("- get_graph_plot(df_cluster_cut)\n"))
 get_graph_plot = function(df_cluster_cut){ # already mode_corrected
 	clusters_now = df_cluster_cut$clusters
@@ -469,7 +474,7 @@ get_hist_fill_plot = function(df_cluster_cut,verbose=0){
 		# scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
 		# breaks=cols[1:max(clust_vals)])
 		xlab("log(PM10) values")+
-		xlim(c(0.5,5))
+		xlim(xlims)
 	
 }
 
@@ -520,7 +525,7 @@ get_hist_color_plot = function(df_cluster_cut,verbose=0){
 		scale_color_identity(guide="legend",labels=paste0("cl",n_clusters),
 							 breaks=cols[n_clusters])+
 		xlab("log(PM10) values")+
-		xlim(c(0.5,5))
+		xlim(xlims)
 }
 
 
@@ -560,7 +565,7 @@ get_hist_continuos_plot = function(df_cluster_cut,verbose=1){
 		theme_bw()+
 		xlab("log(PM10) values")+
 		ylab("")+
-		xlim(c(0.5,5))
+		xlim(xlims)
 }
 
 
@@ -589,7 +594,7 @@ get_boxplot_plot = function(df_cluster_cut){
 		theme_bw()+
 		xlab("")+
 		ylab("log(PM10) values")+
-		ylim(c(0.5,5))+
+		ylim(xlims)+
 		# xlim(extrema(ycurrent)+c(-pad,pad))+
 		# scale_fill_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
 		# breaks=cols[1:max(clust_vals)])+

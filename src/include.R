@@ -66,7 +66,7 @@ if(!(min(df_weekly$AQ_pm10)>2 && max(df_weekly$AQ_pm10)>78)){
 # extrema(df_weekly$AQ_pm10)
 # [1] 2.428571 79.857143
 
-df_weekly_no_log_transf = df_weekly # so here we make a copy of it, the original one
+# df_weekly_no_log_transf = df_weekly # so here we make a copy of it, the original one
 df_weekly$AQ_pm10 = log(df_weekly$AQ_pm10) # here we overwrite df_weekly to be log-transformed
 # extrema(df_weekly$AQ_pm10)
 # [1] 0.8873032 4.3802393
@@ -77,7 +77,7 @@ cat(crayon::cyan(h,"Loaded weekly divided dataset(s). Available as"),
 df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0011A")] = "STA.CH0011A"
 df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0033A")] = "STA.CH0033A"
 df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0043A")] = "STA.CH0043A"
-cat(crayon::italic("Uniformed names of stations (some were STA-ecc and some STA.ecc; now are all STA.ecc).\nOnly of df_weekly and the following df_weekly_scaled_centered.\n"))
+cat(crayon::italic("Uniformed names of stations (some were STA-ecc and some STA.ecc; now are all STA.ecc).\nOnly of df_weekly and the following df_weekly_scaled_centered (ie df_wsc).\n"))
 cat(crayon::italic("This name change was also needed for the graph cluster plot function.\n\n"))
 
 
