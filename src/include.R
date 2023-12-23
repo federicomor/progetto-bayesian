@@ -89,7 +89,9 @@ numerical_covariates_to_scale = c(3,4,6,8:10,12:20,22:37)
 df_weekly_scaled_centered[,numerical_covariates_to_scale] = scale(df_weekly_scaled_centered[,numerical_covariates_to_scale],center=TRUE,scale=TRUE)
 df_weekly_scaled_centered$AQ_pm10 = scale(df_weekly_scaled_centered$AQ_pm10,center=TRUE,scale=FALSE)
 cat(crayon::cyan(h,"Created scaled df_weekly dataset. Available as"),
-	crayon::red("df_weekly_scaled_centered.\n")) # add centering on the PM10
+	crayon::red("df_weekly_scaled_centered"),
+	crayon::cyan("(or"),
+	crayon::red("df_wsc).\n")) # add centering on the PM10
 cat(crayon::italic(
 	"Scaled variables were c(3,4,6,8:10,12:20,22:37)
 Untouched variables were
@@ -113,6 +115,7 @@ Untouched variables were
 # boxplot(df_weekly_scaled_centered$AQ_pm10,main="AQ_pm10 values")
 # boxplot(df_weekly_scaled_centered[,c(7,38,39)],title="remained variables",las=2,cex=0.4)
 
+df_wsc = df_weekly_scaled_centered # short alias
 
 
 ########################

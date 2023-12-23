@@ -97,6 +97,9 @@ for (time in 1:6){
 	
 	clusters_old = clusters_now
 } # end for time
+
+cat(fit$lpml)
+cat(fit$WAIC)
 ```
 # Model sppm
 
