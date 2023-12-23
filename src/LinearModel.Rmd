@@ -24,9 +24,14 @@ library(glmnet) # lasso
 
 
 
-# Start dividing stations
+# Dividing stations, save covariates in a dataframe
 ```{r}
 dati = df_weekly[,c(2,7)]
+
+covariates=df_weekly[,3:39]
+covariates=covariates[,-c(3,5,9,19,36)]    #not numerical
+covariates=covariates[,-c(1,2,3,31)]   #lat, long, alti and land_use constant over same station
+k = dim(covariates)[2]
 head(dati)
 # df_stat=hash() ????
 stations = unique(dati$IDStations)
@@ -49,11 +54,8 @@ y=df_weekly[which(df_weekly$IDStations==st),7]
 y=as.numeric(y[[1]])
 y=scale(y)[1:53]    #normalization on the station
 
-covs=df_weekly[which(df_weekly$IDStations==st),3:39]
-covs=covs[,-c(3,5,9,19,36)]    #not numerical
-covs=covs[,-c(1,2,3,31)]   #lat, long, alti and land_use constant over same station
-k=dim(covs)[2] # number of covariates
 
+covs = covariates[which(df_weekly$IDStations==st),]
 covs=as.data.frame(covs)
 covariates=scale(covs)     #normalization on the station
 #jitter to avoid nans in constant columns
@@ -85,7 +87,7 @@ for (i in 1:size(covs)[2]){
 data = list(y=y,
             x=covs,
             n=dim(covs)[1],
-            k=dim(covs)[2])
+            k=k)
 ```
 
 ### jags stuff
@@ -310,10 +312,7 @@ detach(data.out)
 bayesian_coefficients <- data.frame()
 frequentist_coefficients <- data.frame()
 
-covs=df_weekly[,3:39]
-covs=covs[,-c(3,5,9,19,36)]    #not numerical
-covs=covs[,-c(1,2,3,31)]   #lat, long, alti and land_use constant over same station
-vars_names = colnames(covs)
+vars_names = colnames(covariates)
 
 # stuff for lasso
 formula <- " y ~ ."
@@ -458,7 +457,7 @@ for (st in stations){
   y=as.numeric(y[[1]])
   y=scale(y)[1:53]    #normalization on each single station ( 53 weeks)
 
-  covs=df_weekly[which(df_weekly$IDStations==st),]
+  covs=df_weekly[which(df_weekly$IDStations==st),vars_names ]
   
   covs=as.data.frame(covs)
   covariates=scale(covs)     #normalization on each single station
@@ -562,7 +561,7 @@ Start by running include, dividing stations and dataset preparation block before
 data = list(y=y,
             x=covs,
             n=dim(covs)[1],
-            k=dim(covs)[2])
+            k=k)
 
 inits = function() {list(beta0=0,
                          beta=rep(0,k),
@@ -612,7 +611,7 @@ index = 1
 bayesian_coefficients <- data.frame()
 
 
-for (st in stations){
+for (st in stations[1:4]){
 	cat(crayon::red("Station",st,index,"\n"))
 	index = index+1
  #covariates and target
@@ -620,11 +619,7 @@ for (st in stations){
   y=as.numeric(y[[1]])
   y=scale(y)[1:53]    #normalization on each single station ( 53 weeks)
 
-  covs=df_weekly[which(df_weekly$IDStations==st),3:39]
-  covs=covs[,-c(3,5,9,19,36)]    #not numerical
-  covs=covs[,-c(1,2,3,31)]   #lat, long, alt and land_use constant over same station
-  k=dim(covs)[2] # number of covariates
-
+  covs=df_weekly[which(df_weekly$IDStations==st),vars_names]
   covs=as.data.frame(covs)
   covariates=scale(covs)     #normalization on the station
   #jitter to avoid nans in constant columns
@@ -640,7 +635,7 @@ for (st in stations){
   data = list(y=y,
             x=covs,
             n=dim(covs)[1],
-            k=dim(covs)[2])
+            k=k)
 
   inits = function() {list(beta0=0,
                          beta=rep(0,k),
