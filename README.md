@@ -30,6 +30,7 @@ See also that for understand how to create the plots of the clusters.
 | Gaussian PPMx (Federica) |  X       |   X    |  ✓   |
 | SPPM (Oswaldo)           |  X       |    ✓   | X    |
 | Curve PPMx (Aby)         |   ✓     | X       |  ✓   |
+| CarBayesST               |   ✓     | ✓       |  ✓   | but no clustering
 
 
 The models without time means that time is not inside the model. Then we can "force" time to be included by looping or doing some other tricks, but time will never be inside the model.
@@ -37,11 +38,24 @@ The models without time means that time is not inside the model. Then we can "fo
 The models without space could consider to use space as a covariate? like the locations longitude and latitude as numerical covariates.
 
 # Report chapters idea
-1. Data inspection
+1. Data inspection + problem presentation
+	- 1.1. NAs treatment
+	- 1.2. trends, choice of the year
+	- ?
 2. Models
 	- 2.1. SPPM (as it is just spatial, like the start point)
 	- 2.2. DRPM (space plus time)
-	- 2.3. covariate selection (Ettore and Giulia work, to prepare for the models with covariates)
+	- 2.3. CARBayesST + covariate selection (Ettore and Giulia work, to prepare for the models with covariates)
 	- 2.4. Gaussian PPMx (only covariates)
 	- 2.5. Curve PPMx (covariates and time)
-3. ecc
+3. Model choice
+	- 3.1. model comparison with the metrics used
+	- 3.2. why model X is the "best"
+4. Analysis of the results
+	- 4.1. How do we interpret the model? Why some covariates seem more important than others?
+	- 4.2. Does our results conflict with the ones of the literature?
+5. Conclusion
+6. Further Developments
+	- 6.1. model averaging Package‘AICcmodavg’
+	- 6.2.  weekend-weekday division
+	- 6.3. prior dall'anno precedente
