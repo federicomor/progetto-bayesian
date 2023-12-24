@@ -124,7 +124,7 @@ clusters_old = NULL
 timing_result <- system.time({
 for (time in time_span){
 	cat(crayon::red("Time (ie week)",time,"\n"))
-	df_time = df_weekly_scaled[which(df_weekly$week==time),]
+	df_time = df_weekly_scaled[which(df_weekly$week==time),]  # CAMBIA DATASET
 	y_fit = df_time$AQ_pm10
 	X = df_time[,var_sel] # tutte covariate tranne quelle inutili
 
@@ -133,14 +133,14 @@ for (time in time_span){
 	                  cohesion=1,
 	                  M=1,
 	                  PPM = FALSE,
-	                  similarity_function=2, # auxiliarity function
+	                  similarity_function=1, # auxiliarity function
 	                  consim=1, 
 	                  calibrate=0,
 					  # c(m0, s20, v2,k0,nu0,a0,alpha)
 						# "PRIOR" DELLA SIMILARITY FUNCTION USATA
 						# se cosim = 1 -> (q fun = N) m0 prior per media normale, s20 prior per varianza normale
 						# se cosim = 2 -> (q fun = N -IG) m0, v0 are a priori “guesses” for mj and vj  and k0, n0 the corresponding a priori                                                           “sample sizes”
-	                  simParms=c(0.0, 1.0, 0.1, 1.0, 2.0, 0.1, 1),  # Priors per similarity function
+	                  simParms=c(0.0, 10 , 0.5, 1.0, 2.0, 0.1, 1),  # Priors per similarity function (VEDI PAPER)
 					  # c(m,s2,A,A0)
 						# VEDI PAGINA 1016 DEL PAPER 6 PER CAPIRE MODELLO
 						# m = mean della normale della prior per la media della likelihood
@@ -257,6 +257,113 @@ plot(fit$nclus,type="l",
 # numeri di cluster nell'istante di tempo considerato per ogni iterazione
 
 ```
+
+### Vairible selection based on LPML
+```{r}
+set.seed(1)
+all_cov <- c(
+  "Altitude", "WE_temp_2m", "WE_wind_speed_10m_mean",
+  "WE_wind_speed_10m_max", "WE_mode_wind_direction_10m", "WE_tot_precipitation",
+  "WE_precipitation_t", "WE_surface_pressure", "WE_solar_radiation",
+  "WE_rh_min", "WE_rh_mean", "WE_rh_max",
+  "WE_wind_speed_100m_mean", "WE_wind_speed_100m_max", "WE_mode_wind_direction_100m",
+  "WE_blh_layer_max", "WE_blh_layer_min", "EM_nh3_livestock_mm",
+  "EM_nh3_agr_soils", "EM_nh3_agr_waste_burn", "EM_nh3_sum",
+  "EM_nox_traffic", "EM_nox_sum", "EM_so2_sum",
+  "LI_pigs", "LI_bovine", "LI_pigs_v2",
+  "LI_bovine_v2", "LA_hvi", "LA_lvi",
+  "LA_land_use"
+)
+
+all_cov_sample <- sample(all_cov)
+n <- lenght(all_cov)
+
+```
+
+## loop fit
+```{r}
+var_sel <- all_cov_sample[1]
+for(i in 1:n){
+clusters_old = NULL
+timing_result <- system.time({
+for (time in time_span){
+	cat(crayon::red("Time (ie week)",time,"\n"))
+	df_time = df_weekly_scaled[which(df_weekly$week==time),]
+	y_fit = df_time$AQ_pm10
+	X = df_time[,var_sel] # tutte covariate tranne quelle inutili
+
+	fit = gaussian_ppmx(y_fit, X=X, Xpred=NULL,
+	                  meanModel=1,
+	                  cohesion=1,
+	                  M=1,
+	                  PPM = FALSE,
+	                  similarity_function=2, # auxiliarity function
+	                  consim=1, 
+	                  calibrate=0,
+					  # c(m0, s20, v2,k0,nu0,a0,alpha)
+						# "PRIOR" DELLA SIMILARITY FUNCTION USATA
+						# se cosim = 1 -> (q fun = N) m0 prior per media normale, s20 prior per varianza normale
+						# se cosim = 2 -> (q fun = N -IG) m0, v0 are a priori “guesses” for mj and vj  and k0, n0 the                                                            corresponding a priori “sample sizes”
+	                  simParms=c(0.0, 1.0, 0.1, 1.0, 2.0, 0.1, 1),  # Priors per similarity function
+					  # c(m,s2,A,A0)
+						# VEDI PAGINA 1016 DEL PAPER 6 PER CAPIRE MODELLO
+						# m = mean della normale della prior per la media della likelihood
+						# s2 = varianza della normale della prior della media della likelihood
+						# A = UpperBound dela sigma della normale della likelihood
+						# A0 = upperbound della sigma della normale della prior per la media della likelihood
+	                  modelPriors=c(0, 100^2, 10, 10), # Prior del modello
+	                  mh=c(0.5, 0.5),
+	                  draws=1100, # itaration totali
+					  burn=100, # burnin
+					  thin=1, # considero un valore della catena ogi thin salti
+	                  verbose=FALSE)
+	
+	clusters_now = salso(fit$Si,loss="binder")
+	clusters_now = clusters_now[1:105] # 105 numero max di cluster che possiamo avere
+	### Mode correct clusters
+	# dava errore Error in str2expression(strsplit(x, ",")[[1]]) : 
+	clusters_now = mode_correct_clusters(clusters_old,clusters_now,verbose=0)
+	# ora funziona, se vuoi controllare meglio che succede dietro le quinte metti verbose=1
+	clusters_old = clusters_now
+}# end for time
+  })
+if ( i == 1 )
+    LPML[1] <- fit$LPML
+else 
+	LPML[i] <- fit$LPML
+
+if (i > 1 & LPML[i]>LPML[i-1])
+{
+	var_sel <- c(var_sel, var_sel[i])
+}
+}
+
+print(timing_result)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ### Clusters for season --> we can find somiglianze dei cluster delle settimane appartenenti alla stessa stagione
 
 Winter: 1 - 11, 52, 53
