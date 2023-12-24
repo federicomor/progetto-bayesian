@@ -66,7 +66,7 @@ LPML and WAIC are all based on the LPPD (log posterior predictive density), wher
 - we dont know the real best one, so we just want to choose the best among them
 - we value good a model if supposing a new data arrives we can model well its law
 
-LPPD(model j) = sum_{i=1}^n log( m(y_i | y_vector, Mj) )
+$$LPPD(model j) = sum_{i=1}^n log( m(y_i | y_{vector}, M_j) )$$
 
 
 ## LPML
@@ -154,6 +154,7 @@ for(k in 1: LEN){
 }
 cols_ARI = colora(80,56,0)
 # or see ?designer.colors for colors
+library(fields)
 image.plot(ARImats, main="Lagged ARI values",axes=FALSE,col=rev(cols_ARI))
 mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
 mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
@@ -213,7 +214,7 @@ for(time in time_span){
 
 ## all at once
 If you loop when you fit you can do this.
-```{r}
+```{r,warning= FALSE}
 clusters_old = NULL
 
 for (time in 1:6){
