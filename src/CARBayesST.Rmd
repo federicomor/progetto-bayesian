@@ -18,6 +18,17 @@ The values in each column of these matrices should be ordered so that the first 
 ordered_by_time <- df_wsc[order(df_wsc$Time), ]
 head(ordered_by_time)
 ```
+# SET COVARIATES
+```{r}
+colnames(ordered_by_time)
+covariates_to_exclude = c("X","IDStations",
+						  "Latitude","Longitude","Time","day","week"
+						  )
+covariates=ordered_by_time[,-which(colnames(ordered_by_time)%in% covariates_to_exclude)]
+
+head(covariates)
+```
+
 # neighbourhood matrix
 ```{r}
 library(sp)
@@ -28,36 +39,103 @@ head(spatial_coord)
 coordinates(spatial_coord) <- c("Longitude", "Latitude")
 
 # Calculate the pairwise Euclidean distance matrix
-dist_matrix <- proxy::dist(coordinates(spatial_coord), method = "Euclidean")
-dim(dist_matrix)
+dist_matrix <- as.matrix(proxy::dist(coordinates(spatial_coord), method = "Euclidean"))
 
-```
-
-```{r}
 formula = as.formula("AQ_pm10~.")
 ```
-
+# AR
 ```{r}
-mod<-MVST.CARar(formula= formula,
+mod<-ST.CARar(formula= formula,
 		   family = "gaussian",
-		   data=ordered_by_time,
+		   data=covariates,
 		   W= dist_matrix,
 		   burnin = 10,
-		   n.sample = 2,
+		   n.sample = 1000,
 		   thin=1, 
 		   n.chains=1, 
 		   n.cores=1,
 		   prior.mean.beta=NULL,
 		   prior.var.beta=NULL,
 		   prior.nu2=NULL, 
-		   prior.Sigma.df=NULL,
-		   prior.Sigma.scale=NULL,
+		   #prior.Sigma.df=NULL,
+		   #prior.Sigma.scale=NULL,
 		   AR=1, #1 or 2
 		   rho.S=NULL,
 		   rho.T=NULL, 
 		   MALA=TRUE,
 		   verbose=TRUE)
 ```
+# ADAPTIVE AR sloooooooow
+```{r}
+mod<-ST.CARadaptive(formula= formula,
+		   family = "gaussian",
+		   data=covariates,
+		   W= dist_matrix,
+		   burnin = 10,
+		   n.sample = 1000,
+		   thin=1, 
+		   prior.mean.beta=NULL,
+		   prior.var.beta=NULL,
+		   prior.nu2=NULL, 
+		   MALA=TRUE,
+		   verbose=TRUE)
+```
+# print the model
+```{r}
+print(mod)
+```
+
+```{r}
+summary_results = mod$summary.results
+summary_results = data.frame(summary_results)
+# Identify variables with credible intervals excluding zero
+selected_variables <- summary_results[summary_results$X2.5. > 0 | summary_results$X97.5. < 0, ]
+
+# Print the selected variables
+print("Selected Variables:")
+print(selected_variables)
+
+```
+
+# coefficents
+```{r}
+coef(mod)
+```
+# acceptance probabilities
+```{r}
+mod$accept
+```
+# metrics
+```{r}
+mod$modelfit
+```
+
+
+
+# residuals
+```{r}
+resid = residuals(mod)
+plot(resid)
+```
+
+
+# samples
+```{r}
+summary(mod$samples)
+```
+
+# mcmc plots
+```{r}
+library(coda)
+x11()
+plot(mod$samples$beta)
+```
+```{r}
+beta.mcmcsummary<-summary(mod$samples$beta)
+round(RR.summary, 3)
+```
+
+
 
 
 
