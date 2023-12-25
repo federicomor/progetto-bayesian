@@ -289,7 +289,8 @@ for(i in 1:n) {
 		df_time = df_weekly_scaled_centered[which(df_weekly$week == 5), ]
 		y_fit = df_time$AQ_pm10
 		X = df_time[, var_sel] # tutte covariate tranne quelle inutili
-		
+		    ### CONTROLLA MODELLO--> CAMBIA 
+
 		fit = gaussian_ppmx(
 			y_fit,
 			X = X,
@@ -366,7 +367,7 @@ clusters_old = NULL
 	df_time = df_weekly_scaled_centered[which(df_weekly$week==5),]
 	y_fit = df_time$AQ_pm10
 	X = df_time[,var_sel] # tutte covariate tranne quelle inutili
-
+    ### CONTROLLA MODELLO--> CAMBIA 
 	fit = gaussian_ppmx(y_fit, X=X, Xpred=NULL,
 	                  meanModel=1,
 	                  cohesion=1,
@@ -430,25 +431,26 @@ var_selezionate <- c("Altitude", "WE_mode_wind_direction_10m", "WE_surface_press
 ```
 
 ## loop fit  
+Cambio solo numero di iterazioni e priors per ottenere modello migliore
 ```{r}
 clusters_old = NULL
 	df_time = df_weekly_scaled_centered[which(df_weekly$week==5),]
 	y_fit = df_time$AQ_pm10
 	X = df_time[,var_selezionate] # tutte covariate tranne quelle inutili
-
+    ### CONTROLLA PRIOR MODELLO
 	fit = gaussian_ppmx(y_fit, X=X, Xpred=NULL,
 	                  meanModel=1,
 	                  cohesion=1,
 	                  M=1,
 	                  PPM = FALSE,
-	                  similarity_function=2, # auxiliarity function
+	                  similarity_function=1, # auxiliarity function  ATTENZIONE!!!!
 	                  consim=1, 
 	                  calibrate=0,
 					  # c(m0, s20, v2,k0,nu0,a0,alpha)
 						# "PRIOR" DELLA SIMILARITY FUNCTION USATA
 						# se cosim = 1 -> (q fun = N) m0 prior per media normale, s20 prior per varianza normale
 						# se cosim = 2 -> (q fun = N -IG) m0, v0 are a priori “guesses” for mj and vj  and k0, n0 the                                                            corresponding a priori “sample sizes”
-	                  simParms=c(0.0, 1.0, 0.1, 1.0, 2.0, 0.1, 1),  #  per similarity function
+	                  simParms=c(0.0, 10, 0.5, 1.0, 2.0, 0.1, 1),  #  per similarity function
 					  # c(m,s2,A,A0)
 						# VEDI PAGINA 1016 DEL PAPER 6 PER CAPIRE MODELLO
 						# m = mean della normale della prior per la media della likelihood
@@ -458,7 +460,7 @@ clusters_old = NULL
 	                  modelPriors=c(0, 100^2, 10, 10), # Prior del modello
 	                  mh=c(0.5, 0.5),
 	                  draws=1100, # itaration totali
-					  burn=100, # burnin
+					  burn=0, # burnin
 					  thin=1, # considero un valore della catena ogi thin salti
 	                  verbose=FALSE)
 
@@ -477,7 +479,7 @@ cat("sampled_station =",sampled_station,"- that is station called",unique(df_wee
 ## mu (Posterior mean of mu relativa a soggetto si)  -> associata a muj
 ```{r}
 plot(fit$mu[,sampled_station],type="l",
-		 main=bquote("Trace plot of " * mu * " at time (=week) " * .(time-1) * 
+		 main=bquote("Trace plot of " * mu * " at time (=week) " * .(5) * 
 		 				" - station " * .(sampled_station)),
 		 xlab = "MCMC iterations",ylab="values")
 
@@ -486,7 +488,7 @@ plot(fit$mu[,sampled_station],type="l",
 ## mu0 (Posterior values of mu0) --> associata a mu0
 ```{r}
 plot(fit$mu0,type="l",
-		 main=bquote("Trace plot of " * mu * " at time (=week) " * .(time) * 
+		 main=bquote("Trace plot of " * mu * " at time (=week) " * .(5) * 
 		 				" - station " * .(sampled_station)),
 		 xlab = "MCMC iterations",ylab="values")
 
@@ -495,7 +497,7 @@ plot(fit$mu0,type="l",
 ## sigma2 (posterior of sigma^2 relativa a soggetto si) --> associata a sigmaj
 ```{r}
 plot(fit$sig2[,sampled_station],type="l",
-		 main=bquote("Trace plot of "* sigma^2 * " at time (=week) " * .(time) * 
+		 main=bquote("Trace plot of "* sigma^2 * " at time (=week) " * .(5) * 
 		 				" - station " * .(sampled_station)),
 		 xlab = "MCMC iterations",ylab="values")
 
@@ -505,7 +507,7 @@ plot(fit$sig2[,sampled_station],type="l",
 ## sig20 (Posterior value of sigma0^2)  --> associata sigma0
 ```{r}
 plot(fit$sig20,type="l",
-		 main=bquote("Trace plot of " * sigma^2 * " at time (=week) " * .(time) ),
+		 main=bquote("Trace plot of " * sigma^2 * " at time (=week) " * .(5) ),
 		 xlab = "MCMC iterations",ylab="values")
 
 
