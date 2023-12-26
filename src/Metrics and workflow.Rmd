@@ -66,21 +66,27 @@ LPML and WAIC are all based on the LPPD (log posterior predictive density), wher
 - we dont know the real best one, so we just want to choose the best among them
 - we value good a model if supposing a new data arrives we can model well its law
 
-$$LPPD(model j) = sum_{i=1}^n log( m(y_i | y_{vector}, M_j) )$$
+$$\text{LPPD(model }j) = \sum_{i=1}^n \log\left( m(y_i | {\bf{y}}, M_j) \right)$$
 
 
 ## LPML
-*LPML (Log Pseudo Marginal Likelihood)*
+LPML (Log Pseudo Marginal Likelihood)
 Evaluates the quality of the model as his accuracy in predicting new data.
 It's the LPPD but inside the log we dont use the full y_vector but y_vector removing observation i.
 So like a leave-one-out idea.
-Higher means better.
+*Higher means better.*
+
+$$\text{LPML(model }j) = \sum_{i=1}^n \log\left( m(y_i | {\bf{y}}_{(-y_i)}, M_j) \right)$$
+
 
 ## WAIC
-*WAIC (Watanabe–Akaike or Widely Applicable Information Criterion)*
+WAIC (Watanabe–Akaike or Widely Applicable Information Criterion)
 This metrics values the trade off between model complexity and goodness of fit.
 It's the LPPD but with a penalization for model complexity.
-Lower means better.
+*Lower means better.*
+
+$$\text{WAIC(model }j) = -2\cdot\text{LPPD(model }j) + (\text{penalization term})$$
+
 
 ## computation
 These indexes appears to be easily computable from the MCMC output, so in case your fit function does not provide them let me know and i will update this metric section.
@@ -95,7 +101,7 @@ cat("waic =",FIT$waic,"\n")
 
 
 ## ARI
-*ARI (Adjusted Rand Index)*
+ARI (Adjusted Rand Index)
 Rand does not stand for random, it's just the guy who invented it which is called Rand.
 Morally it is a measure of the similarity between two data clusterings.
 A measure of agreement between partitions.
@@ -134,6 +140,7 @@ This will not be a real metric to evaluate performance, then, but more a visual 
 
 We can build a matrix as we can compare rho(t) with rho(t+k) actually. With k=53 for us.
 ```{r}
+library(mclust)
 ##########################
 load("../data/fit_test.Rdata") # just to have a working example
 FIT = fit_test # your fit
@@ -160,7 +167,7 @@ mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, c
 mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
 ```
 
-Actually can be useful about understanding for how much time run the MCMC.
+Actually can also be useful about understanding for how much time run the MCMC.
 We can run it for few iterations and get rho1 (at a certain time t).
 Then run it a lot more times (author suggets like 50000 iterations) and get rho2.
 => surely the long MCMC will give a better result, so the short MCMC could also be considered good if the rho1 and rho2 compared through the ARI are similar. If they are it means that taking less MCMC can still produce a valid result.
@@ -170,6 +177,11 @@ But we have time, so for safety and accuracy we can just run long long MCMC iter
 ## create df_cluster
 I need this for the plots functions to work.
 ```{r}
+# sites from df_weekly, not df_wsc
+sites = data.frame(
+	longitude = unique(df_weekly$Longitude), 
+	latitude = unique(df_weekly$Latitude))
+
 df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
 for(time in time_span){
 

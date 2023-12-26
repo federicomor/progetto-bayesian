@@ -7,6 +7,7 @@ output: html_document
 ```{r,warning = FALSE}
 library(drpm)
 library(salso)
+library(grDevices) # for image saving
 
 # preparation
 source("include.R") # for having df_agri
@@ -24,17 +25,17 @@ source("include_clusters_functions.R")
 
 create a pm10 table (station x time)
 ```{r}
-stations = unique(df_weekly$IDStations)
+stations = unique(df_wsc$IDStations)
 y=data.frame()
 
 for(st in stations){
-  y_we_pm10=cbind(as.data.frame(st),t(df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]))
+  y_we_pm10=cbind(as.data.frame(st),t(df_wsc[which(df_wsc$IDStations==st),"AQ_pm10"]))
   y=rbind(y,y_we_pm10)
 }
 
 rownames(y) = NULL
 colnames(y)<- c("id",paste0("w", 1:53))
-df_weekly
+df_wsc
 y
 ```
 
@@ -45,7 +46,7 @@ chosen_variable_name = "AQ_pm10"
 
 trendYearStation_week <- function(file_name){
 
-	data_from_to = df_weekly
+	data_from_to = df_wsc
 	len_time = 54
 	
 	chosen_variable = (data_from_to[,chosen_variable_name])
@@ -72,16 +73,11 @@ trendYearStation_week("None")
 ```
 
 standardize space coordinates
+well now we can get them from df_wsc
 ```{r}
-std_sites = sites
-	
-smn <- apply(std_sites,2,mean)
-ssd <- apply(std_sites,2,sd)
-std_sites <- t((t(std_sites) - smn)/ssd)
-
-sites
-std_sites = data.frame(std_sites)
-colnames(std_sites) = colnames(sites)
+std_sites = data.frame(
+	longitude = unique(df_wsc$Longitude), 
+	latitude = unique(df_wsc$Latitude))
 std_sites
 ```
 
@@ -94,21 +90,12 @@ plot(std_sites,col="blue")
 
 # Models fit
 ```{r}
-time_span = 1:8 # low time span for quick testing, real one will be 1:53
+time_span = 1:16 # low time span for quick testing, real one will be 1:53
 
 ### authors suggested to/did scale the spatial locations and also centered the observations
 y_fit = y[,1+time_span]
-y_fit = scale(y_fit,center=TRUE, scale=FALSE)
-y
-
-medie = apply(y[,1+time_span],2,mean)
-head(t(t(y[,1+time_span])-medie)) # scale hand computed, to check
-
-y_fit = data.frame(y_fit)
-colnames(y_fit) = colnames(y)[1+time_span]
-
-y_fit
 tps = ncol(y_fit)
+y_fit
 ### and for the scaling of spatial locations we already built
 std_sites
 ```
@@ -116,122 +103,239 @@ std_sites
 
 ```{r}
 # modelPriors = c(m0, s20, Asig, Atau, Alam, a, b, be)
-# m0 - mean of theta (or phi0)
-# s20 - variance of theta (or phi0)
+# m0 - mean of phi0, phi0 is the mean of theta, theta is the mean of Y
+# s20 - variance of theta, ecc
+
 # Asig - maximum value for sigma
+#	[0,Asig] is the support of the uniform in which sigma (std dev of Y) varies
 # Atau - maximum value for tau
+#	[0,Asig] is the support of the uniform in which mu (mean of Y) varies
 # Alam - maximum value for lambda
+	# lambda is a unuform on [0,Alam]
+	# lambda is the var of tau, tau is the var of sigma, sigma is the var of Y
+
 # a - shape 1 for alpha
 # b - shape 2 for alpha
 # b - scale for eta1
 modelPriors <- c(0,100, 10, 5, 5, 2, 2, 1)
 
 # m, k0, nu0, L0
-cParms <- c(0,1,5,1)
+# cParms <- c(0,1,5,1)
+cParms <- c(0,1,5,1) # as authors
 
 # SIG, TAU, LAM, ETA1, PHI1
-mh <- c(1,1, 1, 0.1, 0.1)
+# mh <- c(1,1, 1, 0.1, 0.1)
+mh <- c(0.1,0.1, 0.7, 0.1, 0.1) # i changed this for sigma2 trace plots
 sp <- 4
+```
 
+
+```{r}
 # niter=50000; nburn=10000; nthin=40 # real one
-niter=500; nburn=100; nthin=2 # Fede tests quick one 
+niter=30000; nburn=15000; nthin=15
 nout <- (niter-nburn)/nthin
+cat(nout,"valid iterations")
+```
 
-alpha = 0.0
+
+```{r}
 set.seed(1)
 models.out <- list()
 hh <- 1
 # h <- "111"; s <- "0";
 model <- "AR1"
-for(s in c("0","1")){
-	for(h in c("E1P1A1","E1P1A0","E1P0A1","E1P0A0","E0P1A1","E0P1A0","E0P0A1","E0P0A0")){
 
-		m.n <- as.numeric(strsplit(h, "")[[1]][c(2,4,6)])
-		
-		eta1_bool <- m.n[1]!=0
-		phi1_bool <- m.n[2]!=0
-		alpha_bool <- m.n[3]!=0
-		# we select true if the number in h was 1, ie "!=0"
-		
-		if(s=="0"){
-			sc <- NULL
-		} else {
-			sc <- std_sites
-		}
+# for(s in c("0","1")){ # we want to use space
+# authors did also space comparison as it was the paper topic also
 
-		tempo_inizio <- Sys.time()
-		set.seed(1*hh)
-		out <- drpm_fit(draws=niter, burn=nburn, thin=nthin,
-						y=y_fit, M=1,s_coords=sc,
-						# global_alpha=FALSE, # forse intendevano questi due comandi dopo:
-						unit_specific_alpha=FALSE,
-						
-						time_specific_alpha=FALSE, # meaning a bit ambiguos
-						# Ok after experimenting it means that:
-						# - if true we let alpha be a param that changes over time. 
-						#	At time 1 we have a chain with some behaviour, 
-						#	at time 2 another chain with another behaviour, ecc
-						# - if false we instead fix alpha, ie all chains of all times
-						#	will be the same, as they refer to the same parameter estimation
-						# The authors in their tests set it to false, ie the fixed alpha
-	  				
-	  					modelPriors=modelPriors,
-	  					alpha_0 = alpha_bool,
-	  					eta1_0 = eta1_bool,
-	  					phi1_0 = phi1_bool,
-	  					SpatialCohesion=sp, cParms=cParms,mh=mh)
-		
-		tempo_fine <- Sys.time()
-		cat(crayon::red("##############################\n"))
-		cat("Model is",paste0(h,"_S",s),"ie:",
-			"\neta1_bool =",eta1_bool,"-",
-			"phi1_bool =",phi1_bool,"-",
-			"alpha_bool =",alpha_bool,"-",
-			"space =",s,
-			"\n")
-		# cat("seed is", 1*hh, "\n")
-		cat("\n")
-		differenza_tempo <- tempo_fine - tempo_inizio
-		cat("Fit took:\n")
-		print(round(differenza_tempo,digits = 4))
+models_vector = c("E1P1A1","E1P1A0","E1P0A1","E1P0A0","E0P1A1","E0P1A0","E0P0A1","E0P0A0")
+for(h in models_vector){
+	readline(prompt="Press [enter] to continue fitting") # to let the pc breath
+	cat(paste0("fitting model ",hh," (",models_vector[hh],")...\n"))
 
-		# print(date())
-    	cat("lpml = ", out$lpml, "\n")
-    	cat("waic = ", out$waic, "\n")
-    	cat(crayon::red("##############################\n"))
-		models.out[[hh]] <- out
-		names(models.out)[hh] <- paste0("out_",h,"_S",s,"_",model)
+	m.n <- as.numeric(strsplit(h, "")[[1]][c(2,4,6)])
+	
+	eta1_bool <- m.n[1]!=0
+	phi1_bool <- m.n[2]!=0
+	alphat_bool <- m.n[3]!=0
+	# we select true if the number in h was 1, ie "!=0"
+	
+	# we always want to use space
+	# if(s=="0"){
+		# sc <- NULL
+	# } else {
+		sc <- std_sites
+	# }
 
-		rho <- list()
+	tempo_inizio <- Sys.time()
+	set.seed(1*hh)
+	sink(nullfile()) # suppress output
+	out <- drpm_fit(draws=niter, burn=nburn, thin=nthin,
+					y=y_fit, M=1, s_coords=sc,
+					# global_alpha=FALSE, # forse intendevano questi due comandi dopo:
+					unit_specific_alpha=FALSE,
+					
+					# maybe our tests should be concentrated here
+					# ie testing with this TRUE or FALSE
+					time_specific_alpha=alphat_bool, # meaning a bit ambiguos
+					# Ok after experimenting it means that:
+					# - if true we let alpha be a param that changes over time. 
+					#	At time 1 we have a chain with some behaviour, 
+					#	at time 2 another chain with another behaviour, ecc
+					# - if false we instead fix alpha, ie all chains of all times
+					#	will be the same, as they refer to the same parameter estimation
+					# The authors in their tests set it to false, ie the fixed alpha
+  				
+  					modelPriors=modelPriors,
+					# ... as testing on this alpha_0 does not seem really relevant
+					# i mean alpha should always be let able to change
+					# if we set alpha_0 = TRUE we would never update alpha, but that's not our
+					# interest (it was in the interest of the paper marketing)
+  					alpha_0 = FALSE,
+  					eta1_0 = eta1_bool,
+  					phi1_0 = phi1_bool,
+  					SpatialCohesion=sp, cParms=cParms,mh=mh,
+					verbose=FALSE)
+	sink() # end suppress output
+	
+	tempo_fine <- Sys.time()
+	cat(crayon::red("##############################\n"))
+	cat(crayon::cyan("Model is",paste0(h),"ie:"),
+		"\neta1_bool =",eta1_bool,"-",
+		"phi1_bool =",phi1_bool,"-",
+		"alphat_bool =",alphat_bool,"-",
+		"\n")
+	# cat("seed is", 1*hh, "\n")
+	cat("\n")
+	differenza_tempo <- tempo_fine - tempo_inizio
+	cat("Fit took:\n")
+	print(round(differenza_tempo,digits = 4))
 
-		for(k in 1:tps){
-			# rho[[k]] <- salso(t(out$Si[k,,]), loss="VI")
-			rho[[k]] <- salso(t(out$Si[k,,]), loss="binder")
-		}
+	# print(date())
+	cat(h,"lpml = ", out$lpml, "\n")
+	cat(h,"waic = ", out$waic, "\n")
+	cat(crayon::red("##############################\n"))
+	models.out[[hh]] <- out
+	names(models.out)[hh] <- paste0("out_",h,"_",model)
 
-		amn <- round(apply(models.out[[hh]]$alpha,2,mean),2)
+	# rho <- list()
+	# for(k in 1:tps){
+	# 	# rho[[k]] <- salso(t(out$Si[k,,]), loss="VI")
+	# 	rho[[k]] <- salso(t(out$Si[k,,]), loss="binder")
+	# }
 
-		# If there is desire to produce plot of each fit uncomment this lines
-		### a noi non serve abbiamo già i nostri plot
-		
-		# pdf(paste0("PM10_", h,"_",s,"_",model,"_SC",sp,"_2.pdf"),height=10, width=12.5)
-				# pchs <- c(letters, paste0(letters,0:9))
-				# par(mfrow=c(3,4))
-				# for(jj in 1:tps){
-				# 	cex1 <- ((y_fit[,jj]-mean(y_fit[,jj]))/sd(y_fit[,jj])+3)/3
-				# 	plot(s_std, col=rho[[jj]], pch=pchs[rho[[jj]]],cex=cex1,
-				# 				main=bquote(alpha==.(amn[jj]) ~~ Time ~ .(jj)),
-				# 				ylab="", xlab="")
-				# }
-		# dev.off()
-			
-		hh <- hh + 1
-	}
+	hh <- hh + 1
 }
+# }
 ```
 
 
-# Table 3
+```{r}
+save(models.out,file="../data/drpm_comparison.Rdata")
+```
+
+# Trace plots
+to check if all models reach convergence in the MCMC iterations.
+
+```{r}
+sampled_station = floor(runif(1,1,105))
+cat("sampled_station =",sampled_station,"- that is station called",unique(df_wsc$IDStations)[sampled_station])
+sampled_station_name = unique(df_wsc$IDStations)[sampled_station]
+```
+
+```{r}
+for (hh in 1:length(models_vector)){
+	modcur = models.out[[hh]]
+	cat(names(models.out)[[hh]],"\n")
+	cat("mu     size = ",size(modcur$mu),"\n")
+	cat("sig2   size = ",size(modcur$sig2),"\n")
+	cat("alpha  size = ",size(modcur$alpha),"\n")
+	cat("theta  size = ",size(modcur$theta),"\n\n")
+}
+```
+
+## mu
+```{r}
+# oma is outer margin, for letting space to the general title
+par(mfrow=c(2,4),mar=c(2,2,2,2), mgp=c(1.5,0.5,0),oma=c(0,0,2,0))
+time = sample(time_span,1)
+for(hh in 1:length(models_vector)){
+	m.n <- as.numeric(strsplit(models_vector[hh], "")[[1]][c(2,4,6)])
+	header <- bquote(eta[1]*  .(ifelse(m.n[1]==1,":Yes",":No"))*","~
+    	             phi[1]*  .(ifelse(m.n[2]==1,":Yes",":No"))*","~
+        	         alpha[t]*.(ifelse(m.n[3]==1,":Yes",":No")))
+
+	
+	plot(models.out[[hh]]$mu[time,sampled_station,],main=header,
+		 xlab="",ylab="",type="l",cex.axis=0.8)
+}
+mtext(bquote("Trace plots of "*mu* " at time " * .(time) *", station " * .(sampled_station_name))
+	  , side = 3, line = 0, outer = TRUE)
+```
+
+## sigma2
+```{r}
+# oma is outer margin, for letting space to the general title
+par(mfrow=c(2,4),mar=c(2,2,2,2), mgp=c(1.5,0.5,0),oma=c(0,0,2,0))
+
+time = sample(time_span,1)
+for(hh in 1:length(models_vector)){
+	m.n <- as.numeric(strsplit(models_vector[hh], "")[[1]][c(2,4,6)])
+	header <- bquote(eta[1]*  .(ifelse(m.n[1]==1,":Yes",":No"))*","~
+    	             phi[1]*  .(ifelse(m.n[2]==1,":Yes",":No"))*","~
+        	         alpha[t]*.(ifelse(m.n[3]==1,":Yes",":No")))
+
+	plot(models.out[[hh]]$sig2[time,sampled_station,],main=header,
+		 xlab="",ylab="",type="l",cex.axis=0.8)
+}
+mtext(bquote("Trace plots of "*sigma^2* " at time " * .(time) *", station " * .(sampled_station_name))
+	  , side = 3, line = 0, outer = TRUE)
+```
+
+## alpha
+```{r}
+# oma is outer margin, for letting space to the general title
+par(mfrow=c(2,4),mar=c(2,2,2,2), mgp=c(1.5,0.5,0),oma=c(0,0,2,0))
+
+time = sample(time_span,1)
+for(hh in 1:length(models_vector)){
+	m.n <- as.numeric(strsplit(models_vector[hh], "")[[1]][c(2,4,6)])
+	header <- bquote(eta[1]*  .(ifelse(m.n[1]==1,":Yes",":No"))*","~
+    	             phi[1]*  .(ifelse(m.n[2]==1,":Yes",":No"))*","~
+        	         alpha[t]*.(ifelse(m.n[3]==1,":Yes",":No")))
+
+	plot(models.out[[hh]]$alpha[,time],main=header,
+		 xlab="",ylab="",type="l",cex.axis=0.8)
+}
+mtext(bquote("Trace plots of "*alpha* " at time " * .(time))
+	  , side = 3, line = 0, outer = TRUE)
+```
+
+
+
+## theta
+the params that generate the mu
+```{r}
+# oma is outer margin, for letting space to the general title
+par(mfrow=c(2,4),mar=c(2,2,2,2), mgp=c(1.5,0.5,0),oma=c(0,0,2,0))
+
+time = sample(time_span,1)
+for(hh in 1:length(models_vector)){
+	m.n <- as.numeric(strsplit(models_vector[hh], "")[[1]][c(2,4,6)])
+	header <- bquote(eta[1]*  .(ifelse(m.n[1]==1,":Yes",":No"))*","~
+    	             phi[1]*  .(ifelse(m.n[2]==1,":Yes",":No"))*","~
+        	         alpha[t]*.(ifelse(m.n[3]==1,":Yes",":No")))
+
+	plot(models.out[[hh]]$theta[,time],main=header,
+		 xlab="",ylab="",type="l",cex.axis=0.8)
+}
+mtext(bquote("Trace plots of "*theta* " at time " * .(time))
+	  , side = 3, line = 0, outer = TRUE)
+```
+
+
+
+# Metrics table
 WAIC and LPML values.
 
 ```{r}
@@ -245,36 +349,43 @@ for(j in 1:length(models.out)){
 	amn[j,] <- round(apply(models.out[[j]]$alpha,2,mean),2)
 }
 res <- data.frame(names=names(models.out), lpml=lpml, waic=waic)
-res[order(res[,2]),]
+res[order(res[,2],decreasing = T),]
 
-# xtable(res[order(res[,2]),],digits=2) # for latex table generation
+# library(xtable) # for latex table generation
+# xtable(res[order(res[,2],decreasing = T),],digits=2) 
 ```
+Sembrano essere migliori i modelli senza eta, cioè senza la parte autoregressive nelle Yt.
+Anche se un po' di correlazione sembra esserci.
+```{r}
+par(mar=c(4,4,3,2))
+acf(df_wsc$AQ_pm10,main="ACF plot of PM10")
+```
+
+
 ```{r}
 ordered_names = res$names[order(res[,2])]
-order_best = order(res[,2])
+order_best = order(res[,2],decreasing = T)
 
-s0_order = c()
-for (i in order_best){
-	if(length(grep("S0",res$names[i],value=TRUE))>=1){
-		s0_order = c(s0_order,i) 	
-	}
-}
-s0_order
+# s0_order = c()
+# for (i in order_best){
+# 	if(length(grep("S0",res$names[i],value=TRUE))>=1){
+# 		s0_order = c(s0_order,i) 	
+# 	}
+# }
+# s0_order
 
-s1_order = c()
-for (i in order_best){
-	if(length(grep("S1",res$names[i],value=TRUE))>=1){
-		s1_order = c(s1_order,i) 	
-	}
-}
-s1_order
-
+# s1_order = c()
+# for (i in order_best){
+# 	if(length(grep("S1",res$names[i],value=TRUE))>=1){
+# 		s1_order = c(s1_order,i) 	
+# 	}
+# }
+order_best
 ```
 
 
 
-# Figure 5
-Lagged ARI plots for models that include time BUT NOT space.
+# Lagged ARI plots
 
 ```{r,warning=FALSE}
 library(fields)
@@ -291,6 +402,7 @@ for (i in 1:length(models.out)) {
 }
 
 for(h in 1:length(models.out)){
+	rho = list()
 	for(k in 1:tps){
 		rho[[k]] <- salso(t(models.out[[h]]$Si[k,,]), loss="binder")
 	}
@@ -305,55 +417,102 @@ for(h in 1:length(models.out)){
 pch=as.character(1:nrow(y))
 
 # This is Figure 5 in the paper. 
-# Lagged ARI plots for models that include time only (no space)
-ord2 = s0_order
+# Lagged ARI plots for the tested models
+ord2 = order_best
 
-# pdf(paste0("LaggedARI_NoSpace2.pdf"), height=7, width=13)
-
-	par(mfrow=c(2,4),mar=c(2,2,2,2), mgp=c(1.5,0.5,0))
-	for(h in ord2){
-		m.n <- as.numeric(do.call(c, strsplit(strsplit(names(models.out)[h], "t|\\_")
-											  [[1]][c(2,3)], ""))[c(2,4,6)])
-		header <- bquote(eta[1]*  .(ifelse(m.n[1]==1,":Yes",":No"))*","~
-	    	             phi[1]*  .(ifelse(m.n[2]==1,":Yes",":No"))*","~
-	        	         alpha[t]*.(ifelse(m.n[3]==1,":Yes",":No")))
-		image.plot(ARImats[[h]], main=header, zlim=range(do.call(c,ARImats),na.rm=TRUE), axes=FALSE)
-		mtext(text=c(paste("",1:tps)), side=2, line=0.3,
-			  at=seq(0,1,length=max(time_span)), las=1, cex=0.8)
-		mtext(text=c(paste("",1:tps)), side=1, line=0.3,
-			  at=seq(0,1,length=max(time_span)), las=2, cex=0.8)
-	}
-# dev.off()
 ```
 
-Figure 6
-Questa non ci interessa/piace, anche perché noi abbiamo molte più stazioni quindi quel plot uscirebbe molto incasinato. E poi abbiamo già i nostri plot.
-
-
-# Figure 7
-Lagged ARI plots for models that include time AND space.
 
 ```{r,warning=FALSE}
-# This is Figure 7 in the paper.
-# Lagged-ARI plots for models that include space in the partition
-ord2 <- s1_order
-
-# pdf(paste0("LaggedARI_OnlySpace2.pdf"), height=7, width=13)
-
-	par(mfrow=c(2,4),mar=c(2,2,2,2), mgp=c(1.5,0.5,0))
+pdf(paste0("./figures/Fed/LaggedARI_comparison.pdf"), height=7, width=13)
+par(mfrow=c(2,4),mar=c(2,2,2,4), mgp=c(1.5,0.5,0),oma=c(0,0,2,0))
 	for(h in ord2){
-		m.n <- as.numeric(do.call(c, strsplit(strsplit(names(models.out)[h], "t|\\_")
-											  [[1]][c(2,3)], ""))[c(2,4,6)])
-		header <- bquote(eta[1]*  .(ifelse(m.n[1]==1,"-Yes","-No"))*","~
-	    	             phi[1]*  .(ifelse(m.n[2]==1,"-Yes","-No"))*","~
-	        	         alpha[t]*.(ifelse(m.n[3]==1,"-Yes","-No")))
-		image.plot(ARImats[[h]], main=header, zlim=range(do.call(c,ARImats),na.rm=TRUE), axes=FALSE)
+		m.n <- as.numeric(strsplit(models_vector[h], "")[[1]][c(2,4,6)])
+		header <- bquote(eta[1]*  .(ifelse(m.n[1]==1,"=Yes","=No"))*","~
+	    	             phi[1]*  .(ifelse(m.n[2]==1,"=Yes","=No"))*","~
+	        	         alpha[t]*.(ifelse(m.n[3]==1,"=Yes","=No")))
+		image.plot(ARImats[[h]], main=header, 
+				   #zlim=range(do.call(c,ARImats),na.rm=TRUE)
+				   axes=FALSE,
+				   col=rev(colora(80,56,0)))
 		mtext(text=c(paste("",1:tps)), side=2, line=0.3,
-			  at=seq(0,1,length=max(time_span)), las=1, cex=0.8)
+			  at=seq(0,1,length=max(time_span)), las=1, cex=0.6)
 		mtext(text=c(paste("",1:tps)), side=1, line=0.3,
-			  at=seq(0,1,length=max(time_span)), las=2, cex=0.8)
+			  at=seq(0,1,length=max(time_span)), las=1, cex=0.6)
 	}
-# dev.off()
+mtext(bquote("Lagged ARI plots for the fitted models")
+	  , side = 3, line = 0, outer = TRUE)
+dev.off()
 ```
 
+# Best model analysis
+```{r}
+drpm1 = models.out$out_E0P1A1_AR1
+```
+
+
+```{r,warning=FALSE}
+df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
+for(time in time_span){
+
+	salso_out <- salso(t(drpm1$Si[time,,]),loss="binder")
+	
+	df_temp = data.frame(
+		Longitude = sites$longitude,
+		Latitude = sites$latitude,
+		clusters = salso_out[1:105]
+	)
+	df_temp$Time = rep(time,dim(df_temp)[1])
+	df_cluster = rbind(df_cluster,df_temp)
+	
+	
+	
+	# clusters log
+	clusters_now = df_temp$clusters
+	# n_clusters = max(clusters_now)
+	n_clusters = unique(clusters_now)
+	ycurrent = y[,paste0("w",time)]
+	cat(crayon::red("Time",time,"\n"))
+	for (cl in n_clusters){
+		cat("Cluster",cl,"- size",length(ycurrent[which(clusters_now==cl)]),
+			"- mean",mean(ycurrent[which(clusters_now==cl)]),"\n")
+			
+	}
+}
+```
+
+```{r}
+cols = colora(12,"div")[-2]
+# cols chosen previously
+clusters_old = NULL
+for(time in time_span){
+	cat(crayon::red("Time",time,"\n"))
+	
+	df_cluster_cut = df_cluster[df_cluster$Time==time,]
+	clusters_now = df_cluster_cut$clusters
+	clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
+	df_cluster_cut$clusters = clusters_now
+	
+	q = get_graph_plot(df_cluster_cut)
+	
+	print(q)
+	clusters_old = clusters_now
+}
+```
+
+```{r}
+clusters_old = NULL
+for(time in time_span[1:5]){
+
+	df_cluster_cut = df_cluster[df_cluster$Time==time,]
+	clusters_now = df_cluster_cut$clusters
+	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
+	df_cluster_cut$clusters = clusters_now
+	
+	p = get_boxplot_plot(df_cluster_cut)
+	
+	print(p)
+	clusters_old = clusters_now
+} # end for(time in eccc)
+```
 

@@ -44,7 +44,6 @@ sd <- apply(ysub2,2,sd)
 # Center the observations
 y <- t(t(ysub2) - mn)
 
-
 tps <- ncol(y)
 
 s_coords <- (dat@sp@coords)[-c(4,16,25,27,30,43,52,59,69),]
