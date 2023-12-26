@@ -24,13 +24,13 @@ See also that for understand how to create the plots of the clusters.
 - SPPM (Oswaldo): just space
 - Curve ppmx (Aby): time and covariates
 
-| Model             | Time     | Space    | Covariates |
-|-------------------|----------|----------|------------|
-| DRPM (Federico)          |  ✓      | ✓      |  X    |
-| Gaussian PPMx (Federica) |  X       |   X    |  ✓   |
-| SPPM (Oswaldo)           |  X       |    ✓   | X    |
-| Curve PPMx (Aby)         |   ✓     | X       |  ✓   |
-| CarBayesST               |   ✓     | ✓       |  ✓   | but no clustering
+| Model                    | Time     | Space    | Covariates | Clustering|
+|--------------------------|----------|----------|------------|-----------|
+| DRPM (Federico)          |  ✓       | ✓          |  X      | ✓      | 
+| Gaussian PPMx (Federica) |  X       |   X        |  ✓      | ✓      | 
+| SPPM (Oswaldo)           |  X       |    ✓       | X      | ✓      |
+| Curve PPMx (Aby)         |   ✓     | X           |  ✓     | ✓      |
+| CarBayesST               |   ✓     | ✓           |  ✓      |  X    |
 
 
 The models without time means that time is not inside the model. Then we can "force" time to be included by looping or doing some other tricks, but time will never be inside the model.
