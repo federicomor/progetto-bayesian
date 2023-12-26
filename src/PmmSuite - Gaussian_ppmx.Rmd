@@ -1,6 +1,8 @@
 ---
 title: "PmmSuite - Gaussian_Ppmx"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 date: "2023-12-15"
 ---
 
@@ -13,7 +15,7 @@ Plot
 source("plot functions/plotter.R")
 ```
 
-```{r}
+```{r include=FALSE}
 source("include_clusters_functions.R")
 ```
 
@@ -22,6 +24,7 @@ Stuff needed for the plot functions to work
 ```{r}
 cols = colora(10,"div")[-2] # divergent palette; togliamo il giallino
 
+stations = unique(df_weekly$IDStations)
 y=data.frame()
 
 for(st in stations){
@@ -31,8 +34,6 @@ for(st in stations){
 
 rownames(y) = NULL
 colnames(y)<- c("id",paste0("w", 1:53))
-df_weekly
-y
 # this y needs to not be overwritten
 ```
 
@@ -48,25 +49,9 @@ Sometimes it fails the execution (dont know why). In that case:
 
 # gaussian_ppmx
 
-## Scaling/Centering update
-```{r}
-time_span = 1:6 # low time span for quick testing, real one will be 1:53
 
-### authors suggested to/did scale the spatial locations and also centered the observations
-y_fit = y[,1+time_span]
-y_fit = scale(y_fit,center=TRUE, scale=FALSE)  # rescal pm10 values
-y
 
-medie = apply(y[,1+time_span],2,mean)
-head(t(t(y[,1+time_span])-medie)) # scale hand computed, to check
-
-y_fit = data.frame(y_fit)
-colnames(y_fit) = colnames(y)[1+time_span]
-
-y_fit
-
-```
-## Selection of covariates
+##  All Covariate into the model
 ```{r}
 all_cov <- c(
   "Altitude", "WE_temp_2m", "WE_wind_speed_10m_mean",
@@ -81,400 +66,124 @@ all_cov <- c(
   "LI_bovine_v2", "LA_hvi", "LA_lvi",
   "LA_land_use"
 )
-
-# a selection of variables reduces the execution time of the code but if it is not a good section the trace plot is bad. Since we have a lot of data, it is not so important to use informative priors but a good selection of variables
-
-# alcune variabili selected con lasso ( soglia = 10)
-var_sel <- c(
-  "WE_wind_speed_10m_mean",
-  "WE_wind_speed_10m_max",
-  "WE_tot_precipitation",
-  "WE_precipitation_t",
-  "WE_rh_max",
-  "WE_wind_speed_100m_mean",
-  "WE_wind_speed_100m_max",
-  "WE_blh_layer_min",
-  "EM_nh3_livestock_mm",
-  "EM_nh3_agr_soils",
-  "EM_nh3_agr_waste_burn",
-  "EM_nh3_sum",
-  "EM_nox_traffic",
-  "EM_nox_sum",
-  "EM_so2_sum",
-  "LI_pigs",
-  "LI_bovine",
-  "LI_pigs_v2",
-  "LA_hvi",
-  "LA_lvi"
-)
-# cON QUESTE COVARIATES TROPPI CLUSTERS E TRACE PLOT FANNO SCHIFO
-
-           
-```
-
-
-
-## loop fit con plots 
-```{r}
-clusters_old = NULL
-timing_result <- system.time({
-for (time in time_span){
-	cat(crayon::red("Time (ie week)",time,"\n"))
-	df_time = df_weekly_scaled_centered[which(df_weekly$week==time),]  # CAMBIA DATASET
-	y_fit = df_time$AQ_pm10
-	X = df_time[,var_sel] # tutte covariate tranne quelle inutili
-
-	fit = gaussian_ppmx(y_fit, X=X, Xpred=NULL,
-	                  meanModel=1,
-	                  cohesion=1,
-	                  M=1,
-	                  PPM = FALSE,
-	                  similarity_function=2, # auxiliarity function
-	                  consim=1, 
-	                  calibrate=0,
-					  # c(m0, s20, v2,k0,nu0,a0,alpha)
-						# "PRIOR" DELLA SIMILARITY FUNCTION USATA
-						# se cosim = 1 -> (q fun = N) m0 prior per media normale, s20 prior per varianza normale
-						# se cosim = 2 -> (q fun = N -IG) m0, v0 are a priori “guesses” for mj and vj  and k0, n0 the corresponding a priori                                                           “sample sizes”
-	                  simParms=c(0.0, 10 , 0.5, 1.0, 2.0, 0.1, 1),  # Priors per similarity function (VEDI PAPER)
-					  # c(m,s2,A,A0)
-						# VEDI PAGINA 1016 DEL PAPER 6 PER CAPIRE MODELLO
-						# m = mean della normale della prior per la media della likelihood
-						# s2 = varianza della normale della prior della media della likelihood
-						# A = UpperBound dela sigma della normale della likelihood
-						# A0 = upperbound della sigma della normale della prior per la media della likelihood
-	                  modelPriors=c(0, 100^2, 10, 10), # Prior del modello
-	                  mh=c(0.5, 0.5),
-	                  draws=1100, # itaration totali
-					  burn=100, # burnin
-					  thin=1, # considero un valore della catena ogi thin salti
-	                  verbose=FALSE)
-	
-	clusters_now = salso(fit$Si,loss="binder")
-	clusters_now = clusters_now[1:105] # 105 numero max di cluster che possiamo avere
-	### Mode correct clusters
-	# dava errore Error in str2expression(strsplit(x, ",")[[1]]) : 
-	clusters_now = mode_correct_clusters(clusters_old,clusters_now,verbose=0)
-	# ora funziona, se vuoi controllare meglio che succede dietro le quinte metti verbose=1
-	
-	df_temp = data.frame(
-		Longitude = unique(df_weekly$Longitude),
-		Latitude = unique(df_weekly$Latitude),
-		clusters = clusters_now[1:105]
-	)
-	df_temp$Time = rep(time,dim(df_temp)[1])
-	df_cluster_cut = df_temp
-	
-
-	
-	### Hist plot
-	# p = get_hist_color_plot(df_cluster_cut)
-	p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
-	print(p)
-	
-	### Graph plot
-	q = get_graph_plot(df_cluster_cut)
-	print(q)
-	
-	# or both together with
-	# plot_graph_and_hist(df_cluster_cut)
-	
-	clusters_old = clusters_now
-}# end for time
-  })
-
-print(timing_result)
-```
-
-Per runnare 6 settimane con tutte le covariate ci metto 6 minuti.
-THE TRACE PLOTS CHANGE A LOT RELATED TO THE VARIABLES USED. ALSO IT IS IMPORTANT TO INCLUDE VARIABLES.
-
-# Trace plots
-```{r}
-sampled_station = floor(runif(1,0,105))
-cat("sampled_station =",sampled_station,"- that is station called",unique(df_weekly$IDStations)[sampled_station])
+n <- length(all_cov)
 
 ```
 
-## Si
-Per controllare come cambia cluster per una stazione nelle 1000 iterazioni
-```{r}
-time = time_span[length(time_span)] # se voglio guardare nel tempo devo fare ciclo for in gaussian_ppmx
-plot(fit$Si[sampled_station,],type="l",
-		 main=bquote("Trace plot of partition at time (=week) " * .(time) * 
-		 				" - station " * .(sampled_station)),
-		 xlab = "MCMC iterations",ylab="values")
-```
+## Selection of the covariate
+In order to choose the covariate to include in the model, i found the 'starting' variable comparing the length(all_cov) model. I selected the covariate relating to the model with the highest LPML.
 
+For these analysis, I used the 5th week.
 
-## mu (Posterior mean of mu relativa a soggetto si)  -> associata a muj
-```{r}
-plot(fit$mu[,sampled_station],type="l",
-		 main=bquote("Trace plot of " * mu * " at time (=week) " * .(time-1) * 
-		 				" - station " * .(sampled_station)),
-		 xlab = "MCMC iterations",ylab="values")
-
-```
-
-## mu0 (Posterior values of mu0) --> associata a mu0
-```{r}
-plot(fit$mu0,type="l",
-		 main=bquote("Trace plot of " * mu * " at time (=week) " * .(time) * 
-		 				" - station " * .(sampled_station)),
-		 xlab = "MCMC iterations",ylab="values")
-
-```
-
-## sigma2 (posterior of sigma^2 relativa a soggetto si) --> associata a sigmaj
-```{r}
-plot(fit$sig2[,sampled_station],type="l",
-		 main=bquote("Trace plot of "* sigma^2 * " at time (=week) " * .(time) * 
-		 				" - station " * .(sampled_station)),
-		 xlab = "MCMC iterations",ylab="values")
-
-
-```
-
-## sig20 (Posterior value of sigma0^2)  --> associata sigma0
-```{r}
-plot(fit$sig20,type="l",
-		 main=bquote("Trace plot of " * sigma^2 * " at time (=week) " * .(time) * 
-		 				" - station " * .(sampled_station)),
-		 xlab = "MCMC iterations",ylab="values")
-
-
-```
-
-## Valutiamo number of cluster
-```{r}
-plot(fit$nclus,type="l",
-		 main=bquote("Trace plot of " * "number of clusters" * " at time (=week) " * .(time)),
-		 xlab = "MCMC iterations",ylab="values")
-# numeri di cluster nell'istante di tempo considerato per ogni iterazione
-
-```
-
-### Vairible selection based on LPML
-
-```{r}
-set.seed(1)
-all_cov <- c(
-  "Altitude", "WE_temp_2m", "WE_wind_speed_10m_mean",
-  "WE_wind_speed_10m_max", "WE_mode_wind_direction_10m", "WE_tot_precipitation",
-  "WE_precipitation_t", "WE_surface_pressure", "WE_solar_radiation",
-  "WE_rh_min", "WE_rh_mean", "WE_rh_max",
-  "WE_wind_speed_100m_mean", "WE_wind_speed_100m_max", "WE_mode_wind_direction_100m",
-  "WE_blh_layer_max", "WE_blh_layer_min", "EM_nh3_livestock_mm",
-  "EM_nh3_agr_soils", "EM_nh3_agr_waste_burn", "EM_nh3_sum",
-  "EM_nox_traffic", "EM_nox_sum", "EM_so2_sum",
-  "LI_pigs", "LI_bovine", "LI_pigs_v2",
-  "LI_bovine_v2", "LA_hvi", "LA_lvi",
-  "LA_land_use"
-)
-
-all_cov_sample <- sample(all_cov)
-n <- lenght(all_cov)
+```{r include=FALSE}
 LPML <- numeric(0)
-
-```
-
-per capire quale variabile prendere come prima fitto modelli con una sola variabile
-Indago sulla settimana 5 (lontana da feste...)
-
-```{r}
-
 for(i in 1:n) {
 	var_sel <- all_cov[i]
 	clusters_old = NULL
 		df_time = df_weekly_scaled_centered[which(df_weekly$week == 5), ]
 		y_fit = df_time$AQ_pm10
-		X = df_time[, var_sel] # tutte covariate tranne quelle inutili
-		    ### CONTROLLA MODELLO--> CAMBIA 
+		X = df_time[, var_sel] 
 
 		fit = gaussian_ppmx(
-			y_fit,
-			X = X,
-			Xpred = NULL,
-			meanModel = 1,
-			cohesion = 1,
-			M = 1,
-			PPM = FALSE,
-			similarity_function = 2,
-			# auxiliarity function
-			consim = 1,
-			calibrate = 0,
-			# c(m0, s20, v2,k0,nu0,a0,alpha)
-			# "PRIOR" DELLA SIMILARITY FUNCTION USATA
-			# se cosim = 1 -> (q fun = N) m0 prior per media normale, s20 prior per varianza normale
-			# se cosim = 2 -> (q fun = N -IG) m0, v0 are a priori “guesses” for mj and vj  and k0, n0 the                                                            corresponding a priori “sample sizes”
-			simParms = c(0.0, 1.0, 0.1, 1.0, 2.0, 0.1, 1),
-			#  per similarity function
-			# c(m,s2,A,A0)
-			# VEDI PAGINA 1016 DEL PAPER 6 PER CAPIRE MODELLO
-			# m = mean della normale della prior per la media della likelihood
-			# s2 = varianza della normale della prior della media della likelihood
-			# A = UpperBound dela sigma della normale della likelihood
-			# A0 = upperbound della sigma della normale della prior per la media della likelihood
-			modelPriors = c(0, 100 ^ 2, 10, 10),
-			# Prior del modello
-			mh = c(0.5, 0.5),
-			draws = 1100,
-			# itaration totali
-			burn = 100,
-			# burnin
-			thin = 1,
-			# considero un valore della catena ogi thin salti
-			verbose = FALSE
-		)
+	y_fit,
+	X = X,
+	Xpred = NULL,
+	meanModel = 1,
+	cohesion = 1,
+	M = 1,
+	PPM = FALSE,
+	similarity_function = 1,
+	# auxiliarity function
+	consim = 2,
+	calibrate = 0,
+	# c(m0, s20, v2,k0,nu0,a0,alpha)
+	# "PRIOR" DELLA SIMILARITY FUNCTION USATA
+	# se cosim = 1 -> (q fun = N) m0 prior per media normale, s20 prior per varianza normale
+	# se cosim = 2 -> (q fun = N -IG) m0, v0 are a priori “guesses” for mj and vj  and k0, n0 the                                                            corresponding a priori “sample sizes”
+	simParms = c(0.0, 10, 10, 1.0, 2.0, 0.1, 1),
+	#  per similarity function
+	# c(m,s2,A,A0)
+	# VEDI PAGINA 1016 DEL PAPER 6 PER CAPIRE MODELLO
+	# m = mean della normale della prior per la media della likelihood
+	# s2 = varianza della normale della prior della media della likelihood
+	# A = UpperBound dela sigma della normale della likelihood
+	# A0 = upperbound della sigma della normale della prior per la media della likelihood
+	modelPriors = c(0, 100^2, 10, 10),
+	# Prior del modello
+	mh = c(0.1, 0.1),
+	draws = 3300,
+	# itaration totali
+	burn = 300,
+	# burnin
+	thin = 3,
+	# considero un valore della catena ogi thin salti
+	verbose = FALSE
+)
 		
 	LPML[i] <- fit$lpml
 	}
 
 ```
 
+
 ```{r}
 id <- which(LPML  == max(LPML))
 all_cov[id] # Altitude
 ```
 
-Per selezionare covariate uso settimana 5
-```{r}
-set.seed(1)
-all_cov_altitude <- c( "WE_temp_2m", "WE_wind_speed_10m_mean",
-  "WE_wind_speed_10m_max", "WE_mode_wind_direction_10m", "WE_tot_precipitation",
-  "WE_precipitation_t", "WE_surface_pressure", "WE_solar_radiation",
-  "WE_rh_min", "WE_rh_mean", "WE_rh_max",
-  "WE_wind_speed_100m_mean", "WE_wind_speed_100m_max", "WE_mode_wind_direction_100m",
-  "WE_blh_layer_max", "WE_blh_layer_min", "EM_nh3_livestock_mm",
-  "EM_nh3_agr_soils", "EM_nh3_agr_waste_burn", "EM_nh3_sum",
-  "EM_nox_traffic", "EM_nox_sum", "EM_so2_sum",
-  "LI_pigs", "LI_bovine", "LI_pigs_v2",
-  "LI_bovine_v2", "LA_hvi", "LA_lvi",
-  "LA_land_use"
+Valutiamo modello migliore
+
+```{r include=FALSE}
+clusters_old = NULL
+df_time = df_weekly_scaled_centered[which(df_weekly$week == 5), ]
+y_fit = df_time$AQ_pm10
+X = df_time[, "Altitude"] 
+
+fit = gaussian_ppmx(
+	y_fit,
+	X = X,
+	Xpred = NULL,
+	meanModel = 1,
+	cohesion = 1,
+	M = 1,
+	PPM = FALSE,
+	similarity_function = 1,
+	# auxiliarity function
+	consim = 2,
+	calibrate = 0,
+	# c(m0, s20, v2,k0,nu0,a0,alpha)
+	# "PRIOR" DELLA SIMILARITY FUNCTION USATA
+	# se cosim = 1 -> (q fun = N) m0 prior per media normale, s20 prior per varianza normale
+	# se cosim = 2 -> (q fun = N -IG) m0, v0 are a priori “guesses” for mj and vj  and k0, n0 the                                                            corresponding a priori “sample sizes”
+	simParms = c(0.0, 10, 10, 1.0, 2.0, 0.1, 1),
+	#  per similarity function
+	# c(m,s2,A,A0)
+	# VEDI PAGINA 1016 DEL PAPER 6 PER CAPIRE MODELLO
+	# m = mean della normale della prior per la media della likelihood
+	# s2 = varianza della normale della prior della media della likelihood
+	# A = UpperBound dela sigma della normale della likelihood
+	# A0 = upperbound della sigma della normale della prior per la media della likelihood
+	modelPriors = c(0, 100^2, 10, 10),
+	# Prior del modello
+	mh = c(0.1, 0.1),
+	draws = 3300,
+	# itaration totali
+	burn = 300,
+	# burnin
+	thin = 3,
+	# considero un valore della catena ogi thin salti
+	verbose = FALSE
 )
 
-all_cov_NOAlt_sample <- sample(all_cov_altitude)
-n <- lenght(all_cov_NOAlt_sample)
-LPML.cov <- numeric(0)
-
-```
-
-## loop fit
-```{r}
-var_sel <- 'Altitude'
-for(i in 1:n-1){
-clusters_old = NULL
-	df_time = df_weekly_scaled_centered[which(df_weekly$week==5),]
-	y_fit = df_time$AQ_pm10
-	X = df_time[,var_sel] # tutte covariate tranne quelle inutili
-    ### CONTROLLA MODELLO--> CAMBIA 
-	fit = gaussian_ppmx(y_fit, X=X, Xpred=NULL,
-	                  meanModel=1,
-	                  cohesion=1,
-	                  M=1,
-	                  PPM = FALSE,
-	                  similarity_function=2, # auxiliarity function
-	                  consim=1, 
-	                  calibrate=0,
-					  # c(m0, s20, v2,k0,nu0,a0,alpha)
-						# "PRIOR" DELLA SIMILARITY FUNCTION USATA
-						# se cosim = 1 -> (q fun = N) m0 prior per media normale, s20 prior per varianza normale
-						# se cosim = 2 -> (q fun = N -IG) m0, v0 are a priori “guesses” for mj and vj  and k0, n0 the                                                            corresponding a priori “sample sizes”
-	                  simParms=c(0.0, 1.0, 0.1, 1.0, 2.0, 0.1, 1),  #  per similarity function
-					  # c(m,s2,A,A0)
-						# VEDI PAGINA 1016 DEL PAPER 6 PER CAPIRE MODELLO
-						# m = mean della normale della prior per la media della likelihood
-						# s2 = varianza della normale della prior della media della likelihood
-						# A = UpperBound dela sigma della normale della likelihood
-						# A0 = upperbound della sigma della normale della prior per la media della likelihood
-	                  modelPriors=c(0, 100^2, 10, 10), # Prior del modello
-	                  mh=c(0.5, 0.5),
-	                  draws=1100, # itaration totali
-					  burn=100, # burnin
-					  thin=1, # considero un valore della catena ogi thin salti
-	                  verbose=FALSE)
-
-var_sel <- c(var_sel, all_cov_NOAlt_sample[i] )
-if ( i == 1 )
-    {LPML.cov[1] <- fit$lpml
-     var_selezionate <- 'Altitude'
-    }
-
-else 
-	LPML.cov[i] <- fit$lpml
-
-if (i > 1){
-	if (LPML.cov[i]>LPML.cov[i-1])
-{
-	var_selezionate <- c(var_selezionate, all_cov_NOAlt_sample[i-1])
-	}
-    else 
-    {
-    	var_sel <-var_sel[-(length(var_sel)-1)]
-    }
-}
-
-}
-```
-```{r}
-var_selezionate
-```
-
-Le variabili selzionate sono: 
-```{r}
-var_selezionate <- c("Altitude", "WE_mode_wind_direction_10m", "WE_surface_pressure",
-               "WE_temp_2m", "WE_rh_max", "EM_nh3_agr_soils",
-               "EM_nh3_agr_waste_burn", "WE_rh_mean", "EM_nox_traffic",
-               "WE_rh_min", "WE_tot_precipitation", "WE_blh_layer_max",
-               "EM_nh3_livestock_mm", "WE_solar_radiation", "WE_precipitation_t",
-               "WE_wind_speed_10m_max")
-```
-
-## loop fit  
-Cambio solo numero di iterazioni e priors per ottenere modello migliore
-```{r}
-clusters_old = NULL
-	df_time = df_weekly_scaled_centered[which(df_weekly$week==5),]
-	y_fit = df_time$AQ_pm10
-	X = df_time[,var_selezionate] # tutte covariate tranne quelle inutili
-    ### CONTROLLA PRIOR MODELLO
-	fit = gaussian_ppmx(y_fit, X=X, Xpred=NULL,
-	                  meanModel=1,
-	                  cohesion=1,
-	                  M=1,
-	                  PPM = FALSE,
-	                  similarity_function=1, # auxiliarity function  ATTENZIONE!!!!
-	                  consim=1, 
-	                  calibrate=0,
-					  # c(m0, s20, v2,k0,nu0,a0,alpha)
-						# "PRIOR" DELLA SIMILARITY FUNCTION USATA
-						# se cosim = 1 -> (q fun = N) m0 prior per media normale, s20 prior per varianza normale
-						# se cosim = 2 -> (q fun = N -IG) m0, v0 are a priori “guesses” for mj and vj  and k0, n0 the                                                            corresponding a priori “sample sizes”
-	                  simParms=c(0.0, 10, 0.5, 1.0, 2.0, 0.1, 1),  #  per similarity function
-					  # c(m,s2,A,A0)
-						# VEDI PAGINA 1016 DEL PAPER 6 PER CAPIRE MODELLO
-						# m = mean della normale della prior per la media della likelihood
-						# s2 = varianza della normale della prior della media della likelihood
-						# A = UpperBound dela sigma della normale della likelihood
-						# A0 = upperbound della sigma della normale della prior per la media della likelihood
-	                  modelPriors=c(0, 100^2, 10, 10), # Prior del modello
-	                  mh=c(0.5, 0.5),
-	                  draws=1100, # itaration totali
-					  burn=0, # burnin
-					  thin=1, # considero un valore della catena ogi thin salti
-	                  verbose=FALSE)
 
 
 ```
 
-# poi controlla
-# Trace plots
 ```{r}
 sampled_station = floor(runif(1,0,105))
 cat("sampled_station =",sampled_station,"- that is station called",unique(df_weekly$IDStations)[sampled_station])
 
 ```
-
 
 ## mu (Posterior mean of mu relativa a soggetto si)  -> associata a muj
 ```{r}
@@ -507,38 +216,467 @@ plot(fit$sig2[,sampled_station],type="l",
 ## sig20 (Posterior value of sigma0^2)  --> associata sigma0
 ```{r}
 plot(fit$sig20,type="l",
-		 main=bquote("Trace plot of " * sigma^2 * " at time (=week) " * .(5) ),
+		 main=bquote("Trace plot of " * sigma^2 * " at time (=week) " * .(5) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+
+
+```
+
+Selezioniamo altre covariate includendo una ad una le covariate nel modello e le seleziono solo se LMPL aumenta.
+Parto da covariata selezionata precedentemente.
+
+Per selezionare covariate uso settimana 5
+```{r}
+set.seed(1)
+all_cov_altitude <- c( "WE_temp_2m", "WE_wind_speed_10m_mean",
+  "WE_wind_speed_10m_max", "WE_mode_wind_direction_10m", "WE_tot_precipitation",
+  "WE_precipitation_t", "WE_surface_pressure", "WE_solar_radiation",
+  "WE_rh_min", "WE_rh_mean", "WE_rh_max",
+  "WE_wind_speed_100m_mean", "WE_wind_speed_100m_max", "WE_mode_wind_direction_100m",
+  "WE_blh_layer_max", "WE_blh_layer_min", "EM_nh3_livestock_mm",
+  "EM_nh3_agr_soils", "EM_nh3_agr_waste_burn", "EM_nh3_sum",
+  "EM_nox_traffic", "EM_nox_sum", "EM_so2_sum",
+  "LI_pigs", "LI_bovine", "LI_pigs_v2",
+  "LI_bovine_v2", "LA_hvi", "LA_lvi",
+  "LA_land_use"
+)
+
+all_cov_NOAlt_sample <- sample(all_cov_altitude)
+n <- lenght(all_cov_NOAlt_sample)
+LPML.cov <- numeric(0)
+
+```
+
+## loop fit
+```{r include=FALSE}
+var_sel <- 'Altitude'  # starting covariate
+for(i in 1:n-1){
+clusters_old = NULL
+	df_time = df_weekly_scaled_centered[which(df_weekly$week==5),]
+	y_fit = df_time$AQ_pm10
+	X = df_time[,var_sel] # tutte covariate tranne quelle inutili
+fit = gaussian_ppmx(
+	y_fit,
+	X = X,
+	Xpred = NULL,
+	meanModel = 1,
+	cohesion = 1,
+	M = 1,
+	PPM = FALSE,
+	similarity_function = 1,
+	# auxiliarity function
+	consim = 2,
+	calibrate = 0,
+	# c(m0, s20, v2,k0,nu0,a0,alpha)
+	# "PRIOR" DELLA SIMILARITY FUNCTION USATA
+	# se cosim = 1 -> (q fun = N) m0 prior per media normale, s20 prior per varianza normale
+	# se cosim = 2 -> (q fun = N -IG) m0, v0 are a priori “guesses” for mj and vj  and k0, n0 the                                                            corresponding a priori “sample sizes”
+	simParms = c(0.0, 10, 10, 1.0, 2.0, 0.1, 1),
+	#  per similarity function
+	# c(m,s2,A,A0)
+	# VEDI PAGINA 1016 DEL PAPER 6 PER CAPIRE MODELLO
+	# m = mean della normale della prior per la media della likelihood
+	# s2 = varianza della normale della prior della media della likelihood
+	# A = UpperBound dela sigma della normale della likelihood
+	# A0 = upperbound della sigma della normale della prior per la media della likelihood
+	modelPriors = c(0, 100^2, 10, 10),
+	# Prior del modello
+	mh = c(0.1, 0.1),
+	draws = 3300,
+	# itaration totali
+	burn = 300,
+	# burnin
+	thin = 3,
+	# considero un valore della catena ogi thin salti
+	verbose = FALSE
+)
+
+var_sel <- c(var_sel, all_cov_NOAlt_sample[i] )
+if ( i == 1 )
+    {LPML.cov[1] <- fit$lpml
+     var_selezionate <- 'Altitude'
+    }
+
+else 
+	LPML.cov[i] <- fit$lpml
+
+if (i > 1){
+	if (LPML.cov[i]>LPML.cov[i-1])
+{
+	var_selezionate <- c(var_selezionate, all_cov_NOAlt_sample[i-1])
+	}
+    else 
+    {
+    	var_sel <-var_sel[-(length(var_sel)-1)]
+    }
+}
+
+}
+```
+Le variabili selezionate sono
+
+```{r}
+var_selezionate
+```
+
+```{r}
+variabili_selezionate <- c("Altitude", "WE_temp_2m", "WE_wind_speed_10m_mean", "WE_mode_wind_direction_100m",
+               "EM_nh3_agr_soils", "EM_nh3_agr_waste_burn", "LI_bovine_v2", "LA_land_use",
+               "EM_nox_sum", "WE_wind_speed_100m_max", "LI_pigs_v2", "EM_nh3_sum",
+               "WE_wind_speed_10m_max")
+```
+
+
+Vediamo convergenza
+
+```{r include=FALSE}
+clusters_old = NULL
+df_time = df_weekly_scaled_centered[which(df_weekly$week == 5), ]
+y_fit = df_time$AQ_pm10
+X = df_time[, variabili_selezionate] 
+
+fit = gaussian_ppmx(
+	y_fit,
+	X = X,
+	Xpred = NULL,
+	meanModel = 1,
+	cohesion = 1,
+	M = 1,
+	PPM = FALSE,
+	similarity_function = 1,
+	# auxiliarity function
+	consim = 2,
+	calibrate = 0,
+	# c(m0, s20, v2,k0,nu0,a0,alpha)
+	# "PRIOR" DELLA SIMILARITY FUNCTION USATA
+	# se cosim = 1 -> (q fun = N) m0 prior per media normale, s20 prior per varianza normale
+	# se cosim = 2 -> (q fun = N -IG) m0, v0 are a priori “guesses” for mj and vj  and k0, n0 the                                                            corresponding a priori “sample sizes”
+	simParms = c(0.0, 10, 10, 1.0, 2.0, 0.1, 1),
+	#  per similarity function
+	# c(m,s2,A,A0)
+	# VEDI PAGINA 1016 DEL PAPER 6 PER CAPIRE MODELLO
+	# m = mean della normale della prior per la media della likelihood
+	# s2 = varianza della normale della prior della media della likelihood
+	# A = UpperBound dela sigma della normale della likelihood
+	# A0 = upperbound della sigma della normale della prior per la media della likelihood
+	modelPriors = c(0, 100^2, 10, 10),
+	# Prior del modello
+	mh = c(0.1, 0.1),
+	draws = 3300,
+	# itaration totali
+	burn = 300,
+	# burnin
+	thin = 3,
+	# considero un valore della catena ogi thin salti
+	verbose = FALSE
+)
+
+```
+
+```{r}
+sampled_station = floor(runif(1,0,105))
+cat("sampled_station =",sampled_station,"- that is station called",unique(df_weekly$IDStations)[sampled_station])
+
+```
+
+## mu (Posterior mean of mu relativa a soggetto si)  -> associata a muj
+```{r}
+plot(fit$mu[,sampled_station],type="l",
+		 main=bquote("Trace plot of " * mu * " at time (=week) " * .(5) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+
+```
+
+## mu0 (Posterior values of mu0) --> associata a mu0
+```{r}
+plot(fit$mu0,type="l",
+		 main=bquote("Trace plot of " * mu * " at time (=week) " * .(5) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+
+```
+
+## sigma2 (posterior of sigma^2 relativa a soggetto si) --> associata a sigmaj
+```{r}
+plot(fit$sig2[,sampled_station],type="l",
+		 main=bquote("Trace plot of "* sigma^2 * " at time (=week) " * .(5) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+
+
+```
+
+## sig20 (Posterior value of sigma0^2)  --> associata sigma0
+```{r}
+plot(fit$sig20,type="l",
+		 main=bquote("Trace plot of " * sigma^2 * " at time (=week) " * .(5) * 
+		 				" - station " * .(sampled_station)),
 		 xlab = "MCMC iterations",ylab="values")
 
 
 ```
 
 
-
-# Sono buoni i trace plot?? Se cambi parametri devi cambiare variable selectiom..
-- PLot
-- LAvoro per stagioni
+## Clusters
+Trovo clusters finali assegnando ad ogni stazione il clusters che la contraddistingue di più
 
 
+```{r include=FALSE}
+i = 1
+time_span = 1:53
+for (time in time_span){
+df_time = df_weekly_scaled_centered[which(df_weekly$week == time), ]
+y_fit = df_time$AQ_pm10
+X = df_time[, variabili_selezionate] 
+
+fit = gaussian_ppmx(
+	y_fit,
+	X = X,
+	Xpred = NULL,
+	meanModel = 1,
+	cohesion = 1,
+	M = 1,
+	PPM = FALSE,
+	similarity_function = 1,
+	# auxiliarity function
+	consim = 2,
+	calibrate = 0,
+	# c(m0, s20, v2,k0,nu0,a0,alpha)
+	# "PRIOR" DELLA SIMILARITY FUNCTION USATA
+	# se cosim = 1 -> (q fun = N) m0 prior per media normale, s20 prior per varianza normale
+	# se cosim = 2 -> (q fun = N -IG) m0, v0 are a priori “guesses” for mj and vj  and k0, n0 the                                                            corresponding a priori “sample sizes”
+	simParms = c(0.0, 10, 10, 1.0, 2.0, 0.1, 1),
+	#  per similarity function
+	# c(m,s2,A,A0)
+	# VEDI PAGINA 1016 DEL PAPER 6 PER CAPIRE MODELLO
+	# m = mean della normale della prior per la media della likelihood
+	# s2 = varianza della normale della prior della media della likelihood
+	# A = UpperBound dela sigma della normale della likelihood
+	# A0 = upperbound della sigma della normale della prior per la media della likelihood
+	modelPriors = c(0, 100^2, 10, 10),
+	# Prior del modello
+	mh = c(0.1, 0.1),
+	draws = 3300,
+	# itaration totali
+	burn = 300,
+	# burnin
+	thin = 3,
+	# considero un valore della catena ogi thin salti
+	verbose = FALSE
+)
+
+	clusters_now = salso(fit$Si,loss="binder")
+	if (i == 1)
+    {mat_cluster = clusters_now
+     i = 2
+	}
+	else {
+    mat_cluster <- cbind(mat_cluster, clusters_now)
+    colnames(mat_cluster)[dim(mat_cluster)[2]] = time
+	}
+
+	clusters_now = clusters_now[1:105] # 105 numero max di cluster che possiamo avere
+}
+
+```
 
 
 
+Per vedere i trace plot guarda quelli della sezione precedente dove considero una settimana sola. Il modello è lo stesso.
+
+
+```{r}
+colnames(mat_cluster)[1] = 1
+clus <- numeric(0)
+for (i in 1:dim(mat_cluster)[1])
+{ clus[i] <- as.numeric(names(table(mat_cluster[i,]))[which.max(table(mat_cluster[i,]))])
+}
+clus
+```
 
 
 
+Plots of the clusters --> perchè mi da' week 53, dove lo tolgo.
+```{r}
+df_temp = data.frame(
+	Longitude = unique(df_weekly$Longitude),
+	Latitude = unique(df_weekly$Latitude),
+	clusters = clus
+)
+
+df_temp$Time = rep(1,dim(df_temp)[1])
+df_cluster_cut = df_temp
 
 
+### Hist plot
+# p = get_hist_color_plot(df_cluster_cut)
+p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
+print(p)
 
+### Graph plot
+q = get_graph_plot(df_cluster_cut)
+print(q)
 
+# or both together with
+# plot_graph_and_hist(df_cluster_cut)
 
+```
+A livello annuale vengono fuori 2 clusters molto sproporzionati.
 
-
-
-
-
-### Clusters for season --> we can find somiglianze dei cluster delle settimane appartenenti alla stessa stagione
-
+### Clusters for seasons 
 Winter: 1 - 11, 52, 53
 Spring: 12- 25
 Summer: 26 - 38
 Autumn: 39 - 51
+
+
+## WINTER
+
+```{r}
+clus_WINTER <- numeric(0)
+for (i in 1:dim(mat_cluster)[1])
+{   
+	clus_WINTER[i] <- as.numeric(names(table(mat_cluster[i,c(1:11, 52,53)]))[which.max(table(mat_cluster[i,c(1:11, 52,53)]))])
+}
+clus_WINTER
+```
+
+
+```{r}
+df_temp = data.frame(
+	Longitude = unique(df_weekly$Longitude),
+	Latitude = unique(df_weekly$Latitude),
+	clusters = clus_WINTER
+)
+
+df_temp$Time = rep(1,dim(df_temp)[1])
+df_cluster_cut = df_temp
+
+
+
+### Hist plot
+# p = get_hist_color_plot(df_cluster_cut)
+p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
+print(p)
+
+### Graph plot
+q = get_graph_plot(df_cluster_cut)
+print(q)
+
+# or both together with
+# plot_graph_and_hist(df_cluster_cut)
+
+```
+
+
+## SPRING 
+
+```{r}
+clus_SPRING <- numeric(0)
+for (i in 1:dim(mat_cluster)[1])
+{ clus_SPRING[i] <- as.numeric(names(table(mat_cluster[i,c(12:25)]))[which.max(table(mat_cluster[i,c(12:25)]))])
+}
+clus_SPRING
+```
+
+
+```{r}
+df_temp = data.frame(
+	Longitude = unique(df_weekly$Longitude),
+	Latitude = unique(df_weekly$Latitude),
+	clusters = clus_SPRING
+)
+
+df_temp$Time = rep(1,dim(df_temp)[1])
+df_cluster_cut = df_temp
+
+
+
+### Hist plot
+# p = get_hist_color_plot(df_cluster_cut)
+p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
+print(p)
+
+### Graph plot
+q = get_graph_plot(df_cluster_cut)
+print(q)
+
+# or both together with
+# plot_graph_and_hist(df_cluster_cut)
+
+```
+
+## SUMMER 
+```{r}
+clus_SUMMER <- numeric(0)
+for (i in 1:dim(mat_cluster)[1])
+{ clus_SUMMER[i] <- as.numeric(names(table(mat_cluster[i,26:38]))[which.max(table(mat_cluster[i,26:38]))])
+}
+clus_SUMMER
+```
+
+
+```{r}
+df_temp = data.frame(
+	Longitude = unique(df_weekly$Longitude),
+	Latitude = unique(df_weekly$Latitude),
+	clusters = clus_SUMMER
+)
+
+df_temp$Time = rep(1,dim(df_temp)[1])
+df_cluster_cut = df_temp
+
+
+
+### Hist plot
+# p = get_hist_color_plot(df_cluster_cut)
+p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
+print(p)
+
+### Graph plot
+q = get_graph_plot(df_cluster_cut)
+print(q)
+
+# or both together with
+# plot_graph_and_hist(df_cluster_cut)
+
+```
+
+## AUTUMN 
+```{r}
+clus_AUTUMN <- numeric(0)
+for (i in 1:dim(mat_cluster)[1])
+{ clus_AUTUMN[i] <- as.numeric(names(table(mat_cluster[i,39:51]))[which.max(table(mat_cluster[i,39:51]))])
+}
+clus_AUTUMN
+```
+
+
+```{r}
+df_temp = data.frame(
+	Longitude = unique(df_weekly$Longitude),
+	Latitude = unique(df_weekly$Latitude),
+	clusters = clus_AUTUMN
+)
+
+df_temp$Time = rep(1,dim(df_temp)[1])
+df_cluster_cut = df_temp
+
+
+
+### Hist plot
+# p = get_hist_color_plot(df_cluster_cut)
+p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
+print(p)
+
+### Graph plot
+q = get_graph_plot(df_cluster_cut)
+print(q)
+
+# or both together with
+# plot_graph_and_hist(df_cluster_cut)
+
+```
+
