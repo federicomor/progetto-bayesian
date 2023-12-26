@@ -8,6 +8,8 @@ source("include.R")
 
 ```{r}
 library(CARBayesST)
+library(sp)
+library(proxy)
 ```
 ```{r}
 head(df_wsc)
@@ -22,7 +24,7 @@ head(ordered_by_time)
 ```{r}
 colnames(ordered_by_time)
 covariates_to_exclude = c("X","IDStations",
-						  "Latitude","Longitude","Time","day","week"
+						  "Latitude","Longitude","Time","day","week","Altitude"
 						  )
 covariates=ordered_by_time[,-which(colnames(ordered_by_time)%in% covariates_to_exclude)]
 
@@ -31,8 +33,6 @@ head(covariates)
 
 # neighbourhood matrix
 ```{r}
-library(sp)
-library(proxy)
 spatial_coord = df_wsc[df_wsc$Time=="2018-01-01",c("IDStations","Latitude","Longitude")]
 head(spatial_coord)
 
@@ -42,6 +42,29 @@ coordinates(spatial_coord) <- c("Longitude", "Latitude")
 dist_matrix <- as.matrix(proxy::dist(coordinates(spatial_coord), method = "Euclidean"))
 
 formula = as.formula("AQ_pm10~.")
+```
+# LINEAR
+```{r}
+mod<-ST.CARlinear(formula= formula,
+		   family = "gaussian",
+		   data=covariates,
+		   W= dist_matrix,
+		   burnin = 10,
+		   n.sample = 1000,
+		   thin=1, 
+		   n.chains=1, 
+		   n.cores=1,
+		   prior.mean.beta=NULL,
+		   prior.var.beta=NULL,
+		   prior.mean.alpha=NULL,
+		   prior.var.alpha=NULL,
+		   prior.nu2=NULL, 
+		   prior.tau2=NULL,
+		   rho.slo=NULL,
+		   rho.int=NULL,
+		   MALA=TRUE,
+		   verbose=TRUE)
+
 ```
 # AR
 ```{r}
@@ -57,14 +80,13 @@ mod<-ST.CARar(formula= formula,
 		   prior.mean.beta=NULL,
 		   prior.var.beta=NULL,
 		   prior.nu2=NULL, 
-		   #prior.Sigma.df=NULL,
-		   #prior.Sigma.scale=NULL,
 		   AR=1, #1 or 2
 		   rho.S=NULL,
 		   rho.T=NULL, 
 		   MALA=TRUE,
 		   verbose=TRUE)
 ```
+
 # ADAPTIVE AR sloooooooow
 ```{r}
 mod<-ST.CARadaptive(formula= formula,
@@ -77,9 +99,92 @@ mod<-ST.CARadaptive(formula= formula,
 		   prior.mean.beta=NULL,
 		   prior.var.beta=NULL,
 		   prior.nu2=NULL, 
+		   prior.tau2=NULL,
+		   rho=NULL,
+		   epsilon=0,
 		   MALA=TRUE,
 		   verbose=TRUE)
 ```
+
+
+# CLUSTERends: 
+only binomial or poisson: response must be integer valued
+seems useless for our goal
+```{r}
+mod = ST.CARclustrends(formula= formula,
+				   family = "binomial",
+				   data=covariates,
+				   W= dist_matrix,
+					 burnin = 10,
+				   n.sample = 1000,
+				   thin=1, 
+					 trends=c("Constant","LI"),
+					 changepoint=NULL,
+					 knots=NULL,
+					 prior.mean.beta=NULL, 
+					 prior.var.beta=NULL,
+					 prior.mean.gamma=NULL,
+					 prior.var.gamma=NULL, 
+					 prior.lambda=NULL,
+					 prior.tau2=NULL,
+					 Nchains=4,
+					 verbose=TRUE)
+```
+# ST.CARlocalised, ST.CARsepspatial
+also this only poisson or binomial, divide into groups low medium high?
+
+# Example of ANOVA: could be used to evaluate the clusterings! 		
+```{r}
+# Load required libraries
+library(MASS)  # For mvrnorm function (multivariate normal distribution)
+library(spdep) # For spatial dependency functions
+library(stats)  # For kronecker function
+
+# Setup the regular lattice
+x.easting <- 1:10
+x.northing <- 1:10
+Grid <- expand.grid(x.easting, x.northing)
+K <- nrow(Grid)
+N <- 10
+N.all <- N * K
+
+# Setup spatial (W) and temporal (D) neighbourhood matrices
+distance <- as.matrix(dist(Grid))
+W <- array(0, c(K, K))
+W[distance == 1] <- 1
+
+D <- array(0, c(N, N))
+for (i in 1:N) {
+  for (j in 1:N) {
+    if (abs((i - j)) == 1) D[i, j] <- 1
+  }
+}
+
+# Simulate the elements in the linear predictor and the data
+gamma <- rnorm(n = N.all, mean = 0, sd = 0.001)
+x <- rnorm(n = N.all, mean = 0, sd = 1)
+beta <- 0.1
+
+Q.W <- 0.99 * (diag(apply(W, 2, sum)) - W) + 0.01 * diag(rep(1, K))
+Q.W.inv <- solve(Q.W)
+phi <- mvrnorm(n = 1, mu = rep(0, K), Sigma = (0.01 * Q.W.inv))
+
+Q.D <- 0.99 * (diag(apply(D, 2, sum)) - D) + 0.01 * diag(rep(1, N))
+Q.D.inv <- solve(Q.D)
+delta<-mvrnorm(n=1,mu=rep(0,N),Sigma=(0.01*Q.D.inv))
+phi.long <- rep(phi, N)
+delta.long <- kronecker(delta, rep(1, K))
+
+LP <- 4 + x * beta + phi.long + delta.long + gamma
+mean <- exp(LP)
+Y <- rpois(n = N.all, lambda = mean)
+
+# Run the model (commented out for now)
+mod <- ST.CARanova(formula = Y ~ x, family = "poisson", interaction = TRUE, W = W, burnin = 10, n.sample = 50)
+summary(model)
+model$summary.results
+```
+
 # print the model
 ```{r}
 print(mod)
@@ -91,8 +196,6 @@ summary_results = data.frame(summary_results)
 # Identify variables with credible intervals excluding zero
 selected_variables <- summary_results[summary_results$X2.5. > 0 | summary_results$X97.5. < 0, ]
 
-# Print the selected variables
-print("Selected Variables:")
 print(selected_variables)
 
 ```
@@ -130,6 +233,7 @@ library(coda)
 x11()
 plot(mod$samples$beta)
 ```
+#?
 ```{r}
 beta.mcmcsummary<-summary(mod$samples$beta)
 round(RR.summary, 3)
