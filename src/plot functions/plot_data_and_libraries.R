@@ -7,6 +7,8 @@ library(gganimate)
 library(av)
 library(ggpubr)
 library(jpeg)
+library(jpeg)
+library(png)
 
 cat(crayon::italic("Loading AGC dataset, may took some time.\n"))
 load("../data/data_agc_lomb_part1.RData")
@@ -31,17 +33,18 @@ cols = colora(6,970,show=F)
 padding <- 0.2 * c(-1, 1)
 DATE_FORMAT = "%Y-%m-%d"
 
+img_lombardy <- readPNG("./src/plot functions/italia/lombardia.png")
 
 # carica file shp
 details <- 3
 details_altre_regioni <- 2
 
 confini  <- c("Emilia-Romagna","Piemonte","Lombardia","Trentino-Alto Adige","Veneto")
-regioni_italiane <- st_read(paste0("plot functions/italia/gadm40_ITA_",details,".shp"))
-regioni_italiane_2 <- st_read(paste0("plot functions/italia/gadm40_ITA_",details_altre_regioni,".shp"))
+regioni_italiane <- st_read(paste0("./src/plot functions/italia/gadm40_ITA_",details,".shp"))
+regioni_italiane_2 <- st_read(paste0("./src/plot functions/italia/gadm40_ITA_",details_altre_regioni,".shp"))
 
 lombardia <- regioni_italiane[regioni_italiane$NAME_1 == "Lombardia",]
 altre_regioni <- regioni_italiane_2[regioni_italiane_2$NAME_1 %in% confini,]
 
-shp_map <- st_read(paste0("plot functions/italia/gadm40_ITA_",1,".shp"))
+shp_map <- st_read(paste0("./src/plot functions/italia/gadm40_ITA_",1,".shp"))
 

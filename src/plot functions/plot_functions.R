@@ -7,6 +7,8 @@ lombardia_2 = altre_regioni[altre_regioni$NAME_1 == "Lombardia",]
 DefaultPlot <- function(){
 	# crea mappa lombardia
 	mappa_stations <- ggplot() +
+		background_image(img_lombardy)+
+		
 		geom_sf(data = altre_regioni, fill = color_empty ,color = color_fill, linewidth = 0.1,alpha=0.1, show.legend = FALSE) +
 		geom_sf(data = lombardia_2, fill = color_empty, color = color_comuni_lombardia, linewidth = 0.3,alpha=0.7, show.legend = FALSE) +
 		

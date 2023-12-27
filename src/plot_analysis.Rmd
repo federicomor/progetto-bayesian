@@ -42,7 +42,10 @@ hist_log <- ggplot(data = data.frame(log_Y = log(chosen_var)), aes(x = log_Y, y=
 grid.arrange(hist_original, hist_log, ncol = 2)
 ```
 
-
+# Default Plot
+```{r}
+DefaultPlot()
+```
 
 # Mappa stazioni
 ```{r}
