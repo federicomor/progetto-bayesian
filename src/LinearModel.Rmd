@@ -26,14 +26,15 @@ library(glmnet) # lasso
 
 # Dividing stations, save covariates in a dataframe
 ```{r}
-dati = df_weekly[,c(2,7)]
+head(df_weekly)
 
-covariates=df_weekly[,3:39]
-covariates=covariates[,-c(3,5,9,19,36)]    #not numerical
-covariates=covariates[,-c(1,2,3,31)]   #lat, long, alti and land_use constant over same station
+covariates_to_exclude = c("X","IDStations","Latitude","Longitude","Time","Altitude",
+						  "AQ_pm10","WE_mode_wind_direction_10m","WE_mode_wind_direction_100m","day","LA_land_use")
+#not numerical or constant over same  (lat, long, alti and land_use)
+
+covariates=df_weekly[,-which(colnames(df_weekly)%in% covariates_to_exclude)]
 k = dim(covariates)[2]
-head(dati)
-# df_stat=hash() ????
+
 stations = unique(dati$IDStations)
 print(stations)
 length(stations)
@@ -50,20 +51,20 @@ Create variables for regression analysis
 #for now only using numerical covariates
 st="1264"   #start with an example, then will cycle on all
 
-y=df_weekly[which(df_weekly$IDStations==st),7]
+y=df_weekly[which(df_weekly$IDStations==st),which(colnames(df_weekly)=="AQ_pm10")]
 y=as.numeric(y[[1]])
 y=scale(y)[1:53]    #normalization on the station
 
 
 covs = covariates[which(df_weekly$IDStations==st),]
 covs=as.data.frame(covs)
-covariates=scale(covs)     #normalization on the station
+covariates=scale(covs,center = TRUE)     #normalization on the station
 #jitter to avoid nans in constant columns
 for(i in 1:k){
   if(sum(is.na(covariates[,i]))>0)
     covs[,i]=jitter(covs[,i],0.01)
 }
-covs=scale(covs)
+covs=scale(covs,center = TRUE)
 
 
 head(covs)
@@ -609,25 +610,32 @@ n.iter=50000
 thin=10  
 index = 1
 bayesian_coefficients <- data.frame()
+covariates_to_exclude = c("X","IDStations","Latitude","Longitude","Time","Altitude",
+						  "AQ_pm10","WE_mode_wind_direction_10m","WE_mode_wind_direction_100m","day","LA_land_use")
+#not numerical or constant over same  (lat, long, alti and land_use)
+covar=df_weekly[,-which(colnames(df_weekly)%in% covariates_to_exclude)]
+k = dim(covar)[2]
+count_for_selection=rep(0,k)
 
 
-for (st in stations[1:4]){
+for (st in stations){
 	cat(crayon::red("Station",st,index,"\n"))
 	index = index+1
  #covariates and target
   y=df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]
   y=as.numeric(y[[1]])
   y=scale(y)[1:53]    #normalization on each single station ( 53 weeks)
-
-  covs=df_weekly[which(df_weekly$IDStations==st),vars_names]
+  
+  covs=covar[which(df_weekly$IDStations==st),]
+ 
   covs=as.data.frame(covs)
-  covariates=scale(covs)     #normalization on the station
+  covariates=scale(covs,center = TRUE)     #normalization on the station
   #jitter to avoid nans in constant columns
   for(i in 1:k){
     if(sum(is.na(covariates[,i]))>0)
       covs[,i]=jitter(covs[,i],0.01)
   }
-  covs=scale(covs)
+  covs=scale(covs, center=TRUE)
 
   
 
@@ -648,9 +656,10 @@ for (st in stations[1:4]){
   
   outputRegress=coda.samples(model=modelRegress,variable.names=c(variable.names,"ind"),n.iter=n.iter,thin=thin)
   #print(summary(outputRegress))
-  #summary(outputRegress)$quantiles[30:57,]   #print of ind 
+  #print(summary(outputRegress)$quantiles[30:57,2])   #print of ind 
   
-  #HERE NEED THRESHOLD AND TO STORE
+  #to count how many time we keep a variable (since ind binary)
+  count_for_selection=count_for_selection+summary(outputRegress)$quantiles[30:57,2]
   
   
   data.out=as.matrix(outputRegress) # trasform the mcmc.list into a matrix,
@@ -668,8 +677,15 @@ for (st in stations[1:4]){
 }
 #to give columns names
 colnames(bayesian_coefficients)<-c('station',names(beta.bayes))
+
+count_for_selection=as.data.frame(t(count_for_selection))
+colnames(count_for_selection)<-colnames(covar)
+print(count_for_selection)
 ```
 
+```{r}
+saveRDS(count_for_selection,"count_at_75p.RData")
+```
 
 
 
