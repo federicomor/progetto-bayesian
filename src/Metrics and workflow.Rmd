@@ -159,10 +159,12 @@ for(k in 1: LEN){
 		ARImats[k,kk] <- adjustedRandIndex(rho_ARI[[k]], rho_ARI[[kk]])
 	}
 }
-cols_ARI = colora(80,56,0)
+ncolors = 80
+cols_ARI = colora(ncolors,56,0)
 # or see ?designer.colors for colors
 library(fields)
-image.plot(ARImats, main="Lagged ARI values",axes=FALSE,col=rev(cols_ARI))
+image.plot(ARImats, main="Lagged ARI values",axes=FALSE,col=rev(cols_ARI),
+		   breaks=seq(0,1,length.out=ncolors+1))
 mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
 mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
 ```

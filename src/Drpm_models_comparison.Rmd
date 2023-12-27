@@ -424,7 +424,7 @@ ord2 = order_best
 
 
 ```{r,warning=FALSE}
-pdf(paste0("./figures/Fed/LaggedARI_comparison.pdf"), height=7, width=13)
+# pdf(paste0("./figures/Fed/LaggedARI_comparison.pdf"), height=7, width=13)
 par(mfrow=c(2,4),mar=c(2,2,2,4), mgp=c(1.5,0.5,0),oma=c(0,0,2,0))
 	for(h in ord2){
 		m.n <- as.numeric(strsplit(models_vector[h], "")[[1]][c(2,4,6)])
@@ -434,7 +434,7 @@ par(mfrow=c(2,4),mar=c(2,2,2,4), mgp=c(1.5,0.5,0),oma=c(0,0,2,0))
 		image.plot(ARImats[[h]], main=header, 
 				   #zlim=range(do.call(c,ARImats),na.rm=TRUE)
 				   axes=FALSE,
-				   col=rev(colora(80,56,0)))
+				   col=rev(colora(80,56,0)),breaks=seq(0,1,length.out=81))
 		mtext(text=c(paste("",1:tps)), side=2, line=0.3,
 			  at=seq(0,1,length=max(time_span)), las=1, cex=0.6)
 		mtext(text=c(paste("",1:tps)), side=1, line=0.3,
@@ -442,11 +442,12 @@ par(mfrow=c(2,4),mar=c(2,2,2,4), mgp=c(1.5,0.5,0),oma=c(0,0,2,0))
 	}
 mtext(bquote("Lagged ARI plots for the fitted models")
 	  , side = 3, line = 0, outer = TRUE)
-dev.off()
+# dev.off()
 ```
 
 # Best model analysis
 ```{r}
+load("../data/drpm_comparison.Rdata")
 drpm1 = models.out$out_E0P1A1_AR1
 ```
 
@@ -485,7 +486,7 @@ for(time in time_span){
 cols = colora(12,"div")[-2]
 # cols chosen previously
 clusters_old = NULL
-for(time in time_span){
+for(time in time_span[1:4]){
 	cat(crayon::red("Time",time,"\n"))
 	
 	df_cluster_cut = df_cluster[df_cluster$Time==time,]
@@ -493,7 +494,7 @@ for(time in time_span){
 	clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
 	df_cluster_cut$clusters = clusters_now
 	
-	q = get_graph_plot(df_cluster_cut)
+	q = get_graph_plot(df_cluster_cut,titolo="mio titolo")
 	
 	print(q)
 	clusters_old = clusters_now

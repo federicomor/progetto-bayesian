@@ -397,7 +397,7 @@ cat(crayon::bold("plotter library required!\n"))
 
 xlims = c(-2.5,1.5)
 cat(crayon::red("- get_graph_plot(df_cluster_cut)\n"))
-get_graph_plot = function(df_cluster_cut){ # already mode_corrected
+get_graph_plot = function(df_cluster_cut,titolo=paste("Cluster map - time",time)){ # already mode_corrected
 	clusters_now = df_cluster_cut$clusters
 	edges_list = assemble_edges_list(clusters_now)
 	
@@ -405,7 +405,7 @@ get_graph_plot = function(df_cluster_cut){ # already mode_corrected
 		geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
 											  # color = cols[factor(clusters)]), size = 2)+
 											  color = cols[clusters_now]), size = 2)+
-		labs(title = paste("Cluster map - time",time))
+		labs(title = titolo)
 	
 	q = p
 	actual_clusters = c()
@@ -429,7 +429,7 @@ get_graph_plot = function(df_cluster_cut){ # already mode_corrected
 
 
 cat(crayon::red("- get_hist_fill_plot(df_cluster_cut)\n"))
-get_hist_fill_plot = function(df_cluster_cut,verbose=0){
+get_hist_fill_plot = function(df_cluster_cut,titolo=paste("Time",time),verbose=0){
 	clusters_now = df_cluster_cut$clusters # needs to be already mode corrected if wanted
 	# n_clusters = max(clusters_now)
 	n_clusters = unique(clusters_now)
@@ -459,7 +459,7 @@ get_hist_fill_plot = function(df_cluster_cut,verbose=0){
 					   position="identity")+ # to have histograms
 		# geom_density(alpha = 0.3)+ # to have the kernel/density estimation
 		
-		ggtitle(paste("Time",time))+
+		ggtitle(titolo)+
 		# labs(title = paste("Cluster map - time",time))+
 		guides(fill = guide_legend(title = "Clusters"))+
 		
@@ -480,7 +480,7 @@ get_hist_fill_plot = function(df_cluster_cut,verbose=0){
 
 
 cat(crayon::red("- get_hist_color_plot(df_cluster_cut)\n"))
-get_hist_color_plot = function(df_cluster_cut,verbose=0){
+get_hist_color_plot = function(df_cluster_cut,titolo=paste("Time",time),verbose=0){
 	clusters_now = df_cluster_cut$clusters # needs to be already mode corrected if wanted
 	# n_clusters = max(clusters_now)
 	n_clusters = unique(clusters_now)
@@ -510,7 +510,7 @@ get_hist_color_plot = function(df_cluster_cut,verbose=0){
 					   position="identity")+ # to have histograms
 		# geom_density(alpha = 0.3)+ # to have the kernel/density estimation
 		
-		ggtitle(paste("Time",time))+
+		ggtitle(titolo)+
 		# labs(title = paste("Cluster map - time",time))+
 		guides(color = guide_legend(title = "Clusters"))+
 		
@@ -530,7 +530,7 @@ get_hist_color_plot = function(df_cluster_cut,verbose=0){
 
 
 cat(crayon::red("- get_hist_continuos_plot(df_cluster_cut)\n"))
-get_hist_continuos_plot = function(df_cluster_cut,verbose=1){
+get_hist_continuos_plot = function(df_cluster_cut,titolo=paste("Time",time),verbose=1){
 	clusters_now = df_cluster_cut$clusters
 	# n_clusters = max(clusters_now)
 	n_clusters = unique(clusters_now)
@@ -561,7 +561,7 @@ get_hist_continuos_plot = function(df_cluster_cut,verbose=1){
 		guides(fill = guide_legend(title = "Clusters"))+
 		
 		geom_density(alpha = 0.3)+
-		ggtitle(paste("Time",time))+
+		ggtitle(titolo)+
 		theme_bw()+
 		xlab("log(PM10) values")+
 		ylab("")+
@@ -570,7 +570,7 @@ get_hist_continuos_plot = function(df_cluster_cut,verbose=1){
 
 
 cat(crayon::red("- get_boxplot_plot(df_cluster_cut)\n"))
-get_boxplot_plot = function(df_cluster_cut){
+get_boxplot_plot = function(df_cluster_cut,titolo=paste("Time",time)){
 	clusters_now = df_cluster_cut$clusters # needs to be already mode corrected if wanted
 	# n_clusters = max(clusters_now)
 	n_clusters = unique(clusters_now)
@@ -586,7 +586,7 @@ get_boxplot_plot = function(df_cluster_cut){
 	))+
 		geom_boxplot()+
 		# geom_jitter(width=0.2)+
-		ggtitle(paste("Time",time))+
+		ggtitle(titolo)+
 		labs(title = paste("Cluster map - time",time))+
 		guides(fill = guide_legend(title = "Clusters"))+
 		
@@ -606,7 +606,7 @@ get_boxplot_plot = function(df_cluster_cut){
 
 
 cat(crayon::red("- plot_graph_and_hist(df_cluster_cut)\n"))
-plot_graph_and_hist = function(df_cluster_cut){
+plot_graph_and_hist = function(df_cluster_cut,titolo=paste("Time",time)){
 # GRAPH #######################
 q_graph = get_graph_plot(df_cluster_cut)
 # HIST #######################
@@ -623,7 +623,7 @@ p = ggplot(df_temp, aes(ycurrent,
 	geom_histogram(alpha=0.5,
 				   # fill="white", # case COLOR
 				   position="identity")+ 
-	ggtitle(paste("Time",time))+
+	ggtitle(titolo)+
 	# guides(color = guide_legend(title = "Clusters"))+
 	theme_bw()+
 	theme(legend.position = "none")+
