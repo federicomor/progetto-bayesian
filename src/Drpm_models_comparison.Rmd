@@ -150,7 +150,7 @@ model <- "AR1"
 
 models_vector = c("E1P1A1","E1P1A0","E1P0A1","E1P0A0","E0P1A1","E0P1A0","E0P0A1","E0P0A0")
 for(h in models_vector){
-	readline(prompt="Press [enter] to continue fitting") # to let the pc breath
+	# readline(prompt="Press [enter] to continue fitting") # to let the pc breath
 	cat(paste0("fitting model ",hh," (",models_vector[hh],")...\n"))
 
 	m.n <- as.numeric(strsplit(h, "")[[1]][c(2,4,6)])
