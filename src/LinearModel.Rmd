@@ -35,7 +35,7 @@ covariates_to_exclude = c("X","IDStations","Latitude","Longitude","Time","Altitu
 covariates=df_weekly[,-which(colnames(df_weekly)%in% covariates_to_exclude)]
 k = dim(covariates)[2]
 
-stations = unique(dati$IDStations)
+stations = unique(df_weekly$IDStations)
 print(stations)
 length(stations)
 ```
@@ -656,7 +656,7 @@ for (st in stations){
   
   outputRegress=coda.samples(model=modelRegress,variable.names=c(variable.names,"ind"),n.iter=n.iter,thin=thin)
   #print(summary(outputRegress))
-  #print(summary(outputRegress)$quantiles[30:57,2])   #print of ind 
+  #print(summary(outputRegress)$quantiles[30:57,])   #print of ind 
   
   #to count how many time we keep a variable (since ind binary)
   count_for_selection=count_for_selection+summary(outputRegress)$quantiles[30:57,2]
@@ -684,10 +684,23 @@ print(count_for_selection)
 ```
 
 ```{r}
-saveRDS(count_for_selection,"count_at_75p.RData")
+saveRDS(count_for_selection,"count_at_50p.RData")
 ```
 
 
+
+```{r}
+temp75=readRDS("count_at_75p.RData")
+temp50=readRDS("count_at_50p.RData") #2nd quantile always 0 not useful, using third quantile
+#difference never more than 8 
+temp20=readRDS("count_at_20p.RData") #always 0 not useful
+```
+
+The smaller the ratio, the more the model tends to discard a variable -> kept only with higher confidence (at 50%) and
+    distribution of acceptance more polarized (all discarded or all kept) 
+-> Choose higher ratio of "probability to keep" or selection quite pointless
+
+Anyway counts always between 50 and 60 -> no variables are visibly better or more informative
 
 
 
