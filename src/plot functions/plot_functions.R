@@ -4,11 +4,15 @@ color_empty = "white"
 color_station = "yellow"
 color_fill = "forestgreen"
 lombardia_2 = altre_regioni[altre_regioni$NAME_1 == "Lombardia",]
-DefaultPlot <- function(){
+DefaultPlot <- function(add_bg=TRUE){
 	# crea mappa lombardia
-	mappa_stations <- ggplot() +
-		background_image(img_lombardy)+
-		
+	if (add_bg==TRUE) {
+		mappa_stations <- ggplot() +
+			background_image(img_lombardy)
+	} else {
+		mappa_stations <- ggplot()
+	}
+	mappa_stations = mappa_stations	+
 		geom_sf(data = altre_regioni, fill = color_empty ,color = color_fill, linewidth = 0.1,alpha=0.1, show.legend = FALSE) +
 		geom_sf(data = lombardia_2, fill = color_empty, color = color_comuni_lombardia, linewidth = 0.3,alpha=0.7, show.legend = FALSE) +
 		

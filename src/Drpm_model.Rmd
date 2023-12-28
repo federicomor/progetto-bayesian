@@ -92,7 +92,7 @@ trendYearStation_week("None")
 
 ## Scaling/Centering update
 ```{r}
-time_span = 1:18 # low time span for quick testing, real one will be 1:53
+time_span = 1:6 # low time span for quick testing, real one will be 1:53
 
 ### authors suggested to/did scale the spatial locations and also centered the observations
 y_fit = y[,1+time_span]
@@ -111,7 +111,7 @@ plot(std_sites)
 Burn in needs to be >= 10000. This after some long fits with low nburn (to see the whole behaviour of the MCMC) where there are some relevant changes even after 10000 iterations. So a lot of them needs to be discarded. I would set burn in to also 20000 maybe.
 
 ```{r}
-niter=30000; nburn=10; nthin=2
+niter=30000; nburn=100; nthin=2
 nout <- (niter-nburn)/nthin
 cat(nout,"valid iterations\n")
 ```
@@ -342,10 +342,6 @@ for (time in time_span){
 ```
 
 
-```{r}
-
-```
-
 ## tau2
 MCMC for each time, one for each station.
 ```{r}
@@ -549,6 +545,12 @@ for(time in time_span){
 } # end for(time in eccc)
 ```
 
+```{r}
+img_lombardy <- readPNG(paste0(start_folder,"plot functions/italia/lombardia_cut.png"))
+p = DefaultPlot(add_bg=T)
+print(p)
+```
+
 
 
 # Plot for time 1
@@ -568,9 +570,10 @@ background image of lombardy
 ```{r}
 library(jpeg)
 library(png)
-img <- readJPEG("./plot functions/italia/lombardia.JPG")
+# img <- readJPEG("./plot functions/italia/lombardia.JPG")
 img <- readPNG("./plot functions/italia/lombardia_cut.png")
 
+time=2
 df_cluster_cut = df_cluster[df_cluster$Time==time,]
 p  <-  DefaultPlot()+
 	geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
@@ -623,7 +626,7 @@ all the functions are in the include_clusters_function. Here is the code to plot
 ```{r}
 # cols chosen previously
 clusters_old = NULL
-for(time in time_span[4:6]){
+for(time in time_span){
 	cat(crayon::red("Time",time,"\n"))
 	
 	df_cluster_cut = df_cluster[df_cluster$Time==time,]

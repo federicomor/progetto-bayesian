@@ -401,7 +401,7 @@ get_graph_plot = function(df_cluster_cut,titolo=paste("Cluster map - time",time)
 	clusters_now = df_cluster_cut$clusters
 	edges_list = assemble_edges_list(clusters_now)
 	
-	p  <-  DefaultPlot()+
+	p  <-  DefaultPlot(add_bg=FALSE)+
 		geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
 											  # color = cols[factor(clusters)]), size = 2)+
 											  color = cols[clusters_now]), size = 2)+
