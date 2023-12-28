@@ -153,6 +153,7 @@ for(i in 1:dim(mcmc_matrix)[2]){
 	plot(mcmc_matrix[,i],type="l",cex.axis=0.8)
 }
 ```
+### other parameters
 ```{r}
 mcmc_matrix = as.matrix(mod$samples$rho)
 for(i in 1:dim(mcmc_matrix)[2]){
@@ -162,7 +163,7 @@ for(i in 1:dim(mcmc_matrix)[2]){
 
 # print the model
 ```{r}
-print(mod)
+#print(mod)
 ```
 
 ```{r}
@@ -175,19 +176,26 @@ print(selected_variables)
 
 ```
 
-# coefficents
-```{r}
-coef(mod)
-```
+
 # acceptance probabilities
 ```{r}
 mod$accept
 ```
 # metrics
 ```{r}
-metrics_dataframe = data.frame()
-for( mod in model_list)
-	print(mod$modelfit)
+# Create an empty matrix with specified row and column names
+metrics_matrix <- matrix(NA, nrow = 4, ncol = 6, dimnames = list(c("linear", "ar1", "ar2", "ar adaptive"), c("DIC", "p.d", "WAIC", "p.w", "LMPL", "loglikelihood")))
+
+k = 1
+for (mod in model_list) {
+  metrics_matrix[k, ] <- mod$modelfit
+  k = k + 1
+}
+
+# Convert the matrix to a data frame if needed
+metrics_dataframe <- as.data.frame(metrics_matrix)
+metrics_dataframe[,c(3,5)]
+
 ```
 
 
