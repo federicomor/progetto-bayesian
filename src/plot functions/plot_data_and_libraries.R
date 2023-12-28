@@ -32,7 +32,7 @@ sites <- data.frame(
 
 stations = unique(df_agri$IDStations)
 cols = colora(6,970,show=F)
-padding <- 0.1 * c(-1, 1)
+padding <- 0.15 * c(-1, 1)
 DATE_FORMAT = "%Y-%m-%d"
 
 if (grep("src",getwd())==1) {
@@ -40,7 +40,7 @@ if (grep("src",getwd())==1) {
 } else {
 	start_folder =  "./src/"
 }
-img_lombardy <- readPNG(paste0(start_folder,"plot functions/italia/lombardia.png"))
+img_lombardy <- readPNG(paste0(start_folder,"plot functions/italia/cut.png"))
 
 # carica file shp
 details <- 3

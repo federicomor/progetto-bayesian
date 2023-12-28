@@ -546,9 +546,8 @@ for(time in time_span){
 ```
 
 ```{r}
-img_lombardy <- readPNG(paste0(start_folder,"plot functions/italia/lombardia_cut.png"))
-p = DefaultPlot(add_bg=T)
-print(p)
+# img_lombardy <- readPNG(paste0(start_folder,"plot functions/italia/cut.png"))
+DefaultPlot(add_bg=T)
 ```
 
 
