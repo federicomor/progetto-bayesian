@@ -10,6 +10,7 @@ source("include.R")
 library(CARBayesST)
 library(sp)
 library(proxy)
+library(coda)
 ```
 ```{r}
 head(df_wsc)
@@ -24,7 +25,7 @@ head(ordered_by_time)
 ```{r}
 colnames(ordered_by_time)
 covariates_to_exclude = c("X","IDStations",
-						  "Latitude","Longitude","Time","day","week","Altitude"
+						  "Latitude","Longitude","Time","day","week"
 						  )
 covariates=ordered_by_time[,-which(colnames(ordered_by_time)%in% covariates_to_exclude)]
 
@@ -33,25 +34,25 @@ head(covariates)
 
 # neighbourhood matrix
 ```{r}
-spatial_coord = df_wsc[df_wsc$Time=="2018-01-01",c("IDStations","Latitude","Longitude")]
+spatial_coord = ordered_by_time[ordered_by_time$Time=="2018-01-01",c("IDStations","Latitude","Longitude")]
 head(spatial_coord)
 
 coordinates(spatial_coord) <- c("Longitude", "Latitude")
 
 # Calculate the pairwise Euclidean distance matrix
 dist_matrix <- as.matrix(proxy::dist(coordinates(spatial_coord), method = "Euclidean"))
-
+dim(dist_matrix)
 formula = as.formula("AQ_pm10~.")
 ```
 # LINEAR
 ```{r}
-mod<-ST.CARlinear(formula= formula,
+mod_linear<-ST.CARlinear(formula= formula,
 		   family = "gaussian",
 		   data=covariates,
 		   W= dist_matrix,
-		   burnin = 10,
-		   n.sample = 1000,
-		   thin=1, 
+		   burnin = 1000,
+		   n.sample = 25000,
+		   thin=10, 
 		   n.chains=1, 
 		   n.cores=1,
 		   prior.mean.beta=NULL,
@@ -68,13 +69,13 @@ mod<-ST.CARlinear(formula= formula,
 ```
 # AR
 ```{r}
-mod<-ST.CARar(formula= formula,
+mod_AR1<-ST.CARar(formula= formula,
 		   family = "gaussian",
 		   data=covariates,
 		   W= dist_matrix,
-		   burnin = 10,
-		   n.sample = 1000,
-		   thin=1, 
+		   burnin = 1000,
+		   n.sample = 25000,
+		   thin=10,  
 		   n.chains=1, 
 		   n.cores=1,
 		   prior.mean.beta=NULL,
@@ -85,11 +86,30 @@ mod<-ST.CARar(formula= formula,
 		   rho.T=NULL, 
 		   MALA=TRUE,
 		   verbose=TRUE)
+
+mod_AR2<-ST.CARar(formula= formula,
+		   family = "gaussian",
+		   data=covariates,
+		   W= dist_matrix,
+		   burnin = 1000,
+		   n.sample = 25000,
+		   thin=10,  
+		   n.chains=1, 
+		   n.cores=1,
+		   prior.mean.beta=NULL,
+		   prior.var.beta=NULL,
+		   prior.nu2=NULL, 
+		   AR=2, #1 or 2
+		   rho.S=NULL,
+		   rho.T=NULL, 
+		   MALA=TRUE,
+		   verbose=TRUE)
 ```
 
 # ADAPTIVE AR sloooooooow
+2 hours (10,1000,1)
 ```{r}
-mod<-ST.CARadaptive(formula= formula,
+mod_ARadaptive<-ST.CARadaptive(formula= formula,
 		   family = "gaussian",
 		   data=covariates,
 		   W= dist_matrix,
@@ -107,31 +127,80 @@ mod<-ST.CARadaptive(formula= formula,
 ```
 
 
-# CLUSTERends: 
+
+# ST.CARlocalised, ST.CARsepspatial, CLUSTERends: 
 only binomial or poisson: response must be integer valued
 seems useless for our goal
+divide into groups low medium high?
 ```{r}
-mod = ST.CARclustrends(formula= formula,
-				   family = "binomial",
-				   data=covariates,
-				   W= dist_matrix,
-					 burnin = 10,
-				   n.sample = 1000,
-				   thin=1, 
-					 trends=c("Constant","LI"),
-					 changepoint=NULL,
-					 knots=NULL,
-					 prior.mean.beta=NULL, 
-					 prior.var.beta=NULL,
-					 prior.mean.gamma=NULL,
-					 prior.var.gamma=NULL, 
-					 prior.lambda=NULL,
-					 prior.tau2=NULL,
-					 Nchains=4,
-					 verbose=TRUE)
+model_list = list(mod_linear,mod_AR1,mod_AR2,mod_ARadaptive)
+mod = model_list[[4]]
 ```
-# ST.CARlocalised, ST.CARsepspatial
-also this only poisson or binomial, divide into groups low medium high?
+
+
+# MCMC analysis
+
+## samples
+```{r}
+summary(mod$samples)
+```
+
+## mcmc plots
+### betas
+```{r}
+mcmc_matrix = as.matrix(mod$samples$beta)
+for(i in 1:dim(mcmc_matrix)[2]){
+	plot(mcmc_matrix[,i],type="l",cex.axis=0.8)
+}
+```
+```{r}
+mcmc_matrix = as.matrix(mod$samples$rho)
+for(i in 1:dim(mcmc_matrix)[2]){
+	plot(mcmc_matrix[,i],type="l",cex.axis=0.8)
+}
+```
+
+# print the model
+```{r}
+print(mod)
+```
+
+```{r}
+summary_results = mod$summary.results
+summary_results = data.frame(summary_results)
+# Identify variables with credible intervals excluding zero
+selected_variables <- summary_results[summary_results$X2.5. > 0 | summary_results$X97.5. < 0, ]
+
+print(selected_variables)
+
+```
+
+# coefficents
+```{r}
+coef(mod)
+```
+# acceptance probabilities
+```{r}
+mod$accept
+```
+# metrics
+```{r}
+metrics_dataframe = data.frame()
+for( mod in model_list)
+	print(mod$modelfit)
+```
+
+
+
+# residuals
+```{r}
+resid = residuals(mod)
+plot(resid,type="l")
+```
+
+
+
+
 
 # Example of ANOVA: could be used to evaluate the clusterings! 		
 ```{r}
@@ -184,62 +253,6 @@ mod <- ST.CARanova(formula = Y ~ x, family = "poisson", interaction = TRUE, W = 
 summary(model)
 model$summary.results
 ```
-
-# print the model
-```{r}
-print(mod)
-```
-
-```{r}
-summary_results = mod$summary.results
-summary_results = data.frame(summary_results)
-# Identify variables with credible intervals excluding zero
-selected_variables <- summary_results[summary_results$X2.5. > 0 | summary_results$X97.5. < 0, ]
-
-print(selected_variables)
-
-```
-
-# coefficents
-```{r}
-coef(mod)
-```
-# acceptance probabilities
-```{r}
-mod$accept
-```
-# metrics
-```{r}
-mod$modelfit
-```
-
-
-
-# residuals
-```{r}
-resid = residuals(mod)
-plot(resid)
-```
-
-
-# samples
-```{r}
-summary(mod$samples)
-```
-
-# mcmc plots
-```{r}
-library(coda)
-x11()
-plot(mod$samples$beta)
-```
-#?
-```{r}
-beta.mcmcsummary<-summary(mod$samples$beta)
-round(RR.summary, 3)
-```
-
-
 
 
 
