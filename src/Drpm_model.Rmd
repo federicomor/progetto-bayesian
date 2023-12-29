@@ -92,7 +92,7 @@ trendYearStation_week("None")
 
 ## Scaling/Centering update
 ```{r}
-time_span = 1:6 # low time span for quick testing, real one will be 1:53
+time_span = 1:53 # low time span for quick testing, real one will be 1:53
 
 ### authors suggested to/did scale the spatial locations and also centered the observations
 y_fit = y[,1+time_span]
@@ -111,15 +111,16 @@ plot(std_sites)
 Burn in needs to be >= 10000. This after some long fits with low nburn (to see the whole behaviour of the MCMC) where there are some relevant changes even after 10000 iterations. So a lot of them needs to be discarded. I would set burn in to also 20000 maybe.
 
 ```{r}
-niter=30000; nburn=100; nthin=2
+niter=60000; nburn=20000; nthin=40 # original
+# niter=50000; nburn=20000; nthin=30 # new one
 nout <- (niter-nburn)/nthin
 cat(nout,"valid iterations\n")
 ```
 
 ```{r}
-seed_choice = runif(1)
+seed_choice = round(runif(1,0,1000))
 set.seed(seed_choice)
-cat("seed",seed_choice,"\n==========================\n",date(),"\n\n")
+cat(paste0("seed ",seed_choice,"\n==========================\n",date(),"\n\n"))
 tempo_inizio <- Sys.time()
 drpm1 <- drpm_fit(y=y_fit, 
 		 s_coords = std_sites,
@@ -127,7 +128,7 @@ drpm1 <- drpm_fit(y=y_fit,
          initial_partition = NULL,
          starting_alpha = 0.5,
          unit_specific_alpha = FALSE,
-         time_specific_alpha = TRUE, # meaning a bit ambiguos
+         # time_specific_alpha = TRUE, # meaning a bit ambiguos
 		# Ok after experimenting it means that:
 		# - if true we let alpha be a param that changes over time. 
 		#	At time 1 we have a chain with some behaviour, 
@@ -135,10 +136,13 @@ drpm1 <- drpm_fit(y=y_fit,
 		# - if false we instead fix alpha, ie all chains of all times
 		#	will be the same, as they refer to the same parameter estimation
 		# The authors in their tests set it to false, ie the fixed alpha
-
-         alpha_0=FALSE,
-         eta1_0=FALSE,
+         alpha_0=FALSE, # modello temporale, questa deve sempre essere falsa
+		
+		# parameters from the drpm models comparison:
+		# case E0P1A1
+         eta1_0=FALSE, 
          phi1_0=FALSE,
+         time_specific_alpha = TRUE,
 
          # modelPriors=c(0,100^2,1,1,1,1), # original default one
          modelPriors=c(0,100,10,5,5,2,2,1), # author suggestion/used one
@@ -158,7 +162,7 @@ drpm1 <- drpm_fit(y=y_fit,
          cParms=c(0, 1, 5, 1), # author suggestion/used one (with 5)
 		
          # mh=c(0.5,1,0.1, 0.1, 0.1), # default one
-		 mh=c(0.1,0.1,0.4, 0.1, 0.1), # with a bit of author suggestion/used one
+		 mh=c(0.1,0.1,0.7, 0.1, 0.1), # with a bit of author suggestion/used one
 
          verbose=TRUE,
 
@@ -181,9 +185,40 @@ cat(crayon::red("\nLPML =",drpm1$lpml, "\nWAIC =",drpm1$waic))
 
 
 ```{r}
-# save(drpm1,file="../data/fit_serious.Rdata")
+# model_name = "drpm_eta0_phi0_spcoes5"
+# save(drpm1,file=paste0("../data/Federico/",model_name,".Rdata"))
 ```
 
+=============================
+real new complete tests
+=============================
+_drpm_eta0_phi1_spcoes5_
+seed 725
+LPML = 3612.91277963648 
+WAIC = -7982.83537806802
+
+actually il best model forse era quello con eta0 cioè false, e phi1 cioè true
+mentre lì sopra avevo interpretato 0 come ... no ok era giusto
+Ma ci sta comunque testare anche gli altri, cioè
+
+_drpm_eta1_phi1_spcoes5_
+mah questa era l'ultima secondo il drpm models comparison quindi si può evitare
+o la faremo per ultima
+
+facciamo la seconda classificata piuttosto (E0P0A1) quindi
+_drpm_eta0_phi0_spcoes5_
+seed 124
+LPML = 3486.79593082633 
+WAIC = -7820.27001567447
+not very good, anche dai plot. Per ora è meglio il primo
+
+_drpm_eta1_phi0_spcoes5_
+
+
+
+====================
+old tests
+====================
 Fittig seriously, and on 30 weeks
 LPML = 1860.18778637473 
 WAIC = -4121.29141752817
@@ -233,10 +268,17 @@ cat("fitted size = ",size(drpm1$fitted),"\n")
 
 # Trace plots?
 ```{r}
+model_name = "drpm_eta0_phi1_spcoes5"
+load(paste0("../data/Federico/",model_name,".Rdata"))
+```
+
+
+```{r}
 sampled_station = floor(runif(1,1,105))
 cat("sampled_station =",sampled_station,"- that is station called",unique(df_wsc$IDStations)[sampled_station])
 sampled_station_name = unique(df_wsc$IDStations)[sampled_station]
 
+time_span_plot = c(1:20)
 ```
 
 ## alpha
@@ -249,7 +291,7 @@ dim(drpm1$alpha)
 ```
 ```{r}
 if(len(size(drpm1$alpha))==2){ # alpha is not unit dependent
-	for (time in time_span){
+	for (time in time_span_plot){
 	# cat("Week",time,"- alpha mean value =",mean(drpm1$alpha[,time]),"\n")
 	plot(drpm1$alpha[,time],type="l",
 		 main=bquote("Trace plot of " * alpha[.(time)] 
@@ -260,7 +302,7 @@ if(len(size(drpm1$alpha))==2){ # alpha is not unit dependent
 }
 
 if(len(size(drpm1$alpha))==3){ # alpha is unit dependent 
-	for (time in time_span){
+	for (time in time_span_plot){
 	plot(drpm1$alpha[time,sampled_station,],type="l",
 		 main=bquote("Trace plot of " * alpha[.(time)] * " - station" * .(sampled_station_name)),
 		 xlab = "MCMC iterations",ylab="values")
@@ -274,7 +316,7 @@ There are MCMC with time and with stations.
 dim(drpm1$Si)
 ```
 ```{r}
-for (time in time_span){
+for (time in time_span_plot){
 	plot(drpm1$Si[time,sampled_station,],type="l",
 		 main=bquote("Trace plot of partition "*rho* " at week " * .(time) * 
 		 				" - station " * .(sampled_station_name)),
@@ -292,13 +334,13 @@ Same as Si, there are MCMC with time and with stations.
 dim(drpm1$mu)
 ```
 ```{r}
-for (time in time_span){
+for (time in time_span_plot){
 	plot(drpm1$mu[time,sampled_station,],type="l",
 		 main=bquote("Trace plot of " * mu * " at week " * .(time) * 
 		 				" - station " * .(sampled_station_name)),
 		 xlab = "MCMC iterations",ylab="values")
 }
-for (time in time_span){
+for (time in time_span_plot){
 	par(mar=c(4,4,3,2))
 	acf(drpm1$mu[time,sampled_station,],main=bquote("ACF plot of " * mu * " at week " * .(time) * 
 		 				" - station " * .(sampled_station_name)))
@@ -311,13 +353,13 @@ Same as mu and Si
 dim(drpm1$sig2)
 ```
 ```{r}
-for (time in time_span){
+for (time in time_span_plot){
 	plot(drpm1$sig2[time,sampled_station,],type="l",
 		 main=bquote("Trace plot of "* sigma^2 * " at week " * .(time) * 
 		 				" - station " * .(sampled_station_name)),
 		 xlab = "MCMC iterations",ylab="values")
 }
-for (time in time_span){
+for (time in time_span_plot){
 	par(mar=c(4,4,3,2))
 	acf(drpm1$sig2[time,sampled_station,],main=bquote("ACF plot of " * sigma^2 * " at week " * .(time) * 
 		 				" - station " * .(sampled_station_name)))
@@ -330,12 +372,12 @@ MCMC for each time, one for all stations.
 dim(drpm1$theta)
 ```
 ```{r}
-for (time in time_span){
+for (time in time_span_plot){
 	plot(drpm1$theta[,time],type="l",
 		 main=bquote("Trace plot of " * theta * " at week "*.(time)),
 		 xlab = "MCMC iterations",ylab="values")
 }
-for (time in time_span){
+for (time in time_span_plot){
 	par(mar=c(4,4,3,2))
 	acf(drpm1$theta[,time],main=bquote("ACF plot of " * theta * " at week "*.(time)))
 }
@@ -348,7 +390,7 @@ MCMC for each time, one for each station.
 dim(drpm1$tau2)
 ```
 ```{r}
-for (time in time_span){
+for (time in time_span_plot){
 	plot(drpm1$tau2[,time],type="l",
 		 main=bquote("Trace plot of " * tau^2 * " at week "*.(time)),
 		 xlab = "MCMC iterations",ylab="values")	
@@ -403,14 +445,20 @@ plot(drpm1$lam2[,1],type="l",
 ```
 
 
-
 # Map cluster plots
+```{r}
+# loss = "binder"
+loss = "VI.lb"
+# loss = "VI"
+```
+
+
 ## dataframe for clusters
 ```{r,warning=FALSE}
 df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
 for(time in time_span){
 
-	salso_out <- salso(t(drpm1$Si[time,,]),loss="binder")
+	salso_out <- salso(t(drpm1$Si[time,,]),loss=loss)
 	
 	df_temp = data.frame(
 		Longitude = sites$longitude,
@@ -427,19 +475,18 @@ for(time in time_span){
 	# n_clusters = max(clusters_now)
 	n_clusters = unique(clusters_now)
 	ycurrent = y[,paste0("w",time)]
-	cat(crayon::red("Time",time,"\n"))
-	for (cl in n_clusters){
-		cat("Cluster",cl,"- size",length(ycurrent[which(clusters_now==cl)]),
-			"- mean",mean(ycurrent[which(clusters_now==cl)]),"\n")
-			
-	}
+	cat(crayon::red("Time",time,"- #clusters =",length(unique(clusters_now)),"\n"))
+	# for (cl in n_clusters){
+		# cat("Cluster",cl,"- size",length(ycurrent[which(clusters_now==cl)]),
+			# "- mean",mean(ycurrent[which(clusters_now==cl)]),"\n")
+	# }
 }
 ```
 
 
 
 ## ARI plot
-```{r}
+```{r,wanring=F}
 library(mclust)
 ##########################
 FIT = drpm1 # your fit
@@ -450,171 +497,60 @@ LEN = max(time_span)
 ARImats <- matrix(NA, nrow=LEN, ncol=LEN)
 rho_ARI <- list()
 for(k in 1:LEN){
-	rho_ARI[[k]] <- salso(t(FIT$Si[k,,]), loss="binder") # adjust with your fit $Si dimension
+	rho_ARI[[k]] <- salso(t(FIT$Si[k,,]), loss=loss) # adjust with your fit $Si dimension
 }
 for(k in 1: LEN){
 	for(kk in 1: LEN){
 		ARImats[k,kk] <- adjustedRandIndex(rho_ARI[[k]], rho_ARI[[kk]])
 	}
 }
-cols_ARI = colora(60,56,0)
+hist(ARImats)
+```
+
+Negative ARI says that the agreement is less than what is expected from a random result. 
+This means the results are 'orthogonal' or 'complementary' to some extend.
+
+
+```{r,wanring=F}
+# pdf(paste0("./figures/Federico/LaggedARI_",model_name,".pdf"), height=8, width=10)
+ncols_ari = 80
+cols_ARI = colora(ncols_ari,79,0)
 # or see ?designer.colors for colors
 library(fields)
-image.plot(ARImats, main="Lagged ARI values",axes=FALSE,col=rev(cols_ARI))
+image.plot(ARImats,
+		   main=paste0("Lagged ARI values - model ",model_name),axes=FALSE,col=cols_ARI,
+		   breaks=seq(-0.5,1,length.out=ncols_ari+1))
 mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
-mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
+mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.8)
+# dev.off()
 ```
 
 
 # Clusters distribution
 
 ## cols choice
-```{r}
-# choose wisely
-# this will be from now on the color palette decision
-cols = colora(12,"div")[-2] # togliamo il giallino
-# cols= colora(12,111)
-```
+now it's inside include clusters functions
 
 
-## continuos
+## plot functions
 ```{r,warning=FALSE}
 clusters_old = NULL
-for(time in time_span){
+for(time in time_span[1:2]){
 
 	df_cluster_cut = df_cluster[df_cluster$Time==time,]
 	clusters_now = df_cluster_cut$clusters
 	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
 	df_cluster_cut$clusters = clusters_now
-	
-	p = get_hist_continuos_plot(df_cluster_cut,verbose=0)
-	
-	print(p)
-	clusters_old = clusters_now
-} # end for(time in eccc)
-```
 
-## histogram v1 - no fill
-```{r,warning=FALSE}
-clusters_old = NULL
-for(time in time_span){
-
-	df_cluster_cut = df_cluster[df_cluster$Time==time,]
-	clusters_now = df_cluster_cut$clusters
-	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
-	df_cluster_cut$clusters = clusters_now
-	
-	p = get_hist_color_plot(df_cluster_cut)
-	
-	print(p)
-	clusters_old = clusters_now
-} # end for(time in eccc)
-```
-
-## histogram v2 - fill
-```{r,warning=FALSE}
-clusters_old = NULL
-for(time in time_span){
-
-	df_cluster_cut = df_cluster[df_cluster$Time==time,]
-	clusters_now = df_cluster_cut$clusters
-	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
-	df_cluster_cut$clusters = clusters_now
-	
-	p = get_hist_fill_plot(df_cluster_cut)
-	
-	print(p)
-	clusters_old = clusters_now
-} # end for(time in eccc)
-```
-
-## boxplot
-```{r}
-clusters_old = NULL
-for(time in time_span){
-
-	df_cluster_cut = df_cluster[df_cluster$Time==time,]
-	clusters_now = df_cluster_cut$clusters
-	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
-	df_cluster_cut$clusters = clusters_now
-	
+	# p = get_hist_continuos_plot(df_cluster_cut,verbose=0)
+	# p = get_hist_color_plot(df_cluster_cut)
+	# p = get_hist_fill_plot(df_cluster_cut)
 	p = get_boxplot_plot(df_cluster_cut)
-	
 	print(p)
+	# plot_graph_and_hist(df_cluster_cut)
+	
 	clusters_old = clusters_now
 } # end for(time in eccc)
-```
-
-```{r}
-# img_lombardy <- readPNG(paste0(start_folder,"plot functions/italia/cut.png"))
-DefaultPlot(add_bg=T)
-```
-
-
-
-# Plot for time 1
-```{r}
-df_cluster_cut = df_cluster[df_cluster$Time==time,]
-p  <-  DefaultPlot()+
-	geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude, color = factor(clusters)), size = 3)+
-	labs(title = "Cluster map")+
-		guides(color = guide_legend(title = "Clusters"))
-
-p
-```
-
-
-## add bg image
-background image of lombardy
-```{r}
-library(jpeg)
-library(png)
-# img <- readJPEG("./plot functions/italia/lombardia.JPG")
-img <- readPNG("./plot functions/italia/lombardia_cut.png")
-
-time=2
-df_cluster_cut = df_cluster[df_cluster$Time==time,]
-p  <-  DefaultPlot()+
-	geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
-										  color = factor(clusters)), size = 3)+
-	labs(title = "Cluster map")+
-	guides(color = guide_legend(title = "Clusters"))
-
-print(p)
-p  <-  DefaultPlot()+background_image(img)+
-	geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
-										  color = factor(clusters)), size = 3)+
-	labs(title = "Cluster map")+
-	guides(color = guide_legend(title = "Clusters"))
-
-print(p)
-
-```
-
-
-
-# Save png(s) for animation
-```{r}
-save_pngs = 0
-
-if(save_pngs==1){
-for( time in time_span){
-	df_cluster_cut = df_cluster[df_cluster$Time==time,]
-	
-	p  <-  DefaultPlot()+
-		geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude, 
-											  color = factor(clusters)), size = 3)+
-		labs(title = "Cluster map")+
-		guides(color = guide_legend(title = "Clusters"))
-	
-	ggsave(
-	  paste0("cluster_plots/cluster_time-",time,".png"),
-	  plot = p
-	)
-}
-} else {
-	cat("Not saving pngs for now.")
-}
 ```
 
 
@@ -625,7 +561,7 @@ all the functions are in the include_clusters_function. Here is the code to plot
 ```{r}
 # cols chosen previously
 clusters_old = NULL
-for(time in time_span){
+for(time in time_span[1:10]){
 	cat(crayon::red("Time",time,"\n"))
 	
 	df_cluster_cut = df_cluster[df_cluster$Time==time,]
@@ -641,78 +577,93 @@ for(time in time_span){
 ```
 
 
-
+## new heat plot
 ```{r}
-# cols chosen previously
 clusters_old = NULL
-for(time in time_span){
+for(time in time_span[40:44]){
 	cat(crayon::red("Time",time,"\n"))
 	
 	df_cluster_cut = df_cluster[df_cluster$Time==time,]
 	clusters_now = df_cluster_cut$clusters
+	####### no mode correct now
 	# clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
+	# se fai heat plot non serve fare la mode correct
+	# perché la heat plot la usi per vedere anche i valori di pm10, non la coerenza temporale
+	# nei gruppi, che con la heat coloration si perde come visibilità (non so se è chiaro)
 	df_cluster_cut$clusters = clusters_now
 	
-	q = get_graph_plot(df_cluster_cut)
+	# meglio l'idea 1
+	cols = color_correct_clusters(df_cluster_cut,idea=1,verbose=0)
 	
-	print(q)
+	# q = get_graph_plot(df_cluster_cut,cols)
+	# print(q)
+	plot_graph_and_hist(df_cluster_cut,cols)
+	
 	clusters_old = clusters_now
+	
 }
 ```
-Forse possiamo fare insieme questa mappa con quella degli istogrammi sopra.
-Così ad ogni istante temporale, e poi nell'animazione, vediamo sia i cluster sia quanto sono diversi in termini di "densità".
 
-Del tipo
+
+# Gif creation
+
 ```{r}
-library(gridExtra)
-library(grDevices) # for png saving
-
+###################################
+# save images
+###################################
 clusters_old = NULL
 for(time in time_span){
+	cat(crayon::red("Time",time,"\n"))
 
-# GRAPH #######################
-cat(crayon::red("Time",time,"\n"))
-df_cluster_cut = df_cluster[df_cluster$Time==time,]
-clusters_now = df_cluster_cut$clusters
-clusters_now = mode_correct_clusters(clusters_old,clusters_now)
-df_cluster_cut$clusters = clusters_now
+	df_cluster_cut = df_cluster[df_cluster$Time==time,]
+	clusters_now = df_cluster_cut$clusters
+	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
+	df_cluster_cut$clusters = clusters_now
 
 	cur_num = sprintf("%02d", time)
-	png(filename=paste0("./cluster_plots/test/graph_plot_",cur_num,".png"), width=1000, height=600)
-	plot_graph_and_hist(df_cluster_cut)
+	# png(filename=paste0("./figures/Federico/",model_name,"-",cur_num,".png"),
+		# width=800, height=500,res=100)
+	# plot_graph_and_hist(df_cluster_cut)
+	q = get_graph_plot(df_cluster_cut)
+	print(q)
+	ggsave(file=paste0("./figures/Federico/",model_name,"-",cur_num,".png"),
+		   units="px",width=2000, height=1400, dpi=300)
+	
 	dev.off()
-	# ggsave(file=paste("./cluster_plots/test/graph_plot_",time,".png"), width=4, height=4, dpi=300)
 
 
 clusters_old = clusters_now
 }
-```
 
 
-
-# Gif creation in R test
-```{r}
+###################################
+# build gif
+###################################
 # Carica i pacchetti
 library(magick)
 library(animation)
+library(gifski)
+library(av)
 
 ## list file names and read in
-percorso = "./cluster_plots/test/"
+percorso = "./figures/Federico/"
 imgs <- list.files(path = percorso, pattern = ".png", full.names = TRUE)
 img_list <- lapply(imgs, image_read)
 
 ## join the images together
 img_joined <- image_join(img_list)
 
-## animate at 2 frames per second
-img_animated <- image_animate(img_joined, fps = 2)
+## animate at 1 frames per second. 1 to freely control the fps/framerate later
+img_animated <- image_animate(img_joined, fps = 1)
 
 ## view animated image
 # img_animated
 
 ## save to disk
-image_write(image = img_animated,
-            path = paste0(percorso,"test.gif"))
+# delay is the inverse of framerate
+frammeratte = 2
+image_write_gif(image = img_animated, path = paste0(percorso,model_name,".gif"),delay=1/frammeratte)
+image_write_video(image = img_animated, path = paste0(percorso,model_name,".mp4"),framerate=frammeratte)
 ```
 
 

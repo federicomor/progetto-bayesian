@@ -231,7 +231,7 @@ for(h in models_vector){
 
 
 ```{r}
-save(models.out,file="../data/drpm_comparison.Rdata")
+save(models.out,file="../data/Federico/drpm_comparison.Rdata")
 ```
 
 # Trace plots
@@ -339,6 +339,11 @@ mtext(bquote("Trace plots of "*theta* " at time " * .(time))
 WAIC and LPML values.
 
 ```{r}
+load("../data/Federico/drpm_comparison.Rdata")
+```
+
+
+```{r}
 # Create table that contains the WAIC and LPML values
 lpml <-  waic <- numeric()
 amn <- matrix(NA, nrow = length(models.out), ncol=ncol(y_fit))
@@ -346,7 +351,7 @@ for(j in 1:length(models.out)){
 	lpml[j] <- models.out[[j]]$lpml
   # lpmlr[j] <- lpml.robust(models.out[[j]]$llike)
 	waic[j] <- models.out[[j]]$waic
-	amn[j,] <- round(apply(models.out[[j]]$alpha,2,mean),2)
+	# amn[j,] <- round(apply(models.out[[j]]$alpha,2,mean),2)
 }
 res <- data.frame(names=names(models.out), lpml=lpml, waic=waic)
 res[order(res[,2],decreasing = T),]
@@ -424,7 +429,7 @@ ord2 = order_best
 
 
 ```{r,warning=FALSE}
-# pdf(paste0("./figures/Fed/LaggedARI_comparison.pdf"), height=7, width=13)
+# pdf(paste0("./figures/Federico/LaggedARI_comparison.pdf"), height=7, width=13)
 par(mfrow=c(2,4),mar=c(2,2,2,4), mgp=c(1.5,0.5,0),oma=c(0,0,2,0))
 	for(h in ord2){
 		m.n <- as.numeric(strsplit(models_vector[h], "")[[1]][c(2,4,6)])

@@ -142,71 +142,71 @@ mode_correct_clusters = function(cl_old, cl_cur,verbose=0,very_verbose=0){ # and
 }
 cat(crayon::red("- mode_correct_clusters(cl_old, cl_cur)\n"))
 
-cat(crayon::blue("Test sets\n"))
-### test sets
-
-cat(crayon::blue("- Ettore test\n"))
-cl_old = c(1,2,1,1,2,2,3,3)
-cl_cur = c(1,1,2,2,1,1,3,3)
-check_ = c(2,2,1,1,2,2,3,3)
-mode_correct_clusters(cl_old,cl_cur,verbose=1)
-# mode_correct_clusters(cl_old,cl_cur) == check_
-
-cat(crayon::blue("- No change case\n"))
-cl_old = c(1,2,1,1,2,2,3,3)
-cl_cur = c(1,2,1,1,2,2,3,3)
-mode_correct_clusters(cl_old,cl_cur,verbose=1)
-
-
-cat(crayon::blue("- Tie case\n"))
-# tie case
-#   units  1 2 3 4 5 6 7 8 9 10
-cl_old = c(1,2,1,1,2,1,3,3)
-cl_cur = c(1,1,2,2,1,1,3,3)
-# ora (pareggio) vedere sia il cluster 1 è entrato in 2 ma anche viceversa
-check1 = c(2,2,1,1,2,2,3,3)
-check2 = c(1,1,2,2,1,1,3,3)
-mode_correct_clusters(cl_old,cl_cur,verbose=1)
-# mode_correct_clusters(cl_old,cl_cur) == check1
-# mode_correct_clusters(cl_old,cl_cur) == check2
-
-cat(crayon::blue("- Double tie case\n"))
-# tie case double
-cl_old = c(1,2,1,1,2,1,3,3,4,4,5,5)
-cl_cur = c(1,1,2,2,1,1,3,3,4,5,4,5)
-# ora (pareggio) vedere sia il cluster 1 è entrato in 2 ma anche viceversa
-# e idem per cluster 4 e 5. Vediamo cosa ritorna
-mode_correct_clusters(cl_old,cl_cur,verbose=1)
-
-cat(crayon::blue("- disappeared clusters test\n"))
-# case of collapsed clusters
-cl_old = c(1,1,1,2,2,2,1,1,3,4,4,4,4)
-cl_cur = c(1,1,1,1,1,1,1,1,1,2,2,2,2) 
-mode_correct_clusters(cl_old,cl_cur,verbose=1) # perfect!
-# it stores the past value, 4, skipping the others; at least, that was my desired beahaviour
-
-cat(crayon::blue("- orphan value test\n"))
-# case of orphan value which was in a bigger cluster
-cl_old = c(1,1,1,1,1,2,2,2,2,2,2,2)
-cl_cur = c(2,2,2,2,2,1,1,1,1,1,1,3)
-mode_correct_clusters(cl_old,cl_cur,verbose=1)
-
-cat(crayon::blue("- complex case of cl_old\n"))
-cl_old = c(2,2,2,2,2,2,2,2,2,2,2,2)
-cl_cur = c(2,2,2,2,2,1,1,1,1,1,1,3)
-mode_correct_clusters(cl_old,cl_cur,verbose=1)
-
-
-cat(crayon::blue("- appeared clusters test\n"))
-cl_old = c(6,6,6,6,5,5,5,5,3,3,3,3,3)
-cl_cur = c(1,1,1,2,2,2,3,3,3,4,4,4,5)
-mode_correct_clusters(cl_old,cl_cur,verbose=1)
-
-
-cat(crayon::blue("- another edge case?\n"))
-cl_old = c(1,2,2,3,2,3,3,3,4,3,3,3,3,3,3,3,1,3,1,1,1,3,5,3,3,6,3,3,2,2,2,2,7,2,2,2,8,8,5,9,3,5,5,2,2,5,2,8,3,2,3,1,3,3,3,8,8,5,2,2,3,3,3,8,1,1,1,2,1,2,1,8,2,1,2,2,8,2,2,1,5,3,1,1,3,5,8,3,2,8,3,10,2,2,2,2,2,2,2,5,10,1,1,2,5)
-cl_cur = c(1,8,8,9,2,3,3,3,8,3,8,3,3,3,3,3,3,3,1,4,1,3,5,3,3,3,3,3,2,8,8,2,3,2,8,6,8,8,5,3,3,5,5,2,2,7,2,8,3,2,3,1,3,1,3,8,8,7,2,2,3,3,8,8,1,1,1,2,4,2,1,8,2,1,2,2,10,2,2,1,7,8,3,3,8,7,8,8,2,8,8,10,2,2,2,2,2,2,2,7,10,9,3,2,7)
-mode_correct_clusters(cl_old,cl_cur,very_verbose = 0,verbose=1)
+# cat(crayon::blue("Test sets\n"))
+# ### test sets
+# 
+# cat(crayon::blue("- Ettore test\n"))
+# cl_old = c(1,2,1,1,2,2,3,3)
+# cl_cur = c(1,1,2,2,1,1,3,3)
+# check_ = c(2,2,1,1,2,2,3,3)
+# mode_correct_clusters(cl_old,cl_cur,verbose=1)
+# # mode_correct_clusters(cl_old,cl_cur) == check_
+# 
+# cat(crayon::blue("- No change case\n"))
+# cl_old = c(1,2,1,1,2,2,3,3)
+# cl_cur = c(1,2,1,1,2,2,3,3)
+# mode_correct_clusters(cl_old,cl_cur,verbose=1)
+# 
+# 
+# cat(crayon::blue("- Tie case\n"))
+# # tie case
+# #   units  1 2 3 4 5 6 7 8 9 10
+# cl_old = c(1,2,1,1,2,1,3,3)
+# cl_cur = c(1,1,2,2,1,1,3,3)
+# # ora (pareggio) vedere sia il cluster 1 è entrato in 2 ma anche viceversa
+# check1 = c(2,2,1,1,2,2,3,3)
+# check2 = c(1,1,2,2,1,1,3,3)
+# mode_correct_clusters(cl_old,cl_cur,verbose=1)
+# # mode_correct_clusters(cl_old,cl_cur) == check1
+# # mode_correct_clusters(cl_old,cl_cur) == check2
+# 
+# cat(crayon::blue("- Double tie case\n"))
+# # tie case double
+# cl_old = c(1,2,1,1,2,1,3,3,4,4,5,5)
+# cl_cur = c(1,1,2,2,1,1,3,3,4,5,4,5)
+# # ora (pareggio) vedere sia il cluster 1 è entrato in 2 ma anche viceversa
+# # e idem per cluster 4 e 5. Vediamo cosa ritorna
+# mode_correct_clusters(cl_old,cl_cur,verbose=1)
+# 
+# cat(crayon::blue("- disappeared clusters test\n"))
+# # case of collapsed clusters
+# cl_old = c(1,1,1,2,2,2,1,1,3,4,4,4,4)
+# cl_cur = c(1,1,1,1,1,1,1,1,1,2,2,2,2) 
+# mode_correct_clusters(cl_old,cl_cur,verbose=1) # perfect!
+# # it stores the past value, 4, skipping the others; at least, that was my desired beahaviour
+# 
+# cat(crayon::blue("- orphan value test\n"))
+# # case of orphan value which was in a bigger cluster
+# cl_old = c(1,1,1,1,1,2,2,2,2,2,2,2)
+# cl_cur = c(2,2,2,2,2,1,1,1,1,1,1,3)
+# mode_correct_clusters(cl_old,cl_cur,verbose=1)
+# 
+# cat(crayon::blue("- complex case of cl_old\n"))
+# cl_old = c(2,2,2,2,2,2,2,2,2,2,2,2)
+# cl_cur = c(2,2,2,2,2,1,1,1,1,1,1,3)
+# mode_correct_clusters(cl_old,cl_cur,verbose=1)
+# 
+# 
+# cat(crayon::blue("- appeared clusters test\n"))
+# cl_old = c(6,6,6,6,5,5,5,5,3,3,3,3,3)
+# cl_cur = c(1,1,1,2,2,2,3,3,3,4,4,4,5)
+# mode_correct_clusters(cl_old,cl_cur,verbose=1)
+# 
+# 
+# cat(crayon::blue("- another edge case?\n"))
+# cl_old = c(1,2,2,3,2,3,3,3,4,3,3,3,3,3,3,3,1,3,1,1,1,3,5,3,3,6,3,3,2,2,2,2,7,2,2,2,8,8,5,9,3,5,5,2,2,5,2,8,3,2,3,1,3,3,3,8,8,5,2,2,3,3,3,8,1,1,1,2,1,2,1,8,2,1,2,2,8,2,2,1,5,3,1,1,3,5,8,3,2,8,3,10,2,2,2,2,2,2,2,5,10,1,1,2,5)
+# cl_cur = c(1,8,8,9,2,3,3,3,8,3,8,3,3,3,3,3,3,3,1,4,1,3,5,3,3,3,3,3,2,8,8,2,3,2,8,6,8,8,5,3,3,5,5,2,2,7,2,8,3,2,3,1,3,1,3,8,8,7,2,2,3,3,8,8,1,1,1,2,4,2,1,8,2,1,2,2,10,2,2,1,7,8,3,3,8,7,8,8,2,8,8,10,2,2,2,2,2,2,2,7,10,9,3,2,7)
+# mode_correct_clusters(cl_old,cl_cur,very_verbose = 0,verbose=1)
 
 ################################################################################
 ### graph plot
@@ -394,10 +394,11 @@ cat(crayon::bold("plotter library required!\n"))
 
 
 
-
+cols_default=colora(12,"div",0)[-2]
 xlims = c(-2.5,1.5)
 cat(crayon::red("- get_graph_plot(df_cluster_cut)\n"))
-get_graph_plot = function(df_cluster_cut,titolo=paste("Cluster map - time",time)){ # already mode_corrected
+get_graph_plot = function(df_cluster_cut,cols=cols_default,
+						  titolo=paste("Cluster map - time",time)){ # already mode_corrected
 	clusters_now = df_cluster_cut$clusters
 	edges_list = assemble_edges_list(clusters_now)
 	
@@ -426,6 +427,80 @@ get_graph_plot = function(df_cluster_cut,titolo=paste("Cluster map - time",time)
 		scale_colour_identity(guide="legend",labels=paste0("cl",actual_clusters),
 							  breaks=cols[actual_clusters])
 }
+
+
+# needs palette from cold to warm
+cat(crayon::red("- color_correct_clusters(df_cluster_cut)\n"))
+color_correct_clusters = function(df_cluster_cut,idea=1,verbose=0) {
+	clusters_now = df_cluster_cut$clusters
+	palette_heat = 111 # o 77 per ora le migliori
+	
+	media = numeric()
+	ycurrent = y[,paste0("w",time)]
+	cls_labels = unique(clusters_now)
+	for (i in 1:length(cls_labels)) {
+		media[i] = mean(ycurrent[which(clusters_now==cls_labels[i])])
+	}
+	res <- data.frame(names=cls_labels, media=media)
+	ord = order(res[,2],decreasing = T)
+	# res[ord,]
+	# cat("order =",ord,"\n")
+	if(verbose==1){
+	for (i in 1:length(cls_labels)) {
+		media[i] = mean(ycurrent[which(clusters_now==cls_labels[i])])
+		cat(paste0("Media cl",cls_labels[i], " = ",round(media[i],4)
+				   ," [pos ",which(ord==cls_labels[i]),"]\n"))
+	}
+	}
+		# clusters_now_cols_ord = clusters_now
+	# for (cl in cls_labels){
+	# 	clusters_now_cols_ord[which(clusters_now_cols_ord==cl)] = letters[which(ord==cl)]
+	# }
+	# clusters_now_cols_ord_num = rep(0,length(clusters_now_cols_ord))
+	# for (i in 1:length(clusters_now_cols_ord)){
+	# 	clusters_now_cols_ord_num[i] = which(letters==clusters_now_cols_ord[i])
+	# }
+	# cat(clusters_now,"\n")
+	# cat(clusters_now_cols_ord_num,"\n")
+	if(idea==1){
+	########### original idea
+	max_overall_clusters = 8
+	cols_original = colora(max_overall_clusters,palette_heat,0)
+
+	cols = cols_original
+	for (i in 1:length(cls_labels)){
+		cols[ord[i]] = cols_original[i] # origial idea
+		# 	# left: ord res
+		# 	#                right: ordine colori
+		# 	cols[6] = cols_original[1]
+		# 	cols[2] = cols_original[2]
+		# 	cols[3] = cols_original[3]
+		# 	cols[5] = cols_original[4]
+		# 	cols[4] = cols_original[5]
+		# 	cols[1] = cols_original[6]
+		# 	cols[7] = cols_original[7]
+	}
+	}
+	if(idea==2){
+	############ grid idea
+	a = min(-1,min(media)); b=max(1,max(media));
+	nint = 500 
+	griglia = seq(a,b,length.out = nint)
+	
+	cols_original = rev(colora(nint,palette_heat,0)) # if grid idea
+	cols = cols_original
+	for (i in 1:length(cls_labels)){
+		cols[i] = cols_original[which.min(abs(griglia-media[i]))] # grid idea
+		# al cluster i va il colore in posizione più vicino al suo valore di media nella griglia
+		if(verbose==1){
+		cat("cluster",i,"pos griglia",which.min(abs(griglia-media[i])),"\n")
+		}
+	}
+	}
+	return(cols)
+}
+
+
 
 
 cat(crayon::red("- get_hist_fill_plot(df_cluster_cut)\n"))
@@ -605,10 +680,11 @@ get_boxplot_plot = function(df_cluster_cut,titolo=paste("Time",time)){
 }
 
 
+library(gridExtra)
 cat(crayon::red("- plot_graph_and_hist(df_cluster_cut)\n"))
-plot_graph_and_hist = function(df_cluster_cut,titolo=paste("Time",time)){
+plot_graph_and_hist = function(df_cluster_cut,cols=cols_default,titolo=paste("Time",time)){
 # GRAPH #######################
-q_graph = get_graph_plot(df_cluster_cut)
+q_graph = get_graph_plot(df_cluster_cut,cols)
 # HIST #######################
 # by hand as we have to remove the legend here, while the function produces it
 # n_clusters = max(clusters_now)
@@ -616,26 +692,41 @@ n_clusters = unique(clusters_now)
 ycurrent = y[,paste0("w",time)]
 clust_vals = clusters_now[1:105]
 df_temp = data.frame(clusters=clust_vals,ycurrent=ycurrent)
-p = ggplot(df_temp, aes(ycurrent,
-						fill = cols[clust_vals] # case FILL
-						# color = cols[clust_vals] # case COLOR
+
+
+########## HIST
+# p = ggplot(df_temp, aes(ycurrent,
+# 						fill = cols[clust_vals] # case FILL
+# 						# color = cols[clust_vals] # case COLOR
+# ))+
+# 	geom_histogram(alpha=0.5,
+# 				   # fill="white", # case COLOR
+# 				   position="identity")+
+# 	ggtitle(titolo)+
+# 	# guides(color = guide_legend(title = "Clusters"))+
+# 	theme_bw()+
+# 	theme(legend.position = "none")+
+# 	# scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
+# 						 # breaks=cols[1:max(clust_vals)])+
+# 	scale_fill_identity(guide="legend",labels=paste0("cl",n_clusters), # case FILL
+# 	# scale_color_identity(guide="legend",labels=paste0("cl",n_clusters), # case COLOR
+# 						 breaks=cols[n_clusters])+
+# 	xlab("log(PM10) values")+
+# 	xlim(xlims)
+# p
+
+############ BOXPLOT
+p = ggplot(df_temp, aes(as.factor(clusters),ycurrent,
+						fill = cols[clusters]
+						# color = cols[clust_vals]
 ))+
-	geom_histogram(alpha=0.5,
-				   # fill="white", # case COLOR
-				   position="identity")+ 
-	ggtitle(titolo)+
-	# guides(color = guide_legend(title = "Clusters"))+
+	geom_boxplot(position = "identity")+
 	theme_bw()+
 	theme(legend.position = "none")+
-	# scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
-						 # breaks=cols[1:max(clust_vals)])+
-	scale_fill_identity(guide="legend",labels=paste0("cl",n_clusters), # case FILL
-	# scale_color_identity(guide="legend",labels=paste0("cl",n_clusters), # case COLOR
-						 breaks=cols[n_clusters])+
-	xlab("log(PM10) values")+
-	xlim(c(0,5))
-# xlim(extrema(df_weekly$AQ_pm10))
-p_hist = p
+	scale_fill_identity(guide="legend",labels=paste0("cl",n_clusters),
+						breaks=cols[n_clusters])+
+	ylab("log(PM10) values")+
+	ylim(xlims)
 
-grid.arrange(q_graph, p_hist, ncol=2,widths=c(1.5,1))
+grid.arrange(q_graph, p, ncol=2,widths=c(1.8,1))
 }
