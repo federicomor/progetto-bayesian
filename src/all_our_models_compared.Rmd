@@ -91,12 +91,15 @@ cat(crayon::red("\nLPML =",drpm_model$lpml, "\nWAIC =",drpm_model$waic))
 
 
 After some tuning this salso configuration should be the best.
+Ie the one with binder loss with a=1.2, while the default a=1 was not so good. 
+Increasing a (max is a=2) means that we penalize more the case where units get wrongly divided in separate clusters if instead should have been together (like a strict false negative, or something similar, contrasint).
 ```{r,warning=F}
 df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
 for(time in time_span){
 
 	salso_out <- salso(t(drpm_model$Si[time,,]),
-					   loss=binder(),
+					   # loss=binder(),
+					   loss=binder(a=1.2), # chosen one, better
 					   maxNClusters = 6
 					   )
 	
@@ -133,7 +136,8 @@ ARImats <- matrix(NA, nrow=LEN, ncol=LEN)
 rho_ARI <- list()
 for(k in 1:LEN){
 	rho_ARI[[k]] <- salso(t(FIT$Si[k,,]),
-						  loss=binder(),
+						  # loss=binder(),
+						  loss=binder(a=1.2), # chosen one, better
 						  maxNClusters = 6
 						  ) # adjust with your fit characteristics
 }
@@ -146,17 +150,13 @@ for(k in 1: LEN){
 
 ## ARI plot
 ```{r}
-titolo = "binder()-max6"
+titolo = "drpm"
 # pdf(paste0("./figures/Federico/final_drpm/LaggedARI_",titolo,".pdf"), height=8, width=10)
 ncols_ari = 100
-# if (min(ARImats)<0){
-	cols_ARI = colora(ncols_ari,79,0)
-	brks = seq(-1,1,length.out=ncols_ari+1)
-# } else {
-# 	cols_ARI = colora(ncols_ari,56,0)
-# 	cols_ARI = rev(cols_ARI) # must be ordered from cold to warm
-# 	brks = seq(0,1,length.out=ncols_ari+1)
-# }
+cols_ARI = colora(ncols_ari,79,0)
+# cols_ARI = rev(cols_ARI)
+brks = seq(-1,1,length.out=ncols_ari+1)
+
 # or see ?designer.colors for colors
 library(fields)
 image.plot(ARImats,
@@ -171,7 +171,7 @@ mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, c
 
 ```{r}
 clusters_old = NULL
-for(time in time_span[34:45]){
+for(time in time_span[44:48]){
 	cat(crayon::red("Time",time,"\n"))
 	
 	df_cluster_cut = df_cluster[df_cluster$Time==time,]
@@ -197,7 +197,8 @@ for(time in time_span[34:45]){
 
 ## gif
 ```{r}
-percorso = "./figures/Federico/final_drpm/"
+output_name = "binder 1p2"
+percorso = paste0("./figures/Federico/final_drpm/",output_name,"/")
 ###################################
 # save images
 ###################################
@@ -219,7 +220,7 @@ for(time in time_span){
 		   # units="px",width=2000, height=1400, dpi=300)
 	
 	p = plot_graph_and_hist(df_cluster_cut,cols)
-	ggsave(file=paste0(percorso,"drpm-graphboxplot-",cur_num,".png"),plot=p,
+	ggsave(file=paste0(percorso,output_name,"-",cur_num,".png"),plot=p,
 		   units="px",width=2500, height=1400, dpi=300)
 	
 	dev.off()
@@ -254,9 +255,11 @@ img_animated <- image_animate(img_joined, fps = 1)
 ## save to disk
 # delay is the inverse of framerate
 frammeratte = 2
-image_write_gif(image = img_animated, path = paste0(percorso,model_name,".gif"),delay=1/frammeratte)
-image_write_video(image = img_animated, path = paste0(percorso,model_name,".mp4"),framerate=frammeratte)
+image_write_gif(image = img_animated, path = paste0(percorso,output_name,".gif"),delay=1/frammeratte)
+image_write_video(image = img_animated, path = paste0(percorso,output_name,".mp4"),framerate=frammeratte)
 ```
+
+
 
 #=======
 # ecc

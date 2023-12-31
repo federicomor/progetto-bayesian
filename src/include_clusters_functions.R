@@ -492,12 +492,17 @@ color_correct_clusters = function(df_cluster_cut,idea=1,verbose=0,max_overall_cl
 	cols = cols_original
 	# for (i in 1:length(cls_labels)){
 	for (i in order(media,decreasing = T)){
-		cols[i] = cols_original[which.min(abs(griglia-media[i]))] # grid idea
+		target_index = which.min(abs(griglia-media[i]))
+		cols[i] = cols_original[target_index] # grid idea
+		if(griglia[target_index]==1000) {
+			# cat(crayon::silver("Tied colors. Suggestion: increment nint\n"))
+			stop("Tied colors. Suggestion: increment nint\n")
+		}
 		# al cluster i va il colore in posizione più vicino al suo valore di media nella griglia
 		if(verbose==1){
-		cat("cluster",i,"pos griglia",which.min(abs(griglia-media[i])),"\n")
+		cat("cluster",i,"pos griglia",target_index,"\n")
 		}
-		griglia[which.min(abs(griglia-media[i])):nint] = 10000 # per rimuovere casi di pareggio colore
+		griglia[target_index:nint] = 1000 # per rimuovere casi di pareggio colore
 	}
 	}
 	return(cols)
