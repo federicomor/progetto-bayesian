@@ -431,7 +431,7 @@ get_graph_plot = function(df_cluster_cut,cols=cols_default,
 
 # needs palette from cold to warm
 cat(crayon::red("- color_correct_clusters(df_cluster_cut)\n"))
-color_correct_clusters = function(df_cluster_cut,idea=1,verbose=0) {
+color_correct_clusters = function(df_cluster_cut,idea=1,verbose=0,max_overall_clusters=8,nint=12) {
 	clusters_now = df_cluster_cut$clusters
 	palette_heat = 111 # o 77 per ora le migliori
 	
@@ -464,7 +464,7 @@ color_correct_clusters = function(df_cluster_cut,idea=1,verbose=0) {
 	# cat(clusters_now_cols_ord_num,"\n")
 	if(idea==1){
 	########### original idea
-	max_overall_clusters = 8
+	max_overall_clusters = max_overall_clusters
 	cols_original = colora(max_overall_clusters,palette_heat,0)
 
 	cols = cols_original
@@ -483,18 +483,21 @@ color_correct_clusters = function(df_cluster_cut,idea=1,verbose=0) {
 	}
 	if(idea==2){
 	############ grid idea
-	a = min(-1,min(media)); b=max(1,max(media));
-	nint = 500 
+	# a = min(-1,min(media)); b=max(1,max(media));
+	a = -1.8; b=1.2;
+	nint = nint 
 	griglia = seq(a,b,length.out = nint)
 	
 	cols_original = rev(colora(nint,palette_heat,0)) # if grid idea
 	cols = cols_original
-	for (i in 1:length(cls_labels)){
+	# for (i in 1:length(cls_labels)){
+	for (i in order(media,decreasing = T)){
 		cols[i] = cols_original[which.min(abs(griglia-media[i]))] # grid idea
 		# al cluster i va il colore in posizione più vicino al suo valore di media nella griglia
 		if(verbose==1){
 		cat("cluster",i,"pos griglia",which.min(abs(griglia-media[i])),"\n")
 		}
+		griglia[which.min(abs(griglia-media[i])):nint] = 10000 # per rimuovere casi di pareggio colore
 	}
 	}
 	return(cols)
@@ -645,7 +648,7 @@ get_hist_continuos_plot = function(df_cluster_cut,titolo=paste("Time",time),verb
 
 
 cat(crayon::red("- get_boxplot_plot(df_cluster_cut)\n"))
-get_boxplot_plot = function(df_cluster_cut,titolo=paste("Time",time)){
+get_boxplot_plot = function(df_cluster_cut,cols=cols_default,titolo=paste("Time",time)){
 	clusters_now = df_cluster_cut$clusters # needs to be already mode corrected if wanted
 	# n_clusters = max(clusters_now)
 	n_clusters = unique(clusters_now)
@@ -684,7 +687,7 @@ library(gridExtra)
 cat(crayon::red("- plot_graph_and_hist(df_cluster_cut)\n"))
 plot_graph_and_hist = function(df_cluster_cut,cols=cols_default,titolo=paste("Time",time)){
 # GRAPH #######################
-q_graph = get_graph_plot(df_cluster_cut,cols)
+q_graph = get_graph_plot(df_cluster_cut,cols,titolo = titolo)
 # HIST #######################
 # by hand as we have to remove the legend here, while the function produces it
 # n_clusters = max(clusters_now)
@@ -726,7 +729,9 @@ p = ggplot(df_temp, aes(as.factor(clusters),ycurrent,
 	scale_fill_identity(guide="legend",labels=paste0("cl",n_clusters),
 						breaks=cols[n_clusters])+
 	ylab("log(PM10) values")+
+	xlab("clusters")+
 	ylim(xlims)
 
-grid.arrange(q_graph, p, ncol=2,widths=c(1.8,1))
+p = grid.arrange(q_graph, p, ncol=2,widths=c(1.8,1.2))
+# p = arrangeGrob(q_graph, p, ncol=2,widths=c(1.8,1.2))
 }

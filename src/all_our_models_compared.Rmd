@@ -1,0 +1,263 @@
+---
+title: "Untitled"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+Implement your model in this file when it is your final decision about it.
+
+# setup
+```{r,warning = FALSE}
+library(drpm)
+library(salso)
+
+# preparation
+source("include.R") # for having df_agri
+source("plot functions/plotter.R")
+```
+
+```{r}
+source("include_clusters_functions.R")
+```
+
+# y and sites
+needed for plots functions
+```{r}
+sites = data.frame(
+	longitude = unique(df_weekly$Longitude), 
+	latitude = unique(df_weekly$Latitude))
+
+std_sites = data.frame(
+	longitude = unique(df_wsc$Longitude), 
+	latitude = unique(df_wsc$Latitude))
+
+stations = unique(df_wsc$IDStations)
+y=data.frame()
+
+for(st in stations){
+  y_we_pm10=cbind(as.data.frame(st),t(df_wsc[which(df_wsc$IDStations==st),"AQ_pm10"]))
+  y=rbind(y,y_we_pm10)
+}
+
+rownames(y) = NULL
+colnames(y)<- c("id",paste0("w", 1:53))
+df_wsc
+y
+plot(sites)
+plot(std_sites)
+```
+
+
+```{r}
+cols = colora(105,56,show=F)
+chosen_variable_name = "AQ_pm10"
+trendYearStation_week <- function(file_name){
+	data_from_to = df_wsc
+	len_time = 54
+	chosen_variable = (data_from_to[,chosen_variable_name])
+	# Crea il grafico ggplot
+	station_trend <- ggplot(data_from_to,aes(x = week, 
+												 y = AQ_pm10,
+												 group=IDStations, 
+												 color = as.factor(IDStations))) +
+		geom_line(show.legend = FALSE) +
+		labs(x = "Stations", y = chosen_variable_name, title = "Year: 2018 all stations") +
+		ylim(range(na.omit(chosen_variable))) +
+		scale_color_manual(values = cols) +
+		theme_bw()+
+		theme(panel.grid = element_blank()) +
+		guides(color = guide_legend())+
+		labs(x="week")
+
+	len_time = (len_time%/%5)
+	return(trend_animator(file_name,station_trend, data_from_to$week,len_time))
+}
+trendYearStation_week("None")
+```
+
+
+#=======
+# DRPM 
+
+## description
+Model obtained collecting 1000 mcmc iterates, using niter=60000; nburn=20000; nthin=40.
+```{r}
+load("../data/Federico/drpm_eta0_phi1_spcoes5.Rdata")
+drpm_model = drpm1 # was called drpm1 inside the rdata
+time_span = c(1:53)
+cat(crayon::red("\nLPML =",drpm_model$lpml, "\nWAIC =",drpm_model$waic))
+```
+
+
+After some tuning this salso configuration should be the best.
+```{r,warning=F}
+df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
+for(time in time_span){
+
+	salso_out <- salso(t(drpm_model$Si[time,,]),
+					   loss=binder(),
+					   maxNClusters = 6
+					   )
+	
+	df_temp = data.frame(
+		Longitude = sites$longitude,
+		Latitude = sites$latitude,
+		clusters = salso_out[1:105]
+	)
+	df_temp$Time = rep(time,dim(df_temp)[1])
+	df_cluster = rbind(df_cluster,df_temp)
+	
+	# clusters log
+	clusters_now = df_temp$clusters
+	# n_clusters = max(clusters_now)
+	n_clusters = unique(clusters_now)
+	ycurrent = y[,paste0("w",time)]
+	cat(crayon::red("Time",time,"- #clusters =",length(unique(clusters_now)),"\n"))
+	# for (cl in n_clusters){
+		# cat("Cluster",cl,"- size",length(ycurrent[which(clusters_now==cl)]),
+			# "- mean",mean(ycurrent[which(clusters_now==cl)]),"\n")
+	# }
+}
+```
+
+```{r}
+library(mclust)
+##########################
+FIT = drpm_model # your fit
+LEN = max(time_span)
+##########################
+
+# build the ARI matrix
+ARImats <- matrix(NA, nrow=LEN, ncol=LEN)
+rho_ARI <- list()
+for(k in 1:LEN){
+	rho_ARI[[k]] <- salso(t(FIT$Si[k,,]),
+						  loss=binder(),
+						  maxNClusters = 6
+						  ) # adjust with your fit characteristics
+}
+for(k in 1: LEN){
+	for(kk in 1: LEN){
+		ARImats[k,kk] <- adjustedRandIndex(rho_ARI[[k]], rho_ARI[[kk]])
+	}
+}
+```
+
+## ARI plot
+```{r}
+titolo = "binder()-max6"
+# pdf(paste0("./figures/Federico/final_drpm/LaggedARI_",titolo,".pdf"), height=8, width=10)
+ncols_ari = 100
+# if (min(ARImats)<0){
+	cols_ARI = colora(ncols_ari,79,0)
+	brks = seq(-1,1,length.out=ncols_ari+1)
+# } else {
+# 	cols_ARI = colora(ncols_ari,56,0)
+# 	cols_ARI = rev(cols_ARI) # must be ordered from cold to warm
+# 	brks = seq(0,1,length.out=ncols_ari+1)
+# }
+# or see ?designer.colors for colors
+library(fields)
+image.plot(ARImats,
+		   main=paste0("Lagged ARI values - with ",titolo),axes=FALSE,col=cols_ARI,
+		   breaks=brks)
+mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
+mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.8)
+# dev.off()
+```
+
+## clusters
+
+```{r}
+clusters_old = NULL
+for(time in time_span[34:45]){
+	cat(crayon::red("Time",time,"\n"))
+	
+	df_cluster_cut = df_cluster[df_cluster$Time==time,]
+	clusters_now = df_cluster_cut$clusters
+	####### no mode correct if heat plot
+	# clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
+	# se fai heat plot non serve fare la mode correct
+	# perché la heat plot la usi per vedere anche i valori di pm10, non la coerenza temporale
+	# nei gruppi, che con la heat coloration si perde come visibilità (non so se è chiaro)
+	df_cluster_cut$clusters = clusters_now
+	
+	# meglio l'idea 1
+	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=10)
+	
+	# q = get_graph_plot(df_cluster_cut,cols)
+	# print(q)
+	p = plot_graph_and_hist(df_cluster_cut,cols)
+	
+	clusters_old = clusters_now
+}
+```
+
+
+## gif
+```{r}
+percorso = "./figures/Federico/final_drpm/"
+###################################
+# save images
+###################################
+clusters_old = NULL
+for(time in time_span){
+	cat(crayon::red("Time",time,"\n"))
+
+	df_cluster_cut = df_cluster[df_cluster$Time==time,]
+	clusters_now = df_cluster_cut$clusters
+	# clusters_now = mode_correct_clusters(clusters_old,clusters_now)
+	df_cluster_cut$clusters = clusters_now
+
+	cur_num = sprintf("%02d", time)
+	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=10)
+	
+	# q = get_graph_plot(df_cluster_cut,cols)
+	# print(q)
+	# ggsave(file=paste0(percorso,titolo,"-graph",cur_num,".png"),
+		   # units="px",width=2000, height=1400, dpi=300)
+	
+	p = plot_graph_and_hist(df_cluster_cut,cols)
+	ggsave(file=paste0(percorso,"drpm-graphboxplot-",cur_num,".png"),plot=p,
+		   units="px",width=2500, height=1400, dpi=300)
+	
+	dev.off()
+
+
+clusters_old = clusters_now
+}
+
+
+###################################
+# build gif
+###################################
+# Carica i pacchetti
+library(magick)
+library(animation)
+library(gifski)
+library(av)
+
+## list file names and read in
+imgs <- list.files(path = percorso, pattern = ".png", full.names = TRUE)
+img_list <- lapply(imgs, image_read)
+
+## join the images together
+img_joined <- image_join(img_list)
+
+## animate at 1 frames per second. 1 to freely control the fps/framerate later
+img_animated <- image_animate(img_joined, fps = 1)
+
+## view animated image
+# img_animated
+
+## save to disk
+# delay is the inverse of framerate
+frammeratte = 2
+image_write_gif(image = img_animated, path = paste0(percorso,model_name,".gif"),delay=1/frammeratte)
+image_write_video(image = img_animated, path = paste0(percorso,model_name,".mp4"),framerate=frammeratte)
+```
+
+#=======
+# ecc
+your models when done

@@ -38,7 +38,7 @@ The models without time means that time is not inside the model. Then we can "fo
 The models without space could consider to use space as a covariate? like the locations longitude and latitude as numerical covariates.
 
 # Report chapters idea
-Report here at https://it.overleaf.com/1492578642dhwhbxdgvtqm#8ccbc6
+Report here at https://it.overleaf.com/6577451481wwsqvrgxswjy#c9ce5d
 
 1. Data inspection + problem presentation
 	- 1.1. NAs treatment

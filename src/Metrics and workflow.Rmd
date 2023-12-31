@@ -92,7 +92,7 @@ $$\text{WAIC(model }j) = -2\cdot\text{LPPD(model }j) + (\text{penalization term}
 These indexes appears to be easily computable from the MCMC output, so in case your fit function does not provide them let me know and i will update this metric section.
 
 ```{r}
-load("../data/fit_test.Rdata") # just to have a working example
+load("../data/Federico/fit_test.Rdata") # just to have a working example
 FIT = fit_test # your fit, for example here is Federico's drpm
 # and i can get those values as this
 cat("lpml =",FIT$lpml,"\n")
@@ -142,7 +142,7 @@ We can build a matrix as we can compare rho(t) with rho(t+k) actually. With k=53
 ```{r}
 library(mclust)
 ##########################
-load("../data/fit_test.Rdata") # just to have a working example
+load("../data/Federico/fit_test.Rdata") # just to have a working example
 FIT = fit_test # your fit
 time_span = size(fit_test$Si)[1] # or your time span: 53 in the real case, lower for the quick tests
 LEN = max(time_span)

@@ -111,8 +111,8 @@ plot(std_sites)
 Burn in needs to be >= 10000. This after some long fits with low nburn (to see the whole behaviour of the MCMC) where there are some relevant changes even after 10000 iterations. So a lot of them needs to be discarded. I would set burn in to also 20000 maybe.
 
 ```{r}
-niter=60000; nburn=20000; nthin=40 # original
-# niter=50000; nburn=20000; nthin=30 # new one
+# niter=60000; nburn=20000; nthin=40 # original
+niter=60000; nburn=40000; nthin=10 # new one for more data
 nout <- (niter-nburn)/nthin
 cat(nout,"valid iterations\n")
 ```
@@ -140,8 +140,8 @@ drpm1 <- drpm_fit(y=y_fit,
 		
 		# parameters from the drpm models comparison:
 		# case E0P1A1
-         eta1_0=FALSE, 
-         phi1_0=FALSE,
+         eta1_0=FALSE,
+         phi1_0=TRUE,
          time_specific_alpha = TRUE,
 
          # modelPriors=c(0,100^2,1,1,1,1), # original default one
@@ -184,37 +184,42 @@ cat(crayon::red("\nLPML =",drpm1$lpml, "\nWAIC =",drpm1$waic))
 ```
 
 
+## model save
 ```{r}
-# model_name = "drpm_eta0_phi0_spcoes5"
+# model_name = "pm_eta0_phi1_spcoes5_run2"
 # save(drpm1,file=paste0("../data/Federico/",model_name,".Rdata"))
 ```
 
 =============================
-real new complete tests
+final result
 =============================
-_drpm_eta0_phi1_spcoes5_
+_1)_ drpm_eta0_phi1_spcoes5
+Lui è il migliore
 seed 725
 LPML = 3612.91277963648 
 WAIC = -7982.83537806802
 
-actually il best model forse era quello con eta0 cioè false, e phi1 cioè true
-mentre lì sopra avevo interpretato 0 come ... no ok era giusto
-Ma ci sta comunque testare anche gli altri, cioè
+--------------------------------------------
 
-_drpm_eta1_phi1_spcoes5_
-mah questa era l'ultima secondo il drpm models comparison quindi si può evitare
-o la faremo per ultima
+_1.1)_ drpm_eta0_phi1_spcoes5_run2
+seed 641
+LPML = 3485.84498476289 
+WAIC = -7995.67709001916
+run2 perchè maggiore burn in e minore thinning
 
-facciamo la seconda classificata piuttosto (E0P0A1) quindi
-_drpm_eta0_phi0_spcoes5_
+_2)_ drpm_eta0_phi0_spcoes5
 seed 124
 LPML = 3486.79593082633 
 WAIC = -7820.27001567447
-not very good, anche dai plot. Per ora è meglio il primo
 
-_drpm_eta1_phi0_spcoes5_
+_3)_ drpm_eta1_phi1_spcoes5
+seed 32
+LPML = 2504.73101147775 
+WAIC = -5299.37076656157
+pessimo, come confermato dal models comparison
 
-
+_4)_ drpm_eta1_phi0_spcoes5
+non vale farlo, era anche lui in basso nel model comparison
 
 ====================
 old tests
@@ -266,19 +271,20 @@ cat("fitted size = ",size(drpm1$fitted),"\n")
 
 
 
-# Trace plots?
+## model load
 ```{r}
 model_name = "drpm_eta0_phi1_spcoes5"
 load(paste0("../data/Federico/",model_name,".Rdata"))
 ```
 
 
+# Trace plots?
 ```{r}
 sampled_station = floor(runif(1,1,105))
 cat("sampled_station =",sampled_station,"- that is station called",unique(df_wsc$IDStations)[sampled_station])
 sampled_station_name = unique(df_wsc$IDStations)[sampled_station]
 
-time_span_plot = c(1:20)
+time_span_plot = c(1:53)
 ```
 
 ## alpha
@@ -446,10 +452,14 @@ plot(drpm1$lam2[,1],type="l",
 
 
 # Map cluster plots
+come loss o usare la classica binder ma con maxnclusters limitato, o provare con VI
 ```{r}
-# loss = "binder"
-loss = "VI.lb"
-# loss = "VI"
+# loss = binder(a=1) # plus maxNClusters = 6 or similar
+loss = "VI"
+# loss = "VI.lb" # generally not recomended, lo dicono gli autori di salso
+
+# loss = "NVI"
+# loss = "NID"
 ```
 
 
@@ -458,7 +468,12 @@ loss = "VI.lb"
 df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
 for(time in time_span){
 
-	salso_out <- salso(t(drpm1$Si[time,,]),loss=loss)
+	salso_out <- salso(t(drpm1$Si[time,,]),
+					   loss=binder(a=1),
+					   # loss="VI",
+					   # loss="VI.lb",
+					   maxNClusters = 6
+					   )
 	
 	df_temp = data.frame(
 		Longitude = sites$longitude,
@@ -497,7 +512,12 @@ LEN = max(time_span)
 ARImats <- matrix(NA, nrow=LEN, ncol=LEN)
 rho_ARI <- list()
 for(k in 1:LEN){
-	rho_ARI[[k]] <- salso(t(FIT$Si[k,,]), loss=loss) # adjust with your fit $Si dimension
+	rho_ARI[[k]] <- salso(t(FIT$Si[k,,]),
+						  loss=binder(a=1),
+						  # loss="VI",
+						  # loss="VI.lb",
+						  maxNClusters = 6
+						  ) # adjust with your fit $Si dimension
 }
 for(k in 1: LEN){
 	for(kk in 1: LEN){
@@ -513,13 +533,20 @@ This means the results are 'orthogonal' or 'complementary' to some extend.
 
 ```{r,wanring=F}
 # pdf(paste0("./figures/Federico/LaggedARI_",model_name,".pdf"), height=8, width=10)
-ncols_ari = 80
-cols_ARI = colora(ncols_ari,79,0)
+ncols_ari = 100
+if (min(ARImats)<0){
+	cols_ARI = colora(ncols_ari,79,0)
+	brks = seq(floor(min(ARImats)),1,length.out=ncols_ari+1)
+} else {
+	cols_ARI = colora(ncols_ari,56,0)
+	cols_ARI = rev(cols_ARI) # must be ordered from cold to warm
+	brks = seq(0,1,length.out=ncols_ari+1)
+}
 # or see ?designer.colors for colors
 library(fields)
 image.plot(ARImats,
 		   main=paste0("Lagged ARI values - model ",model_name),axes=FALSE,col=cols_ARI,
-		   breaks=seq(-0.5,1,length.out=ncols_ari+1))
+		   breaks=brks)
 mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
 mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.8)
 # dev.off()
@@ -535,17 +562,18 @@ now it's inside include clusters functions
 ## plot functions
 ```{r,warning=FALSE}
 clusters_old = NULL
-for(time in time_span[1:2]){
+for(time in time_span[1:10]){
 
 	df_cluster_cut = df_cluster[df_cluster$Time==time,]
 	clusters_now = df_cluster_cut$clusters
-	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
+	# clusters_now = mode_correct_clusters(clusters_old,clusters_now)
 	df_cluster_cut$clusters = clusters_now
 
 	# p = get_hist_continuos_plot(df_cluster_cut,verbose=0)
 	# p = get_hist_color_plot(df_cluster_cut)
 	# p = get_hist_fill_plot(df_cluster_cut)
-	p = get_boxplot_plot(df_cluster_cut)
+	cols = color_correct_clusters(df_cluster_cut,idea=1,verbose=0)
+	p = get_boxplot_plot(df_cluster_cut,cols)
 	print(p)
 	# plot_graph_and_hist(df_cluster_cut)
 	
@@ -561,7 +589,7 @@ all the functions are in the include_clusters_function. Here is the code to plot
 ```{r}
 # cols chosen previously
 clusters_old = NULL
-for(time in time_span[1:10]){
+for(time in time_span[20:40]){
 	cat(crayon::red("Time",time,"\n"))
 	
 	df_cluster_cut = df_cluster[df_cluster$Time==time,]
@@ -580,7 +608,7 @@ for(time in time_span[1:10]){
 ## new heat plot
 ```{r}
 clusters_old = NULL
-for(time in time_span[40:44]){
+for(time in time_span[1:10]){
 	cat(crayon::red("Time",time,"\n"))
 	
 	df_cluster_cut = df_cluster[df_cluster$Time==time,]
@@ -597,7 +625,7 @@ for(time in time_span[40:44]){
 	
 	# q = get_graph_plot(df_cluster_cut,cols)
 	# print(q)
-	plot_graph_and_hist(df_cluster_cut,cols)
+	p = plot_graph_and_hist(df_cluster_cut,cols)
 	
 	clusters_old = clusters_now
 	
@@ -608,6 +636,7 @@ for(time in time_span[40:44]){
 # Gif creation
 
 ```{r}
+percorso = "./figures/Federico/heat/"
 ###################################
 # save images
 ###################################
@@ -617,17 +646,20 @@ for(time in time_span){
 
 	df_cluster_cut = df_cluster[df_cluster$Time==time,]
 	clusters_now = df_cluster_cut$clusters
-	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
+	# clusters_now = mode_correct_clusters(clusters_old,clusters_now)
 	df_cluster_cut$clusters = clusters_now
 
 	cur_num = sprintf("%02d", time)
-	# png(filename=paste0("./figures/Federico/",model_name,"-",cur_num,".png"),
-		# width=800, height=500,res=100)
-	# plot_graph_and_hist(df_cluster_cut)
-	q = get_graph_plot(df_cluster_cut)
+	cols = color_correct_clusters(df_cluster_cut,idea=1,verbose=0)
+	
+	q = get_graph_plot(df_cluster_cut,cols)
 	print(q)
-	ggsave(file=paste0("./figures/Federico/",model_name,"-",cur_num,".png"),
+	ggsave(file=paste0(percorso,model_name,"-graph",cur_num,".png"),
 		   units="px",width=2000, height=1400, dpi=300)
+	
+	# p = plot_graph_and_hist(df_cluster_cut,cols)
+	# ggsave(file=paste0("./figures/Federico/",model_name,"-graph_boxplot",cur_num,".png"),plot=p,
+		   # units="px",width=2500, height=1400, dpi=300)
 	
 	dev.off()
 
@@ -646,7 +678,6 @@ library(gifski)
 library(av)
 
 ## list file names and read in
-percorso = "./figures/Federico/"
 imgs <- list.files(path = percorso, pattern = ".png", full.names = TRUE)
 img_list <- lapply(imgs, image_read)
 
