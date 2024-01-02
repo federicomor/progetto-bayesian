@@ -23,11 +23,15 @@ head(ordered_by_time)
 ```
 # SET COVARIATES
 ```{r}
-colnames(ordered_by_time)
+all_covar = colnames(ordered_by_time)
+
 covariates_to_exclude = c("X","IDStations",
 						  "Latitude","Longitude","Time","day","week"
 						  )
-covariates=ordered_by_time[,-which(colnames(ordered_by_time)%in% covariates_to_exclude)]
+EM_covariates_to_exclude =all_covar[grep("EM_",all_covar)]
+
+covariates_to_exclude = c(covariates_to_exclude,EM_covariates_to_exclude)
+covariates=ordered_by_time[,-which(all_covar%in% covariates_to_exclude)]
 
 head(covariates)
 ```
@@ -69,12 +73,14 @@ mod_linear<-ST.CARlinear(formula= formula,
 ```
 # AR
 ```{r}
+burnin = 2500
+n_sample = 40000
 mod_AR1<-ST.CARar(formula= formula,
 		   family = "gaussian",
 		   data=covariates,
 		   W= dist_matrix,
-		   burnin = 1000,
-		   n.sample = 25000,
+		   burnin = burnin,
+		   n.sample = n_sample,
 		   thin=10,  
 		   n.chains=1, 
 		   n.cores=1,
@@ -91,8 +97,8 @@ mod_AR2<-ST.CARar(formula= formula,
 		   family = "gaussian",
 		   data=covariates,
 		   W= dist_matrix,
-		   burnin = 1000,
-		   n.sample = 25000,
+		   burnin = burnin,
+		   n.sample = n_sample,
 		   thin=10,  
 		   n.chains=1, 
 		   n.cores=1,
@@ -109,21 +115,21 @@ mod_AR2<-ST.CARar(formula= formula,
 # ADAPTIVE AR sloooooooow
 2 hours (10,1000,1)
 ```{r}
-mod_ARadaptive<-ST.CARadaptive(formula= formula,
-		   family = "gaussian",
-		   data=covariates,
-		   W= dist_matrix,
-		   burnin = 10,
-		   n.sample = 1000,
-		   thin=1, 
-		   prior.mean.beta=NULL,
-		   prior.var.beta=NULL,
-		   prior.nu2=NULL, 
-		   prior.tau2=NULL,
-		   rho=NULL,
-		   epsilon=0,
-		   MALA=TRUE,
-		   verbose=TRUE)
+# mod_ARadaptive<-ST.CARadaptive(formula= formula,
+# 		   family = "gaussian",
+# 		   data=covariates,
+# 		   W= dist_matrix,
+# 		   burnin = 5000,
+# 		   n.sample = 50000,
+# 		   thin=3, 
+# 		   prior.mean.beta=NULL,
+# 		   prior.var.beta=NULL,
+# 		   prior.nu2=NULL, 
+# 		   prior.tau2=NULL,
+# 		   rho=NULL,
+# 		   epsilon=0,
+# 		   MALA=TRUE,
+# 		   verbose=TRUE)
 ```
 
 
@@ -133,14 +139,16 @@ only binomial or poisson: response must be integer valued
 seems useless for our goal
 divide into groups low medium high?
 ```{r}
-model_list = list(mod_linear,mod_AR1,mod_AR2,mod_ARadaptive)
-mod = model_list[[4]]
+model_list = list(mod_linear,mod_AR1,mod_AR2)
+saveRDS(model_list, file = "models_CARBayesST.RData")
+mod = model_list[[2]]
 ```
 
 
 # MCMC analysis
 
 ## samples
+ 
 ```{r}
 summary(mod$samples)
 ```
@@ -169,11 +177,16 @@ for(i in 1:dim(mcmc_matrix)[2]){
 ```{r}
 summary_results = mod$summary.results
 summary_results = data.frame(summary_results)
+
+
 # Identify variables with credible intervals excluding zero
 selected_variables <- summary_results[summary_results$X2.5. > 0 | summary_results$X97.5. < 0, ]
 
 print(selected_variables)
+print(rownames(selected_variables)[1:23])
 
+var_removed = summary_results[!(rownames(summary_results)%in%rownames(selected_variables)),]
+print(var_removed)
 ```
 
 
@@ -206,6 +219,10 @@ resid = residuals(mod)
 plot(resid,type="l")
 ```
 
+# NOTES
+- adaptive was too slow ( talking about a day to run) and poor results
+- between AR1, AR2 and LINEAR the first was the best in terms of metrics
+- the select variables (95% CI) didn't include EMission variables, so I run again the AR1 without them
 
 
 
