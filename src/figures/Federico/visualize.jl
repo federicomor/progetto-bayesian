@@ -14,35 +14,34 @@ macro bind(def, element)
     end
 end
 
+# ╔═╡ 28e2fcef-5d82-4887-a764-1b8bd5399de2
+using Interact
+
 # ╔═╡ d9483fe0-a951-11ee-0cd0-a3207320348b
-begin
-	using Interact
-	using Images
-end
+using Images
 
 # ╔═╡ 1404cd89-d629-4f77-bfdf-0a511189a83a
 using PlutoUI
 
 # ╔═╡ 194de13e-d3a0-48ae-8b94-b824bbd0817c
 # Carica le immagini dalla cartella
-images_folder = "./final_drpm/binder 1p2/"
+drpm_folder = "./final_drpm/binder 1p2/"
 
 # ╔═╡ 874c5f08-18c7-49d2-b801-8ee605a88a79
-image_files = readdir(images_folder)
+drpm_images = readdir(drpm_folder)
 
 # ╔═╡ 0094f0fc-0168-4b27-b1e6-6f11da6211f9
 # Creare uno slider e visualizzare l'immagine corrispondente
-@bind week Slider(1:length(image_files),default=45,show_value=true)
+# @bind week Slider(1:length(image_files),default=45,show_value=true)
 
-# ╔═╡ 5d04ca77-9c65-470b-bf9d-b92a1a195248
-PlutoUI.LocalResource(joinpath(images_folder, image_files[week]))
-
-# ╔═╡ b7fc4594-8fec-4b94-a4ef-9a35f39383be
 # wider selection bar, if we will want it
-@bind x html"""
-<input type=range min=1 max=53 step=1 value=0 style='width: 60%;' oninput='this.nextElementSibling.value=this.value;'>
+@bind week html"""
+<input type=range min=1 max=53 step=1 style='width: 60%;' oninput='this.nextElementSibling.value=this.value;'>
 <output>0</output>
 """
+
+# ╔═╡ 5d04ca77-9c65-470b-bf9d-b92a1a195248
+PlutoUI.LocalResource(joinpath(drpm_folder, drpm_images[week]))
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1305,12 +1304,12 @@ version = "17.4.0+0"
 """
 
 # ╔═╡ Cell order:
+# ╠═28e2fcef-5d82-4887-a764-1b8bd5399de2
 # ╠═d9483fe0-a951-11ee-0cd0-a3207320348b
 # ╠═1404cd89-d629-4f77-bfdf-0a511189a83a
 # ╠═194de13e-d3a0-48ae-8b94-b824bbd0817c
 # ╠═874c5f08-18c7-49d2-b801-8ee605a88a79
-# ╠═0094f0fc-0168-4b27-b1e6-6f11da6211f9
+# ╟─0094f0fc-0168-4b27-b1e6-6f11da6211f9
 # ╠═5d04ca77-9c65-470b-bf9d-b92a1a195248
-# ╠═b7fc4594-8fec-4b94-a4ef-9a35f39383be
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
