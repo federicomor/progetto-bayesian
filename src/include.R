@@ -6,6 +6,7 @@
 # morally always needed
 library(ggplot2)
 library(grDevices)
+library(png)
 
 ########################
 # useful aliases

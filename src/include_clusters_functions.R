@@ -435,11 +435,12 @@ color_correct_clusters = function(df_cluster_cut,idea=1,verbose=0,max_overall_cl
 	clusters_now = df_cluster_cut$clusters
 	palette_heat = 111 # o 77 per ora le migliori
 	
+	FUN = median
 	media = numeric()
 	ycurrent = y[,paste0("w",time)]
 	cls_labels = unique(clusters_now)
 	for (i in 1:length(cls_labels)) {
-		media[i] = mean(ycurrent[which(clusters_now==cls_labels[i])])
+		media[i] = median(ycurrent[which(clusters_now==cls_labels[i])])
 	}
 	res <- data.frame(names=cls_labels, media=media)
 	ord = order(res[,2],decreasing = T)
@@ -447,7 +448,7 @@ color_correct_clusters = function(df_cluster_cut,idea=1,verbose=0,max_overall_cl
 	# cat("order =",ord,"\n")
 	if(verbose==1){
 	for (i in 1:length(cls_labels)) {
-		media[i] = mean(ycurrent[which(clusters_now==cls_labels[i])])
+		media[i] = median(ycurrent[which(clusters_now==cls_labels[i])])
 		cat(paste0("Media cl",cls_labels[i], " = ",round(media[i],4)
 				   ," [pos ",which(ord==cls_labels[i]),"]\n"))
 	}
@@ -691,6 +692,7 @@ get_boxplot_plot = function(df_cluster_cut,cols=cols_default,titolo=paste("Time"
 library(gridExtra)
 cat(crayon::red("- plot_graph_and_hist(df_cluster_cut)\n"))
 plot_graph_and_hist = function(df_cluster_cut,cols=cols_default,titolo=paste("Time",time)){
+clusters_now = df_cluster_cut$clusters
 # GRAPH #######################
 q_graph = get_graph_plot(df_cluster_cut,cols,titolo = titolo)
 # HIST #######################
