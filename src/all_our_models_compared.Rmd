@@ -118,7 +118,7 @@ abinder[53] = 1.4
 ## stats
 ```{r,warning=F}
 df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
-for(time in time_span){
+for(time in time_span[1:20]){
 
 	salso_out <- salso(t(drpm_model$Si[time,,]),
 					   # loss=binder(),
@@ -144,6 +144,10 @@ for(time in time_span){
 		# cat("Cluster",cl,"- size",length(ycurrent[which(clusters_now==cl)]),
 			# "- mean",mean(ycurrent[which(clusters_now==cl)]),"\n")
 	# }
+	
+	
+	# cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=12)
+	# p = plot_graph_and_hist(df_cluster_cut,cols)
 }
 ```
 
@@ -205,7 +209,9 @@ cols_ARI = colora(ncols_ari,79,0)
 brks = seq(-1,1,length.out=ncols_ari+1)
 
 # pdf(paste0("./figures/DRPM/ARI/ari.pdf"), height=8, width=10)
-png(paste0("./figures/DRPM/ARI/ari.png"),  width=700,height=600)
+# svg(paste0("./figures/DRPM/ARI/ari.svg"), height=8, width=10)
+# png(paste0("./figures/DRPM/ARI/ari.png"),  width=700,height=600)
+
 # or see ?designer.colors for colors
 library(fields)
 image.plot(ARImats,
@@ -213,13 +219,14 @@ image.plot(ARImats,
 		   breaks=brks)
 mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
 mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.8)
-dev.off()
+
+# dev.off()
 ```
 
-## clusters see
+## cls see
 ```{r}
 clusters_old = NULL
-for(time in time_span[44:46]){
+for(time in time_span[44]){
 	cat(crayon::red("Time",time,"\n"))
 
 	df_cluster_cut = df_cluster[df_cluster$Time==time,]
@@ -232,19 +239,24 @@ for(time in time_span[44:46]){
 	# df_cluster_cut$clusters = clusters_now
 
 	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=10)
-	
+
+	library(grid)
 	### this
 	# q = get_graph_plot(df_cluster_cut,cols)
-	# print(q)
+	q = get_boxplot_plot(df_cluster_cut,cols,annotate=F)
+	
+	# Create a text
+
+	print(q)
 
 	### or this
-	p = plot_graph_and_hist(df_cluster_cut,cols)
+	p = plot_graph_and_hist(df_cluster_cut,cols,annotate=T)
 
 
 clusters_old = clusters_now
 }
 ```
-## clusters save
+## cls save
 ```{r}
 clusters_old = NULL
 for(time in time_span){
@@ -263,17 +275,18 @@ for(time in time_span){
 	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=12)
 	
 	### this
-	q = get_graph_plot(df_cluster_cut,cols)
-	print(q)
-	ggsave(file=paste0("./figures/DRPM/Graph/Graph-",cur_num,".png"),
-	units="px",width=2000, height=1400, dpi=300)
-	dev.off()
+	# q = get_graph_plot(df_cluster_cut,cols)
+	# print(q)
+	# ggsave(file=paste0("./figures/DRPM/Graph/Graph-",cur_num,".png"),
+	# units="px",width=2000, height=1400, dpi=300)
+	# dev.off()
 	
 	### or this
 	p = plot_graph_and_hist(df_cluster_cut,cols)
 	ggsave(file=paste0("./figures/DRPM/Graph and Boxplot/Graph and Boxplot-",cur_num,".png"),
 		   plot=p,
-		   units="px",width=2500, height=1400, dpi=300)
+		   units="px",width=2500, height=1200, dpi=300) # maybe 1200 is better
+		   # units="px",width=2500, height=1400, dpi=300)
 	dev.off()
 
 clusters_old = clusters_now

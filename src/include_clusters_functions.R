@@ -654,11 +654,12 @@ get_hist_continuos_plot = function(df_cluster_cut,titolo=paste("Time",time),verb
 
 
 cat(crayon::red("- get_boxplot_plot(df_cluster_cut)\n"))
-get_boxplot_plot = function(df_cluster_cut,cols=cols_default,titolo=paste("Time",time)){
+get_boxplot_plot = function(df_cluster_cut,cols=cols_default,titolo=paste("Time",time),annotate=FALSE){
 	clusters_now = df_cluster_cut$clusters # needs to be already mode corrected if wanted
 	# n_clusters = max(clusters_now)
 	n_clusters = unique(clusters_now)
 	ycurrent = y[,paste0("w",time)]
+	clsize = table(clusters_now)
 	
 	clust_vals = clusters_now[1:105]
 	df_temp = data.frame(clusters=clust_vals,ycurrent=ycurrent)
@@ -676,7 +677,7 @@ get_boxplot_plot = function(df_cluster_cut,cols=cols_default,titolo=paste("Time"
 		
 		# theme_classic()
 		theme_bw()+
-		xlab("")+
+		xlab("clusters")+
 		ylab("log(PM10) values")+
 		ylim(xlims)+
 		# xlim(extrema(ycurrent)+c(-pad,pad))+
@@ -684,6 +685,10 @@ get_boxplot_plot = function(df_cluster_cut,cols=cols_default,titolo=paste("Time"
 		# breaks=cols[1:max(clust_vals)])+
 		scale_fill_identity(guide="legend",labels=paste0("cl",n_clusters),
 							breaks=cols[n_clusters])
+	if(annotate==TRUE){
+		p = p+ annotate("text", x = n_clusters, y = 1.3, label = paste0("size: ",as.vector(clsize)),col="gray")
+	}
+	return(p)
 	# scale_color_identity(guide="legend",labels=paste0("cl",1:max(clust_vals)),
 	# breaks=cols[1:max(clust_vals)])
 }
@@ -691,7 +696,7 @@ get_boxplot_plot = function(df_cluster_cut,cols=cols_default,titolo=paste("Time"
 
 library(gridExtra)
 cat(crayon::red("- plot_graph_and_hist(df_cluster_cut)\n"))
-plot_graph_and_hist = function(df_cluster_cut,cols=cols_default,titolo=paste("Time",time)){
+plot_graph_and_hist = function(df_cluster_cut,cols=cols_default,titolo=paste("Time",time),annotate=FALSE){
 clusters_now = df_cluster_cut$clusters
 # GRAPH #######################
 q_graph = get_graph_plot(df_cluster_cut,cols,titolo = titolo)
@@ -699,6 +704,7 @@ q_graph = get_graph_plot(df_cluster_cut,cols,titolo = titolo)
 # by hand as we have to remove the legend here, while the function produces it
 # n_clusters = max(clusters_now)
 n_clusters = unique(clusters_now)
+clsize = table(clusters_now)
 ycurrent = y[,paste0("w",time)]
 clust_vals = clusters_now[1:105]
 df_temp = data.frame(clusters=clust_vals,ycurrent=ycurrent)
@@ -738,6 +744,11 @@ p = ggplot(df_temp, aes(as.factor(clusters),ycurrent,
 	ylab("log(PM10) values")+
 	xlab("clusters")+
 	ylim(xlims)
+
+	if(annotate==TRUE){
+		p = p+ annotate("text", x = n_clusters, y = 1.3, label = paste0("size\n",as.vector(clsize)),col="gray")
+	}
+
 
 p = grid.arrange(q_graph, p, ncol=2,widths=c(1.8,1.2))
 # p = arrangeGrob(q_graph, p, ncol=2,widths=c(1.8,1.2))
