@@ -392,6 +392,44 @@ cat(crayon::bold("plotter library required!\n"))
 
 
 
+cat(crayon::red("- plot_intensities(df_cluster_cut)\n"))
+plot_intensities = function(df_cluster_cut,verbose=F) {
+	clust_vals = df_cluster_cut$clusters[1:105]
+	ycurrent = y[,paste0("w",time)]
+	
+	new_cols = colora(105,111,0)
+	ord = order(ycurrent,decreasing = T)
+	if(verbose==T){
+		print(tail(ord))
+	}
+	
+	
+	par(mar=c(0,0,0,0),pty="s")
+	plot(df_cluster_cut$Longitude[ord],df_cluster_cut$Latitude[ord],col=new_cols,pch=19)
+	text(df_cluster_cut$Longitude,df_cluster_cut$Latitude-0.04,labels=1:105,cex=0.6,col="gray")
+	
+	
+	# titolo=paste("Cluster map - time",time)
+	# 
+	# p = ggplot() +theme_bw()+
+	# 	geom_sf(data = altre_regioni,
+	# 			# fill = color_empty ,color = color_fill,
+	# 			linewidth = 0.1,alpha=0.1, show.legend = FALSE) +
+	# 	coord_sf(xlim = range(sites$longitude) + padding, ylim = range(sites$latitude) + padding, expand = FALSE)+
+	# 	geom_point(data = df_temp, aes(x = Longitude, y = Latitude,
+	# 								   # color = cols[factor(clusters)]), size = 2)+
+	# 								   # color = new_cols[clusters_now]
+	# 								   # color = lerp_pm10_color(ycurrent,colmin="yellow",colmax = "#990000")
+	# 								   color = as.list(new_cols)
+	# 								   # fill = "white"
+	# 								   ),
+	# 			   # size = 2
+	# 			   size=lerp_pm10_radius(ycurrent,rmax=2)
+	# 			   )+theme(legend.position = "none")+labs(title = titolo)
+
+}
+
+
 
 
 cols_default=colora(12,"div",0)[-2]
@@ -435,15 +473,15 @@ color_correct_clusters = function(df_cluster_cut,idea=1,verbose=0,max_overall_cl
 	clusters_now = df_cluster_cut$clusters
 	palette_heat = 111 # o 77 per ora le migliori
 	
-	FUN = median
-	media = numeric()
+	# FUN = mean
+	media = c()
 	ycurrent = y[,paste0("w",time)]
 	cls_labels = unique(clusters_now)
 	for (i in 1:length(cls_labels)) {
 		media[i] = median(ycurrent[which(clusters_now==cls_labels[i])])
 	}
 	res <- data.frame(names=cls_labels, media=media)
-	ord = order(res[,2],decreasing = T)
+	ord = order(res$media,decreasing=T)
 	# res[ord,]
 	# cat("order =",ord,"\n")
 	if(verbose==1){
@@ -492,16 +530,17 @@ color_correct_clusters = function(df_cluster_cut,idea=1,verbose=0,max_overall_cl
 	cols_original = rev(colora(nint,palette_heat,0)) # if grid idea
 	cols = cols_original
 	# for (i in 1:length(cls_labels)){
-	for (i in order(media,decreasing = T)){
+	# for (i in order(media,decreasing = T)){
+	for (i in ord){
 		target_index = which.min(abs(griglia-media[i]))
-		cols[i] = cols_original[target_index] # grid idea
+		cols[res$names[i]] = cols_original[target_index] # grid idea
 		if(griglia[target_index]==1000) {
 			# cat(crayon::silver("Tied colors. Suggestion: increment nint\n"))
 			stop("Tied colors. Suggestion: increment nint\n")
 		}
 		# al cluster i va il colore in posizione più vicino al suo valore di media nella griglia
 		if(verbose==1){
-		cat("cluster",i,"pos griglia",target_index,"\n")
+		cat("cluster",i,"pos griglia/color index",target_index,"\n")
 		}
 		griglia[target_index:nint] = 1000 # per rimuovere casi di pareggio colore
 	}
@@ -696,7 +735,7 @@ get_boxplot_plot = function(df_cluster_cut,cols=cols_default,titolo=paste("Time"
 
 library(gridExtra)
 cat(crayon::red("- plot_graph_and_hist(df_cluster_cut)\n"))
-plot_graph_and_hist = function(df_cluster_cut,cols=cols_default,titolo=paste("Time",time),annotate=FALSE){
+plot_graph_and_hist = function(df_cluster_cut,cols=cols_default,titolo=paste("Time",time),annotate=FALSE,jittera=FALSE){
 clusters_now = df_cluster_cut$clusters
 # GRAPH #######################
 q_graph = get_graph_plot(df_cluster_cut,cols,titolo = titolo)
@@ -736,7 +775,11 @@ p = ggplot(df_temp, aes(as.factor(clusters),ycurrent,
 						fill = cols[clusters]
 						# color = cols[clust_vals]
 ))+
-	geom_boxplot(position = "identity")+
+	geom_boxplot(position = "identity")
+if(jittera==TRUE){
+	p = p+ geom_jitter(width=0.2,size=1,col="#9202af")
+}
+p = p +
 	theme_bw()+
 	theme(legend.position = "none")+
 	scale_fill_identity(guide="legend",labels=paste0("cl",n_clusters),

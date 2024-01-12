@@ -17,9 +17,9 @@ cardinal_to_degree <- function(cardinal) {
 }
 
 # LERP FUNCTIONS
-lerp_pm10_radius <- function(val){
-	radius_0 = 1
-	radius_f = 10
+lerp_pm10_radius <- function(val,rmin=1,rmax=10){
+	radius_0 = rmin
+	radius_f = rmax
 	min_max = range(val[!is.na(val)])
 	min_val = min_max[1]
 	max_val = min_max[2]
@@ -29,9 +29,9 @@ lerp_pm10_radius <- function(val){
 	return(return_val) 
 }
 
-lerp_pm10_color <- function(val) {
-	color_0 <- col2rgb("yellow")
-	color_f <- col2rgb("#F80000")
+lerp_pm10_color <- function(val,colmin="yellow",colmax="#F80000") {
+	color_0 <- col2rgb(colmin)
+	color_f <- col2rgb(colmax)
 	
 	min_max <- range(val[!is.na(val)])
 	min_val <- min_max[1]
