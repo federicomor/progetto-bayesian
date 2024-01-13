@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<!-- ############# Load images ############# -->
+	<link rel="preload" href="DRPM/ARI/ari.png" as="image"/>
+	<!-- forse prefetch se sono online -->
+	<script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var head = document.head;
+            var baseFolders = [
+            	'DRPM/Graph/Graph-', 
+            	'DRPM/Graph and Boxplot/Graph and Boxplot-', 
+            	'DRPM/Salso/Salso-'
+            ]; // Aggiungi qui le tue cartelle
+            var totalImages = 53;
+
+            for (var folderIndex = 0; folderIndex < baseFolders.length; folderIndex++) {
+                var baseFolder = baseFolders[folderIndex];
+
+                for (var i = 1; i <= totalImages; i++) {
+                    var link = document.createElement('link');
+                    link.rel = 'preload';
+                    link.href = baseFolder + pad(i, 2) + '.png';
+                    link.as = 'image';
+                    head.appendChild(link);
+                }
+            }
+
+            function pad(number, length) {
+                var str = '' + number;
+                while (str.length < length) {
+                    str = '0' + str;
+                }
+                return str;
+            }
+        });
+    </script>
+
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Plots dashboard</title>
+	<style>
+		body {
+			font-family: 'Arial', sans-serif;
+			background-color: #f4f4f4;
+			text-align: center;
+			margin: 0;
+			padding: 0;
+		}
+
+		#image-slider, #image-grid {
+			max-width: 85%;
+			margin: 20px auto;
+			background-color: #fff;
+			padding: 20px;
+			border-radius: 8px;
+			box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+		}
+
+		#folder-select, #slider {
+			margin-bottom: 10px;
+		}
+
+		#current-image, #current-number {
+			margin-top: 20px;
+		}
+
+		img {
+			max-width: 70%;
+			height: auto;
+			border-radius: 8px;
+			box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+		}
+/*h1 { color: #7c795d; font-family: 'Trocchi', serif; font-size: 45px; font-weight: normal; line-height: 48px; margin: 0; }*/
+/*h1 { color: #173932; font-family: 'Lato', sans-serif; font-size: 54px; font-weight: 300; line-height: 58px; margin: 0 0 10px; }*/
+/*h1 { color: #333333; font-family: 'Bitter', serif; font-size: 50px; font-weight: normal; line-height: 54px; margin: 0 0 20px; }*/
+h1 { color: #CEF0D4; font-family: 'Rouge Script', cursive; font-size: 60px; font-weight: normal; line-height: 48px; margin: 0 0 30px; text-align: center; text-shadow: 1px 1px 2px #082b34; }
+
+/*h1 { font-family: 'Enriqueta', arial, serif; line-height: 1.25; margin: 0 0 10px; font-size: 40px; font-weight: bold; }*/
+/*https://wdexplorer.com/20-examples-beautiful-css-typography-design/*/
+
+/*h1 {
+  text-align:center;
+  text-transform:uppercase;
+  font-size:26px; letter-spacing:1px;  
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-rows: 16px 0;
+  grid-gap: 22px;
+}
+h1:after, h1:before {
+  content: " ";
+  display: block;
+  border-bottom: 2px solid #ccc;
+  background-color:#f8f8f8;
+}*/
+
+</style>
+</head>
+<body onload="changemodel(); changemodel_grid();">
+
+
+
+<!-- ############# one model ############# -->
+<div id="image-slider">
+	<h1>One-model plots</h1>
+
+	<label for="model-select">Model </label>
+	<select id="model-select" onchange="changemodel()">
+	<!-- <select id="model-select"> -->
+		<option value="DRPM/">DRPM</option>
+		<option value="SPPM/">SPPM</option>
+	</select>
+
+	<!-- <br> -->
+	<label for="plot-select">Plot </label>
+	<select id="plot-select" onchange="changemodel()">
+	<!-- <select id="plot-select"> -->
+		<option value="Graph and Boxplot">Graph and Boxplot</option>
+		<option value="Graph">Graph</option>
+		<option value="Salso">Salso</option>
+		<option value="ARI">ARI</option>
+	</select>
+
+	<!-- <br> -->
+	Week <input type="range" default="1" id="slider" style='width: 15%' value="1" min="1" max="53" oninput="this.nextElementSibling.value = this.value">
+	<output>1</output>
+	<div id="current-image"></div>
+
+</div>
+
+<script>
+	var slider = document.getElementById('slider');
+	var currentImage = document.getElementById('current-image');
+	var modelselect = document.getElementById('model-select');
+	var plotselect = document.getElementById('plot-select');
+	var height=500
+	var width=500
+
+	slider.addEventListener('input', function () {
+		changemodel();
+	});
+
+	function changemodel() {
+		// Aggiorna l'immagine quando si cambia la cartella
+		var currentValue = parseInt(slider.value);
+		var selectedmodel = modelselect.value;
+		var selectedplot = plotselect.value;
+
+		var imagePath;
+        if (selectedplot =='ARI') {
+            imagePath = selectedmodel + 'ARI/ari.png';
+        } else {
+            imagePath = selectedmodel + selectedplot + '/' + selectedplot + '-' + pad(currentValue, 2) + '.png';
+        }
+        // console.log(imagePath)
+		currentImage.innerHTML = '<img src="' + imagePath + '"alt="Image ' + currentValue + '" />';
+		// currentImage.innerHTML = '<img height="' + height + '" width="' + width + '"src="' + imagePath + '"alt="Image ' + currentValue + '" />';
+	}
+
+	function pad(number, length) {
+		var str = '' + number;
+		while (str.length < length) {
+			str = '0' + str;
+		}
+		return str;
+	}
+</script>
+
+
+
+
+<!-- ############# four models ############# -->
+<!-- update above part, change h1 title and variables ecc -->
+<div id="image-grid">
+	<h1>Four-model plots</h1>
+
+	<!-- <br> -->
+	<label for="plot-select-grid">Plot </label>
+	<select id="plot-select-grid" onchange="changemodel_grid()">
+	<!-- <select id="plot-select"> -->
+		<option value="Graph and Boxplot">Graph and Boxplot</option>
+		<option value="Graph">Graph</option>
+		<option value="Salso">Salso</option>
+		<option value="ARI">ARI</option>
+	</select>
+
+	<!-- <br> -->
+	Week <input type="range" default="1" style='width: 15%' id="slider-grid" value="1" min="1" max="53" oninput="this.nextElementSibling.value = this.value">
+	<output>1</output>
+
+	<table>
+    <tr>
+		<td>DRPM<div id="current-image-one"></div></td>
+		<td>SPPM<div id="current-image-two"></div></td>            
+	</tr>
+	<tr>
+		<td>Gaussian PPMx<div id="current-image-three"></div></td>
+		<td>Curve PPMx<div id="current-image-four"></div></td>
+	</tr>
+</table>
+</div>
+
+<script>
+	var sliderGrid = document.getElementById('slider-grid');
+	var currentImage_one = document.getElementById('current-image-one');
+	var currentImage_two = document.getElementById('current-image-two');
+	var currentImage_three = document.getElementById('current-image-three');
+	var currentImage_four = document.getElementById('current-image-four');
+	var plotselectGrid = document.getElementById('plot-select-grid');
+	var height=500
+	var width=500
+
+	sliderGrid.addEventListener('input', function () {
+		changemodel_grid();
+	});
+
+	function changemodel_grid() {
+		// Aggiorna l'immagine quando si cambia la cartella
+		var currentValue = parseInt(sliderGrid.value);
+		var selectedplotGrid = plotselectGrid.value;
+
+		var imagePath;
+        if (selectedplotGrid =='ARI') {
+            imagePath_one = "DRPM/" + 'ARI/ari.png';
+            imagePath_two = "DRPM/" + 'ARI/ari.png';
+            imagePath_three = "DRPM/" + 'ARI/ari.png';
+            imagePath_four = "DRPM/" + 'ARI/ari.png';
+        } else {
+            // imagePath = selectedmodel + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue, 2) + '.png';
+            imagePath_one = "DRPM/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
+            imagePath_two = "DRPM/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
+            imagePath_three = "DRPM/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
+            imagePath_four = "DRPM/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
+        }
+
+        // console.log(imagePath_one)
+		// currentImage.innerHTML = '<img src="' + imagePath + '"alt="Image ' + currentValue + '" />';
+		// currentImage.innerHTML = '<img height="' + height + '" width="' + width + '"src="' + imagePath + '"alt="Image ' + currentValue + '" />';
+		currentImage_one.innerHTML = '<img src="' + imagePath_one + '"alt="Image ' + currentValue + '" />';
+		currentImage_two.innerHTML = '<img src="' + imagePath_two + '"alt="Image ' + currentValue + '" />';
+		currentImage_three.innerHTML = '<img src="' + imagePath_three + '"alt="Image ' + currentValue + '" />';
+		currentImage_four.innerHTML = '<img src="' + imagePath_four + '"alt="Image ' + currentValue + '" />';
+	}
+
+	function pad(number, length) {
+		var str = '' + number;
+		while (str.length < length) {
+			str = '0' + str;
+		}
+		return str;
+	}
+</script>
+
+</body>
+</html>

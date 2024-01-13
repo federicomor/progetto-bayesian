@@ -49,6 +49,7 @@ plot(std_sites)
 ```
 
 
+
 ```{r}
 cols = colora(105,56,show=F)
 chosen_variable_name = "AQ_pm10"
@@ -83,7 +84,14 @@ trendYearStation_week("None")
 ## description
 Model obtained collecting 1000 mcmc iterates, using niter=60000; nburn=20000; nthin=40.
 ```{r}
+# load("../data/Federico/drpm_eta0_phi1_spcoes5.Rdata")
+# load("../data/Federico/drpm_eta0_phi1_spcoes5_v2.Rdata")
+
 load("../data/Federico/drpm_eta0_phi1_spcoes5.Rdata")
+# questo resta il migliore, ma forse su certi tempi si può lavorare in modo adaptive
+# cambiando abinder o a mano in qualche modo
+# perché gli altri test di fit hanno suggerito altre divisioni interessanti, in certi tempi
+
 drpm_model = drpm1 # was called drpm1 inside the rdata
 time_span = c(1:53)
 cat(crayon::red("\nLPML =",drpm_model$lpml, "\nWAIC =",drpm_model$waic))
@@ -93,16 +101,112 @@ cat(crayon::red("\nLPML =",drpm_model$lpml, "\nWAIC =",drpm_model$waic))
 After some tuning this salso configuration should be the best.
 Ie the one with binder loss with a=1.2, while the default a=1 was not so good. 
 Increasing a (max is a=2) means that we penalize more the case where units get wrongly divided in separate clusters if instead should have been together (like a strict false negative, or something similar, contrasint).
-```{r,warning=F}
+
+```{r}
+abinder = rep(1.2,53)
+abinder[19] = 1.3
+abinder[21] = 1.3
+abinder[22] = 1.3
+abinder[40] = 1.1
+abinder[43] = 1.3
+abinder[44] = 1.5
+abinder[45] = 1.3
+abinder[50] = 1.5
+abinder[52] = 1.4
+abinder[53] = 1.4
+# plot(abinder,type="l")
+```
+
+```{r}
+# pdf("stations_names_visualized.pdf",height=10,width=10)
+plot(std_sites,col="white")
+
+text(std_sites$longitude,std_sites$latitude,labels=unique(df_wsc$IDStations),cex=0.4)
+text(std_sites$longitude,std_sites$latitude-0.05,labels=1:105,cex=0.4,col="gray")
+# dev.off()
+```
+
+## othe experiments modifications
+```{r}
+exclude=list()
+for (i in 1:53){
+	exclude[[i]]=list()
+}
+
+exclude[[1]][[1]] = c(80,52)
+exclude[[2]][[1]] = c(80)
+exclude[[3]][[1]] = c(80)
+exclude[[4]][[1]] = c(80,52)
+exclude[[5]][[1]] = c(80)
+exclude[[6]][[1]] = c(80)
+
+exclude[[7]][[2]] = c(92,101)
+exclude[[8]][[2]] = c(92,101)
+exclude[[9]][[2]] = c(92,101)
+exclude[[10]][[2]] = c(92,101)
+exclude[[11]][[2]] = c(92,101)
+exclude[[12]][[2]] = c(92,101)
+exclude[[13]][[2]] = c(92,101)
+exclude[[14]][[1]] = c(92,101)
+exclude[[15]][[1]] = c(92,101)
+exclude[[16]][[1]] = c(92,101)
+
+exclude[[7]][[1]] = c(80)
+exclude[[8]][[1]] = c(80)
+exclude[[9]][[1]] = c(80)
+exclude[[10]][[1]] = c(80)
+exclude[[11]][[1]] = c(80)
+exclude[[12]][[1]] = c(80)
+exclude[[13]][[1]] = c(80)
+
+exclude[[44]][[1]] = c(101,92)
+
+exclude[[46]][[1]] = c(92,101)
+
+exclude[[47]][[1]] = c(92,101)
+exclude[[47]][[2]] = c(80)
+
+exclude[[48]][[1]] = c(92,101)
+
+exclude[[51]][[1]] = c(92,101)
+exclude[[51]][[2]] = c(80,52)
+
+exclude[[52]][[1]] = c(92,101)
+exclude[[52]][[2]] = c(80,52)
+
+exclude[[53]][[1]] = c(92,101)
+exclude[[53]][[2]] = c(80,20,69)
+```
+
+
+```{r}
 df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
 for(time in time_span){
 
-	salso_out <- salso(t(drpm_model$Si[time,,]),
+	salso_out = rep(0,105)
+	if(length(exclude[[time]])==0 ){
+		cat("no touch\n")
+		salso_out <- salso(t(drpm_model$Si[time,,]),
 					   # loss=binder(),
-					   loss=binder(a=1.2), # chosen one, better
+					   loss=binder(a=abinder[time]), # chosen one, better
 					   maxNClusters = 6
 					   )
-	
+	} else {
+		cat("correction\n")
+		exclude_st = Reduce(union,exclude[[time]])
+		
+		# salso_out[-exclude_st] <- salso(t(drpm_model$Si[time,-exclude_st,]),
+		salso_out <- salso(t(drpm_model$Si[time,,]),
+					   # loss=binder(),
+					   loss=binder(a=abinder[time]), # chosen one, better
+					   maxNClusters = 6
+					   )
+		curr_n_clusters = max(salso_out[-exclude_st])
+		for(i in 1:length(exclude[[time]])){
+			curr_n_clusters = curr_n_clusters+1
+			salso_out[exclude[[time]][[i]]] = curr_n_clusters
+		}
+	}
 	df_temp = data.frame(
 		Longitude = sites$longitude,
 		Latitude = sites$latitude,
@@ -121,9 +225,105 @@ for(time in time_span){
 		# cat("Cluster",cl,"- size",length(ycurrent[which(clusters_now==cl)]),
 			# "- mean",mean(ycurrent[which(clusters_now==cl)]),"\n")
 	# }
+	
+	df_cluster_cut = df_temp
+	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=12)
+	p = plot_graph_and_hist(df_cluster_cut,cols,jittera = T)
+
+	# plot_intensities(df_cluster_cut,verbose=T)
 }
 ```
 
+
+
+## final definition
+```{r,warning=F}
+salso_out_list = list()
+df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
+for(time in time_span){
+
+	# salso_out <- salso(t(drpm_model$Si[time,,]),
+	# 				   # loss=binder(),
+	# 				   loss=binder(a=abinder[time]), # chosen one, better
+	# 				   maxNClusters = 6
+	# 				   )
+	salso_out = rep(0,105)
+	if(length(exclude[[time]])==0 ){
+		cat("no touch\n")
+		salso_out <- salso(t(drpm_model$Si[time,,]),
+					   # loss=binder(),
+					   loss=binder(a=abinder[time]), # chosen one, better
+					   maxNClusters = 6
+					   )
+	} else {
+		cat("correction\n")
+		exclude_st = Reduce(union,exclude[[time]])
+		
+		# salso_out[-exclude_st] <- salso(t(drpm_model$Si[time,-exclude_st,]),
+		salso_out <- salso(t(drpm_model$Si[time,,]),
+					   # loss=binder(),
+					   loss=binder(a=abinder[time]), # chosen one, better
+					   maxNClusters = 6
+					   )
+		curr_n_clusters = max(salso_out[-exclude_st])
+		for(i in 1:length(exclude[[time]])){
+			curr_n_clusters = curr_n_clusters+1
+			salso_out[exclude[[time]][[i]]] = curr_n_clusters
+		}
+	}
+	salso_out_list[[time]] = salso_out
+
+	################################################
+	df_temp = data.frame(
+		Longitude = sites$longitude,
+		Latitude = sites$latitude,
+		clusters = salso_out[1:105]
+	)
+	df_temp$Time = rep(time,dim(df_temp)[1])
+	df_cluster = rbind(df_cluster,df_temp)
+	
+	# clusters log
+	clusters_now = df_temp$clusters
+	# n_clusters = max(clusters_now)
+	n_clusters = unique(clusters_now)
+	ycurrent = y[,paste0("w",time)]
+	cat(crayon::red("Time",time,"- #clusters =",length(unique(clusters_now)),"\n"))
+	# for (cl in n_clusters){
+		# cat("Cluster",cl,"- size",length(ycurrent[which(clusters_now==cl)]),
+			# "- mean",mean(ycurrent[which(clusters_now==cl)]),"\n")
+	# }
+	
+	
+	# cols = color_correct_clusters(df_temp,idea=2,verbose=0,nint=16)
+	# p = plot_graph_and_hist(df_temp,cols)
+}
+```
+
+
+## salso plots
+```{r}
+for(time in time_span){
+
+	salso_out = salso_out_list[[time]]
+	################################################
+	cat(crayon::red("Time",time,"- #clusters =",length(unique(salso_out[1:105])),"\n"))
+
+	ssout = summary(salso_out)
+	png(filename=paste0("./figures/DRPM/Salso/Salso-",sprintf("%02d",time),".png"),width=600,height=500)
+
+	# plot(ssout,type="heatmap")
+	# plot(ssout,type="mds")
+	plot(ssout,type="pairs",data=std_sites)
+	text(0.2,0.98,paste0("Time ",time))
+	# plot(ssout,type="dendrogram")
+	
+	dev.off()
+}
+```
+
+
+
+## ARI plot
 ```{r}
 library(mclust)
 ##########################
@@ -134,12 +334,8 @@ LEN = max(time_span)
 # build the ARI matrix
 ARImats <- matrix(NA, nrow=LEN, ncol=LEN)
 rho_ARI <- list()
-for(k in 1:LEN){
-	rho_ARI[[k]] <- salso(t(FIT$Si[k,,]),
-						  # loss=binder(),
-						  loss=binder(a=1.2), # chosen one, better
-						  maxNClusters = 6
-						  ) # adjust with your fit characteristics
+for(time in 1:LEN){
+	rho_ARI[[time]] = salso_out_list[[time]]
 }
 for(k in 1: LEN){
 	for(kk in 1: LEN){
@@ -148,87 +344,107 @@ for(k in 1: LEN){
 }
 ```
 
-## ARI plot
 ```{r}
-titolo = "drpm"
-# pdf(paste0("./figures/Federico/final_drpm/LaggedARI_",titolo,".pdf"), height=8, width=10)
+titolo = "DRPM"
 ncols_ari = 100
 cols_ARI = colora(ncols_ari,79,0)
 # cols_ARI = rev(cols_ARI)
+
 brks = seq(-1,1,length.out=ncols_ari+1)
+
+# pdf(paste0("./figures/DRPM/ARI/ari.pdf"), height=8, width=10)
+# svg(paste0("./figures/DRPM/ARI/ari.svg"), height=8, width=10)
+# png(paste0("./figures/DRPM/ARI/ari.png"),  width=700,height=600)
 
 # or see ?designer.colors for colors
 library(fields)
 image.plot(ARImats,
-		   main=paste0("Lagged ARI values - with ",titolo),axes=FALSE,col=cols_ARI,
+		   main=paste0("Lagged ARI values - ",titolo),axes=FALSE,col=cols_ARI,
 		   breaks=brks)
 mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
 mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.8)
+
 # dev.off()
 ```
 
-## clusters
-
+## cls see
 ```{r}
 clusters_old = NULL
-for(time in time_span[44:48]){
+for(time in time_span[44]){
 	cat(crayon::red("Time",time,"\n"))
-	
+
 	df_cluster_cut = df_cluster[df_cluster$Time==time,]
-	clusters_now = df_cluster_cut$clusters
+	# clusters_now = df_cluster_cut$clusters
 	####### no mode correct if heat plot
 	# clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
 	# se fai heat plot non serve fare la mode correct
 	# perché la heat plot la usi per vedere anche i valori di pm10, non la coerenza temporale
 	# nei gruppi, che con la heat coloration si perde come visibilità (non so se è chiaro)
-	df_cluster_cut$clusters = clusters_now
-	
-	# meglio l'idea 1
+	# df_cluster_cut$clusters = clusters_now
+
 	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=10)
-	
+
+	library(grid)
+	### this
 	# q = get_graph_plot(df_cluster_cut,cols)
-	# print(q)
-	p = plot_graph_and_hist(df_cluster_cut,cols)
+	q = get_boxplot_plot(df_cluster_cut,cols,annotate=F)
 	
-	clusters_old = clusters_now
+	# Create a text
+
+	print(q)
+
+	### or this
+	p = plot_graph_and_hist(df_cluster_cut,cols,annotate=T)
+
+
+clusters_old = clusters_now
 }
 ```
-
-
-## gif
+## cls save
 ```{r}
-output_name = "binder 1p2"
-percorso = paste0("./figures/Federico/final_drpm/",output_name,"/")
-###################################
-# save images
-###################################
 clusters_old = NULL
 for(time in time_span){
 	cat(crayon::red("Time",time,"\n"))
 
 	df_cluster_cut = df_cluster[df_cluster$Time==time,]
-	clusters_now = df_cluster_cut$clusters
-	# clusters_now = mode_correct_clusters(clusters_old,clusters_now)
-	df_cluster_cut$clusters = clusters_now
+	# clusters_now = df_cluster_cut$clusters
+	####### no mode correct if heat plot
+	# clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
+	# se fai heat plot non serve fare la mode correct
+	# perché la heat plot la usi per vedere anche i valori di pm10, non la coerenza temporale
+	# nei gruppi, che con la heat coloration si perde come visibilità (non so se è chiaro)
+	# df_cluster_cut$clusters = clusters_now
 
 	cur_num = sprintf("%02d", time)
-	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=10)
+	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=12)
 	
+	### this
 	# q = get_graph_plot(df_cluster_cut,cols)
 	# print(q)
-	# ggsave(file=paste0(percorso,titolo,"-graph",cur_num,".png"),
-		   # units="px",width=2000, height=1400, dpi=300)
+	# ggsave(file=paste0("./figures/DRPM/Graph/Graph-",cur_num,".png"),
+	# units="px",width=2000, height=1400, dpi=300)
+	# dev.off()
 	
+	### or this
 	p = plot_graph_and_hist(df_cluster_cut,cols)
-	ggsave(file=paste0(percorso,output_name,"-",cur_num,".png"),plot=p,
-		   units="px",width=2500, height=1400, dpi=300)
-	
+	ggsave(file=paste0("./figures/DRPM/Graph and Boxplot/Graph and Boxplot-",cur_num,".png"),
+		   plot=p,
+		   units="px",width=2500, height=1200, dpi=300) # maybe 1200 is better
+		   # units="px",width=2500, height=1400, dpi=300)
 	dev.off()
-
 
 clusters_old = clusters_now
 }
+```
 
+## build gif
+```{r}
+percorso = paste0("./figures/Federico/DRPM/Graph")
+# percorso = paste0("./figures/Federico/DRPM/Salso")
+# percorso = paste0("./figures/Federico/DRPM/Graph and Boxplot")
+output_name = "Graph"
+# output_name = "Salso"
+# output_name = "Graph and Boxplot"
 
 ###################################
 # build gif

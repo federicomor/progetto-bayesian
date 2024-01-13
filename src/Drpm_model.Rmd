@@ -112,7 +112,7 @@ Burn in needs to be >= 10000. This after some long fits with low nburn (to see t
 
 ```{r}
 # niter=60000; nburn=20000; nthin=40 # original
-niter=60000; nburn=40000; nthin=10 # new one for more data
+niter=100000; nburn=60000; nthin=40 # new one for more data
 nout <- (niter-nburn)/nthin
 cat(nout,"valid iterations\n")
 ```
@@ -186,8 +186,8 @@ cat(crayon::red("\nLPML =",drpm1$lpml, "\nWAIC =",drpm1$waic))
 
 ## model save
 ```{r}
-# model_name = "pm_eta0_phi1_spcoes5_run2"
-# save(drpm1,file=paste0("../data/Federico/",model_name,".Rdata"))
+model_name = "pm_eta0_phi1_spcoes5_v2"
+save(drpm1,file=paste0("../data/Federico/",model_name,".Rdata"))
 ```
 
 =============================
@@ -198,6 +198,12 @@ Lui è il migliore
 seed 725
 LPML = 3612.91277963648 
 WAIC = -7982.83537806802
+
+_2)_ drpm_eta0_phi1_spcoes5_v2
+longer run, 100k iterazioni, 60k burn in
+seed 509
+LPML = 3504.75360390795 
+WAIC = -8050.23259569603
 
 --------------------------------------------
 
@@ -273,8 +279,8 @@ cat("fitted size = ",size(drpm1$fitted),"\n")
 
 ## model load
 ```{r}
-model_name = "drpm_eta0_phi1_spcoes5"
-load(paste0("../data/Federico/",model_name,".Rdata"))
+# model_name = "drpm_eta0_phi1_spcoes5"
+# load(paste0("../data/Federico/",model_name,".Rdata"))
 ```
 
 
