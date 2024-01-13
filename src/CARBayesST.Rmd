@@ -32,8 +32,9 @@ EM_covariates_to_exclude =all_covar[grep("EM_",all_covar)]
 
 covariates_to_exclude = c(covariates_to_exclude,EM_covariates_to_exclude)
 covariates=ordered_by_time[,-which(all_covar%in% covariates_to_exclude)]
+### after 1 iteration - selected variables (AR(1))
 
-head(covariates)
+covariates=ordered_by_time[,-which(colnames(covariates)%in%var_removed)] head(covariates)
 ```
 
 # neighbourhood matrix
@@ -75,7 +76,7 @@ mod_linear<-ST.CARlinear(formula= formula,
 ```{r}
 burnin = 2500
 n_sample = 40000
-mod_AR1<-ST.CARar(formula= formula,
+mod_AR1_2<-ST.CARar(formula= formula,
 		   family = "gaussian",
 		   data=covariates,
 		   W= dist_matrix,
@@ -92,7 +93,10 @@ mod_AR1<-ST.CARar(formula= formula,
 		   rho.T=NULL, 
 		   MALA=TRUE,
 		   verbose=TRUE)
+```
 
+# AR2
+```{r}
 mod_AR2<-ST.CARar(formula= formula,
 		   family = "gaussian",
 		   data=covariates,
@@ -139,9 +143,10 @@ only binomial or poisson: response must be integer valued
 seems useless for our goal
 divide into groups low medium high?
 ```{r}
-model_list = list(mod_linear,mod_AR1,mod_AR2)
-saveRDS(model_list, file = "models_CARBayesST.RData")
-mod = model_list[[2]]
+#model_list = list(mod_linear,mod_AR1,mod_AR2)
+#mod = model_list[[2]]
+saveRDS(mod_AR1, file = "AR(1)_model_carbayesST.RData")
+mod = readRDS("AR(1)_model_carbayesST.RData")
 ```
 
 
@@ -185,7 +190,7 @@ selected_variables <- summary_results[summary_results$X2.5. > 0 | summary_result
 print(selected_variables)
 print(rownames(selected_variables)[1:23])
 
-var_removed = summary_results[!(rownames(summary_results)%in%rownames(selected_variables)),]
+var_removed = rownames(summary_results[!(rownames(summary_results)%in%rownames(selected_variables)),])
 print(var_removed)
 ```
 
@@ -210,7 +215,10 @@ metrics_dataframe <- as.data.frame(metrics_matrix)
 metrics_dataframe[,c(3,5)]
 
 ```
-
+          DIC           p.d          WAIC           p.w          LMPL 
+    -5525.360      1460.358     -5485.842      1251.694      2669.273 
+loglikelihood 
+     4223.037 
 
 
 # residuals
