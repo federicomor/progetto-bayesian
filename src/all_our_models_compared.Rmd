@@ -501,7 +501,7 @@ for ( time in time_span){
 }
 ```
 
-
+## cls def
 ```{r}
 salso_out_list_SPPM = list()
 df_cluster_SPPM = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
@@ -509,7 +509,7 @@ for(time in time_span){
 	
 	salso_out <- salso(sppm_C4_list[[time]]$Si,
 				   loss=binder(),
-				   maxNClusters = 8
+				   maxNClusters = 6
 				   )
 
 	salso_out_list_SPPM[[time]] = salso_out
@@ -540,6 +540,29 @@ for(time in time_span){
 }
 ```
 
+## cls see
+```{r}
+for(time in time_span[2]){
+	cat(crayon::red("Time",time,"\n"))
+
+	df_cluster_cut = df_cluster_SPPM[df_cluster_SPPM$Time==time,]
+	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=15)
+
+	# salso_out = salso_out_list_SPPM[[time]]
+	# ssout = summary(salso_out)
+	# plot(ssout,type="heatmap")
+	# plot(ssout,type="mds")
+	# plot(ssout,type="pairs",data=std_sites)
+	# text(0.2,0.98,paste0("Time ",time))
+	# plot(ssout,type="dendrogram")
+
+	
+	# q = get_graph_plot(df_cluster_cut,cols)
+	# print(q)
+	p = plot_graph_and_hist(df_cluster_cut,cols)
+}
+```
+
 ## create plots
 ```{r}
 base_folder = "SPPM"
@@ -563,7 +586,7 @@ cols_ARI = colora(ncols_ari,79,0)
 # cols_ARI = rev(cols_ARI)
 brks = seq(-1,1,length.out=ncols_ari+1)
 # pdf(paste0("./figures/DRPM/ARI/ari.pdf"), height=8, width=10)
-svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=8, width=10)
+# svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=8, width=10)
 # png(paste0("./figures/",base_folder,"/ARI/ari.png"),  width=700,height=600)
 # or see ?designer.colors for colors
 library(fields)
@@ -572,10 +595,11 @@ image.plot(ARImats,
 		   breaks=brks)
 mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
 mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.8)
-dev.off()
+# dev.off()
 ```
 
 
+## cls save
 ```{r}
 for(time in time_span){
 	cat(crayon::red("Time",time,"\n"))
