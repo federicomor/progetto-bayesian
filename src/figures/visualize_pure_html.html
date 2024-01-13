@@ -3,6 +3,7 @@
 <head>
 	<!-- ############# Load images ############# -->
 	<link rel="preload" href="DRPM/ARI/ari.png" as="image"/>
+	<link rel="preload" href="SPPM/ARI/ari.png" as="image"/>
 	<!-- forse prefetch se sono online -->
 	<script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -10,7 +11,10 @@
             var baseFolders = [
             	'DRPM/Graph/Graph-', 
             	'DRPM/Graph and Boxplot/Graph and Boxplot-', 
-            	'DRPM/Salso/Salso-'
+            	'DRPM/Salso/Salso-',
+				'SPPM/Graph/Graph-', 
+            	'SPPM/Graph and Boxplot/Graph and Boxplot-', 
+            	'SPPM/Salso/Salso-'
             ]; // Aggiungi qui le tue cartelle
             var totalImages = 53;
 
@@ -223,15 +227,15 @@ h1:after, h1:before {
 		var imagePath;
         if (selectedplotGrid =='ARI') {
             imagePath_one = "DRPM/" + 'ARI/ari.png';
-            imagePath_two = "DRPM/" + 'ARI/ari.png';
+            imagePath_two = "SPPM/" + 'ARI/ari.png';
             imagePath_three = "DRPM/" + 'ARI/ari.png';
             imagePath_four = "DRPM/" + 'ARI/ari.png';
         } else {
             // imagePath = selectedmodel + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue, 2) + '.png';
             imagePath_one = "DRPM/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
-            imagePath_two = "DRPM/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
-            imagePath_three = "DRPM/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
-            imagePath_four = "DRPM/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
+            imagePath_two = "SPPM/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
+            imagePath_three = "absent/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
+            imagePath_four = "absent/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
         }
 
         // console.log(imagePath_one)

@@ -478,7 +478,7 @@ color_correct_clusters = function(df_cluster_cut,idea=1,verbose=0,max_overall_cl
 	ycurrent = y[,paste0("w",time)]
 	cls_labels = unique(clusters_now)
 	for (i in 1:length(cls_labels)) {
-		media[i] = median(ycurrent[which(clusters_now==cls_labels[i])])
+		media[i] = mean(ycurrent[which(clusters_now==cls_labels[i])])
 	}
 	res <- data.frame(names=cls_labels, media=media)
 	ord = order(res$media,decreasing=T)
@@ -486,7 +486,7 @@ color_correct_clusters = function(df_cluster_cut,idea=1,verbose=0,max_overall_cl
 	# cat("order =",ord,"\n")
 	if(verbose==1){
 	for (i in 1:length(cls_labels)) {
-		media[i] = median(ycurrent[which(clusters_now==cls_labels[i])])
+		media[i] = mean(ycurrent[which(clusters_now==cls_labels[i])])
 		cat(paste0("Media cl",cls_labels[i], " = ",round(media[i],4)
 				   ," [pos ",which(ord==cls_labels[i]),"]\n"))
 	}
