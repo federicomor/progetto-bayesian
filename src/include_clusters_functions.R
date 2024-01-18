@@ -796,3 +796,29 @@ p = p +
 p = grid.arrange(q_graph, p, ncol=2,widths=c(1.8,1.2))
 # p = arrangeGrob(q_graph, p, ncol=2,widths=c(1.8,1.2))
 }
+
+easy_plot = function(clusters_input,nintput=15){
+	clusters_input = clusters_input[1:105]
+	sites = data.frame(
+		longitude = unique(df_weekly$Longitude), 
+		latitude = unique(df_weekly$Latitude))
+	std_sites = data.frame(
+		longitude = unique(df_wsc$Longitude), 
+		latitude = unique(df_wsc$Latitude))
+	stations = unique(df_wsc$IDStations)
+	y=data.frame()
+	for(st in stations){
+		y_we_pm10=cbind(as.data.frame(st),t(df_wsc[which(df_wsc$IDStations==st),"AQ_pm10"]))
+		y=rbind(y,y_we_pm10)
+	}
+	rownames(y) = NULL
+	colnames(y)<- c("id",paste0("w", 1:53))
+	
+	df_temp = data.frame(
+		Longitude = sites$longitude,
+		Latitude = sites$latitude,
+		clusters = clusters_input
+	)
+	cols = color_correct_clusters(df_temp,idea=2,verbose=0,nint=nintput)
+	p = plot_graph_and_hist(df_temp,cols,jittera = T)
+}
