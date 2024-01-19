@@ -704,3 +704,90 @@ Anyway counts always between 50 and 60 -> no variables are visibly better or mor
 
 
 
+
+
+
+
+
+# Bayesian lasso and Horseshoe
+https://search.r-project.org/CRAN/refmans/monomvn/html/blasso.html
+https://cran.r-project.org/web/packages/horseshoe/horseshoe.pdf
+```{r}
+library(horseshoe)
+library(monomvn)
+
+
+index = 1
+covariates_to_exclude = c("X","IDStations","Latitude","Longitude","Time","Altitude",
+						  "AQ_pm10","WE_mode_wind_direction_10m","WE_mode_wind_direction_100m","day","LA_land_use")
+#not numerical or constant over same  (lat, long, alti and land_use)
+covar=df_weekly[,-which(colnames(df_weekly)%in% covariates_to_exclude)]
+k = dim(covar)[2]+3  #+3 if gonna use nonlinearities on time
+count_for_selection_l=rep(0,k)
+count_for_selection_hs=rep(0,k)
+
+
+for (st in stations){
+	cat(crayon::red("Station",st,index,"\n"))
+	index = index+1
+ #covariates and target
+  y=df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]
+  y=as.numeric(y[[1]])
+  y=scale(y)[1:53]    #normalization on each single station ( 53 weeks)
+  
+  covs=covar[which(df_weekly$IDStations==st),]
+  
+  #to add nonlinearities on time
+  t2=(covs$week)^2
+  sint=sin(covs$week)
+  cost=cos(covs$week)
+  covs=cbind(covs,t2,sint,cost)
+ 
+  covs=as.data.frame(covs)
+  covariates=scale(covs,center = TRUE)     #normalization on the station
+  #jitter to avoid nans in constant columns
+  for(i in 1:k){
+    if(sum(is.na(covariates[,i]))>0)
+      covs[,i]=jitter(covs[,i],0.01)
+  }
+  covs=scale(covs, center=TRUE)
+
+  
+  X=covs
+  
+ #lasso
+  model_lasso=blasso(X, y)
+  #probability for each variable of being selected
+  count_l=rep(0,k)
+  count_l[which(summary(model_lasso, burnin=200,lambda2=1,M=5)$bn0>0.7)]=1  #can change threshold
+  count_for_selection_l=count_for_selection_l + count_l
+  
+
+ #horseshoe
+  model_hs=horseshoe(y, X, method.tau="fixed",tau=0.01, method.sigma="fixed", Sigma2=100, burn=1000, nmc=5000, thin=10, alpha=0.05)
+  #selected variables
+  count_for_selection_hs=count_for_selection_hs + HS.var.select(model_hs, y, method = "intervals")
+  
+}
+
+count_for_selection_l=as.data.frame(t(count_for_selection_l))
+colnames(count_for_selection_l)<-colnames(covs)
+print(count_for_selection_l)
+
+#count_for_selection_hs=as.data.frame(t(count_for_selection_hs))
+#colnames(count_for_selection_hs)<-colnames(covs)
+#print(count_for_selection_hs)
+#looks like horseshoe rejecting all variables -> useless
+
+```
+
+
+
+```{r}
+#saveRDS(count_for_selection_l,"count_for_selection_l.RData")
+#saveRDS(count_for_selection_hs,"count_for_selection_hs.RData")
+#saveRDS(count_for_selection_l,"c_for_sel_l_with_nonlin_on_time.RData") 
+```
+
+
+
