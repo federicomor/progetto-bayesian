@@ -8,6 +8,14 @@ library(ggplot2)
 library(grDevices)
 library(png)
 
+Mode <- function(x,verbose=0) {
+	ux <- unique(x)
+	if(verbose){
+		print(table(x))
+	}
+	ux[which.max(tabulate(match(x, ux)))]
+}
+
 ########################
 # useful aliases
 ########################

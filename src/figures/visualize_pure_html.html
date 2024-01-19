@@ -12,9 +12,14 @@
             	'DRPM/Graph/Graph-', 
             	'DRPM/Graph and Boxplot/Graph and Boxplot-', 
             	'DRPM/Salso/Salso-',
-				'SPPM/Graph/Graph-', 
-            	'SPPM/Graph and Boxplot/Graph and Boxplot-', 
-            	'SPPM/Salso/Salso-'
+				
+				'sPPM/Graph/Graph-', 
+            	'sPPM/Graph and Boxplot/Graph and Boxplot-', 
+            	'sPPM/Salso/Salso-',
+            	
+            	'Gaussian PPMx/Graph/Graph-', 
+            	'Gaussian PPMx/Graph and Boxplot/Graph and Boxplot-', 
+            	'Gaussian PPMx/Salso/Salso-'
             ]; // Aggiungi qui le tue cartelle
             var totalImages = 53;
 
@@ -140,7 +145,9 @@ h1:after, h1:before {
 	<select id="model-select" onchange="changemodel()">
 	<!-- <select id="model-select"> -->
 		<option value="DRPM/">DRPM</option>
-		<option value="SPPM/">SPPM</option>
+		<option value="sPPM/">SPPM</option>
+		<option value="Gaussian PPMx/">Gaussian PPMx</option>
+		<option value="Curve PPMx/">Curve PPMx</option>
 	</select>
 
 	<!-- <br> -->
@@ -151,6 +158,7 @@ h1:after, h1:before {
 		<option value="Graph">Graph</option>
 		<option value="Salso">Salso</option>
 		<option value="ARI">ARI</option>
+		<option value="Time series">Time series</option>
 	</select>
 
 	<!-- <br> -->
@@ -180,8 +188,11 @@ h1:after, h1:before {
 
 		var imagePath;
         if (selectedplot =='ARI') {
-            imagePath = selectedmodel + 'ARI/ari.png';
-        } else {
+            imagePath = selectedmodel + 'ARI/ari.svg';
+        } else if (selectedplot == 'Time series') {
+        	imagePath = selectedmodel + 'Time series/Time series.svg';
+        } 
+        else {
             imagePath = selectedmodel + selectedplot + '/' + selectedplot + '-' + pad(currentValue, 2) + '.png';
         }
         // console.log(imagePath)
@@ -214,6 +225,7 @@ h1:after, h1:before {
 		<option value="Graph">Graph</option>
 		<option value="Salso">Salso</option>
 		<option value="ARI">ARI</option>
+		<option value="Time series">Time series</option>
 	</select>
 
 	<!-- <br> -->
@@ -223,7 +235,7 @@ h1:after, h1:before {
 	<table>
     <tr>
 		<td>DRPM<div id="current-image-one"></div></td>
-		<td>SPPM<div id="current-image-two"></div></td>            
+		<td>sPPM<div id="current-image-two"></div></td>            
 	</tr>
 	<tr>
 		<td>Gaussian PPMx<div id="current-image-three"></div></td>
@@ -253,16 +265,21 @@ h1:after, h1:before {
 
 		var imagePath;
         if (selectedplotGrid =='ARI') {
-            imagePath_one = "DRPM/" + 'ARI/ari.png';
-            imagePath_two = "SPPM/" + 'ARI/ari.png';
-            imagePath_three = "DRPM/" + 'ARI/ari.png';
-            imagePath_four = "DRPM/" + 'ARI/ari.png';
-        } else {
+            imagePath_one = "DRPM/" + 'ARI/ari.svg';
+            imagePath_two = "sPPM/" + 'ARI/ari.svg';
+            imagePath_three = "Gaussian PPMx/" + 'ARI/ari.svg';
+            imagePath_four = "Curve PPMx/" + 'ARI/ari.svg';
+        } else if (selectedplotGrid == 'Time series') {
+            imagePath_one = "DRPM/" + 'Time series/Time series.svg';
+            imagePath_two = "sPPM/" + 'Time series/Time series.svg';
+            imagePath_three = "Gaussian PPMx/" + 'Time series/Time series.svg';
+            imagePath_four = "Curve PPMx/" + 'Time series/Time series.svg';
+        }  else {
             // imagePath = selectedmodel + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue, 2) + '.png';
             imagePath_one = "DRPM/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
-            imagePath_two = "SPPM/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
-            imagePath_three = "absent/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
-            imagePath_four = "absent/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
+            imagePath_two = "sPPM/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
+            imagePath_three = "Gaussian PPMx/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
+            imagePath_four = "Curve PPMx/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
         }
 
         // console.log(imagePath_one)

@@ -4,7 +4,7 @@ color_empty = "white"
 color_station = "yellow"
 color_fill = "forestgreen"
 lombardia_2 = altre_regioni[altre_regioni$NAME_1 == "Lombardia",]
-DefaultPlot <- function(add_bg=TRUE){
+DefaultPlot <- function(add_bg=FALSE){
 	# crea mappa lombardia
 	if (add_bg==TRUE) {
 		mappa_stations <- ggplot() +

@@ -436,7 +436,7 @@ cols_default=colora(12,"div",0)[-2]
 xlims = c(-2.5,1.5)
 cat(crayon::red("- get_graph_plot(df_cluster_cut)\n"))
 get_graph_plot = function(df_cluster_cut,cols=cols_default,
-						  titolo=paste("Cluster map - time",time)){ # already mode_corrected
+						  titolo=paste("Cluster map - time",time),verbose=0){ # already mode_corrected
 	clusters_now = df_cluster_cut$clusters
 	edges_list = assemble_edges_list(clusters_now)
 	
@@ -452,6 +452,10 @@ get_graph_plot = function(df_cluster_cut,cols=cols_default,
 		edges_to_plot = edges_list[[cl]]
 		if(!is.null(edges_to_plot)){
 			actual_clusters = c(actual_clusters,cl)
+			if(verbose==1){
+				cat("procesing cluster",cl,"\n")
+				print(actual_clusters)
+			}
 		q = q + geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
 								 color = cols[as.numeric(cluster)]),
 							 # color = paste0("cl",cl)),
@@ -797,7 +801,7 @@ p = grid.arrange(q_graph, p, ncol=2,widths=c(1.8,1.2))
 # p = arrangeGrob(q_graph, p, ncol=2,widths=c(1.8,1.2))
 }
 
-easy_plot = function(clusters_input,nintput=15){
+easy_plot = function(clusters_input,nintput=30){
 	clusters_input = clusters_input[1:105]
 	sites = data.frame(
 		longitude = unique(df_weekly$Longitude), 
