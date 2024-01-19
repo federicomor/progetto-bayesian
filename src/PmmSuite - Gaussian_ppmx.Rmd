@@ -594,38 +594,9 @@ X = df_time[, var_selected]
 cLUSTER PLOTS, WEEK 5
 
 ```{r}
-
-		df_temp = data.frame(
-		Longitude = unique(df_weekly$Longitude),
-		Latitude = unique(df_weekly$Latitude),
-		clusters = clusters_now[1:105]
-	)
-	df_temp$Time = rep(time,dim(df_temp)[1])
-	df_cluster_cut = df_temp
-	
-	
-	### Hist plot
-	# p = get_hist_color_plot(df_cluster_cut)
-	#p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
-	#print(p)
-	
-	### Graph plot
-	q = get_graph_plot(df_cluster_cut)
-	print(q)
-	
-    # p = get_hist_continuos_plot(df_cluster_cut,verbose=0)
-	# p = get_hist_color_plot(df_cluster_cut)
-	# p = get_hist_fill_plot(df_cluster_cut)
-	cols = color_correct_clusters(df_cluster_cut,idea=1,verbose=0)
-	p = get_boxplot_plot(df_cluster_cut,cols)
-	print(p)
-	# plot_graph_and_hist(df_cluster_cut)
-	
-	# or both together with
-	# plot_graph_and_hist(df_cluster_cut)
-	
-	clusters_old = clusters_now
-		
+clusters_now = salso(fit$Si,loss="binder")
+clusters_now = clusters_now[1:105]
+easy_plot(clusters_now)
 ```
 
 
@@ -682,6 +653,7 @@ Trovo clusters finali assegnando ad ogni stazione il clusters che la contraddist
 ```{r include=FALSE}
 i = 1
 time_span = 1:53
+lista <- list(0)
 for (time in time_span){
 df_time = df_weekly_scaled_centered[which(df_weekly$week == time), ]
 y_fit = df_time$AQ_pm10
@@ -727,199 +699,24 @@ fit = gaussian_ppmx(
 	clusters_now = clusters_now[1:105]
 	### Mode correct clusters
 	#clusters_now = mode_correct_clusters(clusters_old,clusters_now)
-	
-	df_temp = data.frame(
-		Longitude = unique(df_weekly$Longitude),
-		Latitude = unique(df_weekly$Latitude),
-		clusters = clusters_now[1:105]
-	)
-	df_temp$Time = rep(time,dim(df_temp)[1])
-	df_cluster_cut = df_temp
-	
-	
-	### Hist plot
-	# p = get_hist_color_plot(df_cluster_cut)
-	#p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
+	#p = easy_plot(clusters_now)
 	#print(p)
 	
-	### Graph plot
-	q = get_graph_plot(df_cluster_cut)
-	print(q)
-	
-    # p = get_hist_continuos_plot(df_cluster_cut,verbose=0)
-	# p = get_hist_color_plot(df_cluster_cut)
-	# p = get_hist_fill_plot(df_cluster_cut)
-	cols = color_correct_clusters(df_cluster_cut,idea=1,verbose=0)
-	p = get_boxplot_plot(df_cluster_cut,cols)
-	print(p)
-	# plot_graph_and_hist(df_cluster_cut)
-	
-	# or both together with
-	# plot_graph_and_hist(df_cluster_cut)
+
 	
 	clusters_old = clusters_now
-	########### CAPIRE COME 
+	# salvo
+	lista[[time]] = fit
 }
 
 ```
 
+```{r}
+saveRDS(lista, file="Gaussian_ppmX.RData")
+```
 
 
 Per vedere i trace plot guarda quelli della sezione precedente dove considero una settimana sola. Il modello è lo stesso.
 
 
-### Clusters for seasons 
-Winter: 1 - 11, 52, 53
-Spring: 12- 25
-Summer: 26 - 38
-Autumn: 39 - 51
-
-
-## WINTER
-
-```{r}
-clus_WINTER <- numeric(0)
-for (i in 1:dim(mat_cluster)[1])
-{   
-	clus_WINTER[i] <- as.numeric(names(table(mat_cluster[i,c(1:11, 52,53)]))[which.max(table(mat_cluster[i,c(1:11, 52,53)]))])
-}
-clus_WINTER
-```
-
-
-```{r}
-df_temp = data.frame(
-	Longitude = unique(df_weekly$Longitude),
-	Latitude = unique(df_weekly$Latitude),
-	clusters = clus_WINTER
-)
-
-df_temp$Time = rep(1,dim(df_temp)[1])
-df_cluster_cut = df_temp
-
-
-
-### Hist plot
-# p = get_hist_color_plot(df_cluster_cut)
-p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
-print(p)
-
-### Graph plot
-q = get_graph_plot(df_cluster_cut)
-print(q)
-
-# or both together with
-# plot_graph_and_hist(df_cluster_cut)
-
-```
-
-
-## SPRING 
-
-```{r}
-clus_SPRING <- numeric(0)
-for (i in 1:dim(mat_cluster)[1])
-{ clus_SPRING[i] <- as.numeric(names(table(mat_cluster[i,c(12:25)]))[which.max(table(mat_cluster[i,c(12:25)]))])
-}
-clus_SPRING
-```
-
-
-```{r}
-df_temp = data.frame(
-	Longitude = unique(df_weekly$Longitude),
-	Latitude = unique(df_weekly$Latitude),
-	clusters = clus_SPRING
-)
-
-df_temp$Time = rep(1,dim(df_temp)[1])
-df_cluster_cut = df_temp
-
-
-
-### Hist plot
-# p = get_hist_color_plot(df_cluster_cut)
-p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
-print(p)
-
-### Graph plot
-q = get_graph_plot(df_cluster_cut)
-print(q)
-
-# or both together with
-# plot_graph_and_hist(df_cluster_cut)
-
-```
-
-## SUMMER 
-```{r}
-clus_SUMMER <- numeric(0)
-for (i in 1:dim(mat_cluster)[1])
-{ clus_SUMMER[i] <- as.numeric(names(table(mat_cluster[i,26:38]))[which.max(table(mat_cluster[i,26:38]))])
-}
-clus_SUMMER
-```
-
-
-```{r}
-df_temp = data.frame(
-	Longitude = unique(df_weekly$Longitude),
-	Latitude = unique(df_weekly$Latitude),
-	clusters = clus_SUMMER
-)
-
-df_temp$Time = rep(1,dim(df_temp)[1])
-df_cluster_cut = df_temp
-
-
-
-### Hist plot
-# p = get_hist_color_plot(df_cluster_cut)
-p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
-print(p)
-
-### Graph plot
-q = get_graph_plot(df_cluster_cut)
-print(q)
-
-# or both together with
-# plot_graph_and_hist(df_cluster_cut)
-
-```
-
-## AUTUMN 
-```{r}
-clus_AUTUMN <- numeric(0)
-for (i in 1:dim(mat_cluster)[1])
-{ clus_AUTUMN[i] <- as.numeric(names(table(mat_cluster[i,39:51]))[which.max(table(mat_cluster[i,39:51]))])
-}
-clus_AUTUMN
-```
-
-
-```{r}
-df_temp = data.frame(
-	Longitude = unique(df_weekly$Longitude),
-	Latitude = unique(df_weekly$Latitude),
-	clusters = clus_AUTUMN
-)
-
-df_temp$Time = rep(1,dim(df_temp)[1])
-df_cluster_cut = df_temp
-
-
-
-### Hist plot
-# p = get_hist_color_plot(df_cluster_cut)
-p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
-print(p)
-
-### Graph plot
-q = get_graph_plot(df_cluster_cut)
-print(q)
-
-# or both together with
-# plot_graph_and_hist(df_cluster_cut)
-
-```
 
