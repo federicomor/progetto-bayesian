@@ -558,6 +558,8 @@ LPML
 ```
 
 ## MODELLO FINALE SU UNA SETTIMANA
+
+Preciso le prior sul modello finale
 ```{r}
 var_selected <- c("Altitude","EM_nox_sum","WE_mode_wind_direction_100m","WE_wind_speed_100m_max", "LA_lvi")
 ```
@@ -592,14 +594,14 @@ X = df_time[, var_selected]
 	# s2 = varianza della normale della prior della media della likelihood
 	# A = UpperBound dela sigma della normale della likelihood
 	# A0 = upperbound della sigma della normale della prior per la media della likelihood
-	modelPriors = c(0, 100^2, 10, 100), 
+	modelPriors = c(0, 100, 0.5, 1), # c(0, 100, 10, 1)
 	# Prior del modello
 	mh = c(0.1, 0.1),
-	draws = 3300,
+	draws = 4300,
 	# itaration totali
 	burn = 300,
 	# burnin
-	thin = 3,
+	thin = 5,
 	# considero un valore della catena ogi thin salti
 	verbose = FALSE)
 ```
@@ -618,6 +620,8 @@ easy_plot(clusters_now)
 ```{r}
 sampled_station = floor(runif(1,0,105))
 cat("sampled_station =",sampled_station,"- that is station called",unique(df_weekly$IDStations)[sampled_station])
+
+# sampled_sation = 2,5,42,52,81,38,39,104,98 buon trace plot
 
 ```
  I TRACE PLOT CAMBIANO MOLTO CON LE STAZIONI SCELTE!!!
@@ -640,6 +644,7 @@ plot(fit$mu0,type="l",
 		 				" - station " * .(sampled_station)),
 		 xlab = "MCMC iterations",ylab="values")
 
+
 ```
 
 ## sigma2 (posterior of sigma^2 relativa a soggetto si) --> associata a sigmaj
@@ -649,7 +654,9 @@ plot(fit$sig2[,sampled_station],type="l",
 		 				" - station " * .(sampled_station)),
 		 xlab = "MCMC iterations",ylab="values")
 
-
+par(mar=c(4,4,3,2))
+acf(fit$sig2[,sampled_station],main=bquote("ACF plot of " * sig2 * " at week " * .(time) *
+										  	" - station " * .(sampled_station)))
 ```
 
 ## sig20 (Posterior value of sigma0^2)  --> associata sigma0
@@ -700,25 +707,23 @@ fit = gaussian_ppmx(
 	# s2 = varianza della normale della prior della media della likelihood
 	# A = UpperBound dela sigma della normale della likelihood
 	# A0 = upperbound della sigma della normale della prior per la media della likelihood
-	modelPriors = c(0, 100^2, 10, 100), 
+	modelPriors = c(0, 100, 0.5, 1), # c(0, 100, 10, 1)
 	# Prior del modello
 	mh = c(0.1, 0.1),
-	draws = 3300,
+	draws = 4300,
 	# itaration totali
 	burn = 300,
 	# burnin
-	thin = 3,
+	thin = 5,
 	# considero un valore della catena ogi thin salti
 	verbose = FALSE
 )
 
-	clusters_now = salso(fit$Si,loss="binder")
-	clusters_now = clusters_now[1:105]
-	### Mode correct clusters
-	#clusters_now = mode_correct_clusters(clusters_old,clusters_now)
-	#p = easy_plot(clusters_now)
-	#print(p)
 	
+	clusters_now = salso(fit$Si,loss="binder")
+    clusters_now = clusters_now[1:105]
+    time = time # mancava questo, l'indicazione della week scelta nel fit
+    easy_plot(clusters_now)
 
 	
 	clusters_old = clusters_now
