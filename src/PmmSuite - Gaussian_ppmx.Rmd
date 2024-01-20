@@ -24,16 +24,29 @@ Stuff needed for the plot functions to work
 ```{r}
 cols = colora(10,"div")[-2] # divergent palette; togliamo il giallino
 
-stations = unique(df_weekly$IDStations)
+time_span = c(1:53)
+sites = data.frame(
+	longitude = unique(df_weekly$Longitude), 
+	latitude = unique(df_weekly$Latitude))
+
+std_sites = data.frame(
+	longitude = unique(df_wsc$Longitude), 
+	latitude = unique(df_wsc$Latitude))
+
+stations = unique(df_wsc$IDStations)
 y=data.frame()
 
 for(st in stations){
-  y_we_pm10=cbind(as.data.frame(st),t(df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]))
+  y_we_pm10=cbind(as.data.frame(st),t(df_wsc[which(df_wsc$IDStations==st),"AQ_pm10"]))
   y=rbind(y,y_we_pm10)
 }
 
 rownames(y) = NULL
 colnames(y)<- c("id",paste0("w", 1:53))
+df_wsc
+y
+plot(sites)
+plot(std_sites)
 # this y needs to not be overwritten
 ```
 
@@ -596,6 +609,7 @@ cLUSTER PLOTS, WEEK 5
 ```{r}
 clusters_now = salso(fit$Si,loss="binder")
 clusters_now = clusters_now[1:105]
+time = 5 # mancava questo, l'indicazione della week scelta nel fit
 easy_plot(clusters_now)
 ```
 
@@ -614,6 +628,9 @@ plot(fit$mu[,sampled_station],type="l",
 		 				" - station " * .(sampled_station)),
 		 xlab = "MCMC iterations",ylab="values")
 
+par(mar=c(4,4,3,2))
+acf(fit$mu[,sampled_station],main=bquote("ACF plot of " * mu * " at week " * .(time) *
+										  	" - station " * .(sampled_station)))
 ```
 
 ## mu0 (Posterior values of mu0) --> associata a mu0
