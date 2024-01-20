@@ -52,6 +52,8 @@ plot(std_sites)
 sites_plt = sites
 colnames(sites_plt) = c("Longitude","Latitude")
 rownames(sites_plt) = paste(1:105)
+
+salso_out_lists = list()
 ```
 
 
@@ -349,6 +351,9 @@ for(time in time_span){
 
 }
 ```
+```{r}
+salso_out_lists[["DRPM"]] = salso_out_list
+```
 
 ## tseries plot
 ```{r}
@@ -627,10 +632,10 @@ load("../data/sppm_c4_list.RData")
 ## cls def/see
 Here you should tune the salso(ecc) to maybe improve the cluster generation
 ```{r}
-salso_out_list_SPPM = list()
-salso_out_matrix_SPPM = matrix(NA,nrow=53,ncol=105)
+salso_out_list = list()
+salso_out_matrix = matrix(NA,nrow=53,ncol=105)
 
-df_cluster_SPPM = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
+df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
 for(time in time_span){
 	
 	# tune here your cluster generation
@@ -639,8 +644,8 @@ for(time in time_span){
 				   maxNClusters = 8
 				   )
 
-	salso_out_list_SPPM[[time]] = salso_out
-	salso_out_matrix_SPPM[time,] = salso_out
+	salso_out_list[[time]] = salso_out
+	salso_out_matrix[time,] = salso_out
 
 	df_temp = data.frame(
 		Longitude = sites$longitude,
@@ -653,7 +658,7 @@ for(time in time_span){
 	################################################
 	
 	df_temp$Time = rep(time,dim(df_temp)[1])
-	df_cluster_SPPM = rbind(df_cluster_SPPM,df_temp)
+	df_cluster = rbind(df_cluster,df_temp)
 	
 	# clusters log
 	clusters_now = df_temp$clusters
@@ -672,10 +677,10 @@ for(time in time_span){
 	df_cluster_cut = df_temp 
 	# if you want to see results directly here, use these lines
 	
-	# df_cluster_cut = df_cluster_SPPM[df_cluster_SPPM$Time==time,] # same def
+	# df_cluster_cut = df_cluster[df_cluster$Time==time,] # same def
 	# cols = ... defined above
 
-	# salso_out = salso_out_list_SPPM[[time]]
+	# salso_out = salso_out_list[[time]]
 	# ssout = summary(salso_out)
 	# plot(ssout,type="heatmap")
 	# plot(ssout,type="mds")
@@ -693,6 +698,7 @@ for(time in time_span){
 ## plots save
 ```{r}
 base_folder = "sPPM"
+salso_out_lists[[base_folder]] = salso_out_list
 ```
 
 ### ari
@@ -705,7 +711,7 @@ LEN = max(time_span)
 ARImats <- matrix(NA, nrow=LEN, ncol=LEN)
 rho_ARI <- list()
 for(time in 1:LEN){
-	rho_ARI[[time]] = salso_out_list_SPPM[[time]]
+	rho_ARI[[time]] = salso_out_list[[time]]
 }
 for(k in 1: LEN){
 	for(kk in 1: LEN){
@@ -721,15 +727,15 @@ for(a in 1:2){
 if(a==1)
 png(paste0("./figures/",base_folder,"/ARI/ari.png"), width=700,height=600)
 else {
-svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=8, width=10)
+svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=7, width=8)
 }
 
 	library(fields)
 image.plot(ARImats,
 		   main=paste0("Lagged ARI values - ",base_folder),axes=FALSE,col=cols_ARI,
 		   breaks=brks)
-mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
-mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.8)
+mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.7)
+mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.7)
 dev.off()
 }
 ```
@@ -745,7 +751,7 @@ tssites = sites_plt
 tssites$cl = rep(0,105)
 
 for (st in 1:105){
-	mo = Mode(salso_out_matrix_SPPM[,st],verbose=1)
+	mo = Mode(salso_out_matrix[,st],verbose=1)
 	cat(crayon::red("Station",st,"has mode cluster label equal to",mo,"\n"))
 	cl_regions[[mo]] = c(cl_regions[[mo]],st)
 	tssites$cl[st] = mo
@@ -836,7 +842,7 @@ dev.off()
 for(time in time_span){
 	cat(crayon::red("Time",time,"\n"))
 
-	df_cluster_cut = df_cluster_SPPM[df_cluster_SPPM$Time==time,]
+	df_cluster_cut = df_cluster[df_cluster$Time==time,]
 	# clusters_now = df_cluster_cut$clusters
 	####### no mode correct if heat plot
 	# clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
@@ -850,7 +856,7 @@ for(time in time_span){
 
 	
 	### Salso
-	salso_out = salso_out_list_SPPM[[time]]
+	salso_out = salso_out_list[[time]]
 	ssout = summary(salso_out)
 	png(filename=paste0("./figures/",base_folder,"/Salso/Salso-",sprintf("%02d",time),".png"),
 		width=600,height=500)
@@ -893,20 +899,20 @@ gppmx_fit = readRDS("Gaussian_ppmX.RData")
 ## cls def/see
 Here you should tune the salso(ecc) to maybe improve the cluster generation
 ```{r}
-salso_out_list_GPPMX = list()
-salso_out_matrix_GPPMX = matrix(NA,nrow=53,ncol=105)
+salso_out_list = list()
+salso_out_matrix = matrix(NA,nrow=53,ncol=105)
 
-df_cluster_GPPMX = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
+df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
 for(time in time_span){
 	
 	# tune here your cluster generation
 	salso_out <- salso(gppmx_fit[[time]]$Si,
-				   loss=binder(),
+				   loss=binder(a=1.2), # example of a tuning
 				   maxNClusters = 8
 				   )
 
-	salso_out_list_GPPMX[[time]] = salso_out
-	salso_out_matrix_GPPMX[time,] = salso_out
+	salso_out_list[[time]] = salso_out
+	salso_out_matrix[time,] = salso_out
 
 	df_temp = data.frame(
 		Longitude = sites$longitude,
@@ -919,7 +925,7 @@ for(time in time_span){
 	################################################
 	
 	df_temp$Time = rep(time,dim(df_temp)[1])
-	df_cluster_GPPMX = rbind(df_cluster_GPPMX,df_temp)
+	df_cluster = rbind(df_cluster,df_temp)
 	
 	# clusters log
 	clusters_now = df_temp$clusters
@@ -938,10 +944,10 @@ for(time in time_span){
 	df_cluster_cut = df_temp 
 	# if you want to see results directly here, use these lines
 	
-	# df_cluster_cut = df_cluster_GPPMX[df_cluster_GPPMX$Time==time,] # same def
+	# df_cluster_cut = df_cluster[df_cluster$Time==time,] # same def
 	# cols = ... defined above
 
-	# salso_out = salso_out_list_GPPMX[[time]]
+	# salso_out = salso_out_list[[time]]
 	# ssout = summary(salso_out)
 	# plot(ssout,type="heatmap")
 	# plot(ssout,type="mds")
@@ -959,6 +965,7 @@ for(time in time_span){
 ## plots save
 ```{r}
 base_folder = "Gaussian PPMx"
+salso_out_lists[[base_folder]] = salso_out_list
 ```
 
 ### ari
@@ -971,7 +978,7 @@ LEN = max(time_span)
 ARImats <- matrix(NA, nrow=LEN, ncol=LEN)
 rho_ARI <- list()
 for(time in 1:LEN){
-	rho_ARI[[time]] = salso_out_list_GPPMX[[time]]
+	rho_ARI[[time]] = salso_out_list[[time]]
 }
 for(k in 1: LEN){
 	for(kk in 1: LEN){
@@ -987,15 +994,15 @@ for(a in 1:2){
 if(a==1)
 png(paste0("./figures/",base_folder,"/ARI/ari.png"), width=700,height=600)
 else {
-svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=8, width=10)
+svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=7, width=8)
 }
 
 	library(fields)
 image.plot(ARImats,
 		   main=paste0("Lagged ARI values - ",base_folder),axes=FALSE,col=cols_ARI,
 		   breaks=brks)
-mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
-mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.8)
+mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.7)
+mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.7)
 dev.off()
 }
 ```
@@ -1011,7 +1018,7 @@ tssites = sites_plt
 tssites$cl = rep(0,105)
 
 for (st in 1:105){
-	mo = Mode(salso_out_matrix_GPPMX[,st],verbose=1)
+	mo = Mode(salso_out_matrix[,st],verbose=1)
 	cat(crayon::red("Station",st,"has mode cluster label equal to",mo,"\n"))
 	cl_regions[[mo]] = c(cl_regions[[mo]],st)
 	tssites$cl[st] = mo
@@ -1102,7 +1109,7 @@ dev.off()
 for(time in time_span){
 	cat(crayon::red("Time",time,"\n"))
 
-	df_cluster_cut = df_cluster_GPPMX[df_cluster_GPPMX$Time==time,]
+	df_cluster_cut = df_cluster[df_cluster$Time==time,]
 	# clusters_now = df_cluster_cut$clusters
 	####### no mode correct if heat plot
 	# clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
@@ -1116,7 +1123,7 @@ for(time in time_span){
 
 	
 	### Salso
-	salso_out = salso_out_list_GPPMX[[time]]
+	salso_out = salso_out_list[[time]]
 	ssout = summary(salso_out)
 	png(filename=paste0("./figures/",base_folder,"/Salso/Salso-",sprintf("%02d",time),".png"),
 		width=600,height=500)
@@ -1160,29 +1167,40 @@ your models when done
 
 #======
 # ARI models
+need to run almost all the notebook sections for this
 ```{r}
 library(mclust) # if Adjusted RI
 LEN = max(time_span)
 
-ARIvec <- matrix(NA, nrow=1, ncol=LEN)
-for(k in 1: LEN){
-	ARIvec[k] <- adjustedRandIndex(salso_out_list[[k]], salso_out_list_SPPM[[k]])
-}	
-ncols_ari = 100
-cols_ARI = colora(ncols_ari,79,0)
-# cols_ARI = rev(cols_ARI)
-brks = seq(-1,1,length.out=ncols_ari+1)
-# pdf(paste0("./figures/DRPM/ARI/ari.pdf"), height=8, width=10)
-# svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=8, width=10)
-# png(paste0("./figures/",base_folder,"/ARI/ari.png"),  width=700,height=600)
-# or see ?designer.colors for colors
-library(fields)
-plot(1:53,ARIvec,type="l")
+compare_ARI = function(mod1,mod2){
+	ARIvec <- matrix(NA, nrow=1, ncol=LEN)
+	for(k in 1: LEN){
+		ARIvec[k] <- adjustedRandIndex(salso_out_lists[[mod1]][[k]][1:105],
+									   salso_out_lists[[mod2]][[k]][1:105])
+	}	
+	ncols_ari = 100
+	cols_ARI = colora(ncols_ari,79,0)
+	# cols_ARI = rev(cols_ARI)
+	brks = seq(-1,1,length.out=ncols_ari+1)
+	# pdf(paste0("./figures/DRPM/ARI/ari.pdf"), height=8, width=10)
+	# svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=8, width=10)
+	# png(paste0("./figures/",base_folder,"/ARI/ari.png"),  width=700,height=600)
+	library(fields)
+	plot(1:53,ARIvec,type="l",main=paste0("ARI values - ",mod1," vs ",mod2),ylim=c(-0.5,1))
+	abline(h=0,col="gray80",lty=3)
+	
+	image.plot(ARIvec,
+			   main=paste0("ARI values - ",mod1," vs ",mod2),axes=FALSE,col=cols_ARI,
+			   breaks=brks)
+	mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
 
-image.plot(ARIvec,
-		   main=paste0("ARI values - DRPM vs SPPM"),axes=FALSE,col=cols_ARI,
-		   breaks=brks)
-mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
+}
+
+mods = c("DRPM","sPPM","Gaussian PPMx")
+compare_ARI(mods[1],mods[2])
+compare_ARI(mods[1],mods[3])
+compare_ARI(mods[2],mods[3])
+
 # dev.off()
 ```
 
