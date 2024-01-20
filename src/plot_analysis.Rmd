@@ -4,16 +4,11 @@ title: "R Notebook"
 
 ```{r,warning=FALSE}
 source("include.R")
-source("plot functions/plot_data_and_libraries.R")
 ```
 
-
-```{r,warning=FALSE}
-source("plot functions/plot_utilities.R")
-```
 # update plot libraries
 ```{r,warning=FALSE}
-source("plot functions/plot_functions.R")
+source("plot functions/plotter.R")
 ```
 
 # Istogram Y and ln(Y)
@@ -76,15 +71,48 @@ map = gridMap(initial_date,final_date,every,file_name,chosen_variable_name)
 
 #  Map expanding radius: togliere la legenda
 
+
+```{r}
+
+circlesPlot <- function(initial_date,final_date,every,file_name,chosen_var_name){
+	
+	filter_date_list = filter_date(df_agri,initial_date,final_date,every)
+	data_from_to = filter_date_list[[1]]
+	len_time = 10
+	chosen_var = as.numeric(data_from_to[,chosen_var_name])
+	
+	
+	
+	mappa_expanding <- DefaultPlot()+
+		## add points for the stations
+		
+		
+		
+		geom_point(data =data_from_to, aes(x=Longitude,y=Latitude),
+				   size=lerp_pm10_radius(chosen_var),
+				   color = lerp_pm10_color(chosen_var), alpha=0.6)+
+		
+		geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = color_station_point) +
+		
+		labs(title=paste0("measurments of ",chosen_var_name))+
+		guides(color = guide_legend(title = chosen_var_name))
+
+	return(animator(file_name,mappa_expanding,data_from_to,len_time,1080,1080))
+
+}
+
+```
+
+
 ```{r,warning=FALSE}
 initial_date = "2018-01-01"
 final_date = "2019-01-01"
-every = "year"
+every = "week"
 
 # if you change the file_name from None it will create a mp4 video
-file_name = "None"
+file_name = "expanding circles"
 
-chosen_var_name = "AQ_pm10" 
+chosen_var_name = "AQ_pm10"
 
 circles_plot <- circlesPlot(initial_date,final_date,every,file_name,chosen_var_name)
 ```

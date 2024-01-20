@@ -12,9 +12,17 @@
             	'DRPM/Graph/Graph-', 
             	'DRPM/Graph and Boxplot/Graph and Boxplot-', 
             	'DRPM/Salso/Salso-',
-				'SPPM/Graph/Graph-', 
-            	'SPPM/Graph and Boxplot/Graph and Boxplot-', 
-            	'SPPM/Salso/Salso-'
+            	'DRPM/With Covariates/With Covariates-',
+				
+				'sPPM/Graph/Graph-', 
+            	'sPPM/Graph and Boxplot/Graph and Boxplot-', 
+            	'sPPM/Salso/Salso-',
+            	'sPPM/With Covariates/With Covariates-',
+
+            	'Gaussian PPMx/Graph/Graph-', 
+            	'Gaussian PPMx/Graph and Boxplot/Graph and Boxplot-', 
+            	'Gaussian PPMx/Salso/Salso-',
+            	'Gaussian PPMx/With Covariates/With Covariates-'
             ]; // Aggiungi qui le tue cartelle
             var totalImages = 53;
 
@@ -135,12 +143,15 @@ h1:after, h1:before {
 <!-- ############# one model ############# -->
 <div id="image-slider">
 	<h1>One-model plots</h1>
+	Per i modelli senza covariate ho messo comunque i plot con le covariate (per ora quelle selezionate da Federica) che possono comunque essere utili per l'interpretazione magari.<br> Poi anziché la sezione dei four-plots potremmo fare quattro sezioni singole, una per modello, per anche spiegarli brevmente.<br><br>
 
 	<label for="model-select">Model </label>
 	<select id="model-select" onchange="changemodel()">
 	<!-- <select id="model-select"> -->
 		<option value="DRPM/">DRPM</option>
-		<option value="SPPM/">SPPM</option>
+		<option value="sPPM/">SPPM</option>
+		<option value="Gaussian PPMx/">Gaussian PPMx</option>
+		<option value="Curve PPMx/">Curve PPMx</option>
 	</select>
 
 	<!-- <br> -->
@@ -149,8 +160,10 @@ h1:after, h1:before {
 	<!-- <select id="plot-select"> -->
 		<option value="Graph and Boxplot">Graph and Boxplot</option>
 		<option value="Graph">Graph</option>
+		<option value="With Covariates">With Covariates</option>
 		<option value="Salso">Salso</option>
 		<option value="ARI">ARI</option>
+		<option value="Time series">Time series</option>
 	</select>
 
 	<!-- <br> -->
@@ -180,13 +193,14 @@ h1:after, h1:before {
 
 		var imagePath;
         if (selectedplot =='ARI') {
-            imagePath = selectedmodel + 'ARI/ari.png';
+            imagePath = selectedmodel + 'ARI/ari.svg';
+        } else if (selectedplot == 'Time series') {
+        	imagePath = selectedmodel + 'Time series/Time series.svg"';
         } else {
             imagePath = selectedmodel + selectedplot + '/' + selectedplot + '-' + pad(currentValue, 2) + '.png';
         }
         // console.log(imagePath)
 		currentImage.innerHTML = '<img src="' + imagePath + '"alt="Image ' + currentValue + '" />';
-		// currentImage.innerHTML = '<img height="' + height + '" width="' + width + '"src="' + imagePath + '"alt="Image ' + currentValue + '" />';
 	}
 
 	function pad(number, length) {
@@ -205,6 +219,7 @@ h1:after, h1:before {
 <!-- update above part, change h1 title and variables ecc -->
 <div id="image-grid-four">
 	<h1>Four-model plots</h1>
+	In realtà penso la toglierò questa parte, meglio avere piuttosto quattro sezioni distinte, ognuna per modello. Cioè a me non convince molto, vediamo cosa ne pensiamo insieme.<br><br>
 
 	<!-- <br> -->
 	<label for="plot-select-grid">Plot </label>
@@ -214,6 +229,7 @@ h1:after, h1:before {
 		<option value="Graph">Graph</option>
 		<option value="Salso">Salso</option>
 		<option value="ARI">ARI</option>
+		<option value="Time series">Time series</option>
 	</select>
 
 	<!-- <br> -->
@@ -223,10 +239,12 @@ h1:after, h1:before {
 	<table>
     <tr>
 		<td>DRPM<div id="current-image-one"></div></td>
-		<td>SPPM<div id="current-image-two"></div></td>            
+	<!-- <tr></tr> -->
+		<td>sPPM<div id="current-image-two"></div></td>            
 	</tr>
 	<tr>
 		<td>Gaussian PPMx<div id="current-image-three"></div></td>
+	<!-- <tr></tr> -->
 		<td>Curve PPMx<div id="current-image-four"></div></td>
 	</tr>
 </table>
@@ -253,16 +271,21 @@ h1:after, h1:before {
 
 		var imagePath;
         if (selectedplotGrid =='ARI') {
-            imagePath_one = "DRPM/" + 'ARI/ari.png';
-            imagePath_two = "SPPM/" + 'ARI/ari.png';
-            imagePath_three = "DRPM/" + 'ARI/ari.png';
-            imagePath_four = "DRPM/" + 'ARI/ari.png';
-        } else {
+            imagePath_one = "DRPM/" + 'ARI/ari.svg';
+            imagePath_two = "sPPM/" + 'ARI/ari.svg';
+            imagePath_three = "Gaussian PPMx/" + 'ARI/ari.svg';
+            imagePath_four = "Curve PPMx/" + 'ARI/ari.svg';
+        } else if (selectedplotGrid == 'Time series') {
+            imagePath_one = "DRPM/" + 'Time series/Time series.svg';
+            imagePath_two = "sPPM/" + 'Time series/Time series.svg';
+            imagePath_three = "Gaussian PPMx/" + 'Time series/Time series.svg';
+            imagePath_four = "Curve PPMx/" + 'Time series/Time series.svg';
+        }  else {
             // imagePath = selectedmodel + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue, 2) + '.png';
             imagePath_one = "DRPM/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
-            imagePath_two = "SPPM/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
-            imagePath_three = "absent/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
-            imagePath_four = "absent/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
+            imagePath_two = "sPPM/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
+            imagePath_three = "Gaussian PPMx/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
+            imagePath_four = "Curve PPMx/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
         }
 
         // console.log(imagePath_one)

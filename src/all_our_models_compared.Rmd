@@ -24,6 +24,8 @@ source("include_clusters_functions.R")
 # y and sites
 needed for plots functions
 ```{r}
+time_span = c(1:53)
+
 sites = data.frame(
 	longitude = unique(df_weekly$Longitude), 
 	latitude = unique(df_weekly$Latitude))
@@ -46,6 +48,12 @@ df_wsc
 y
 plot(sites)
 plot(std_sites)
+
+sites_plt = sites
+colnames(sites_plt) = c("Longitude","Latitude")
+rownames(sites_plt) = paste(1:105)
+
+salso_out_lists = list()
 ```
 
 
@@ -78,8 +86,48 @@ trendYearStation_week("None")
 ```
 
 
+```{r}
+# install.packages("ggrepel")
+library(ggrepel)
+
+# p_stations_codes = 
+	# ggplot()+
+	# geom_sf(data = altre_regioni, fill = color_empty ,color = color_fill,
+	# 		linewidth = 0.1,alpha=0.1, show.legend = FALSE) +
+	# geom_sf(data = lombardia_2, fill = color_empty, color = color_comuni_lombardia,
+	# 		linewidth = 0.3,alpha=0.7, show.legend = FALSE) +
+	# coord_sf(xlim = range(sites$longitude) + padding,
+	# 		 ylim = range(sites$latitude) + padding, expand = FALSE)+
+	# theme_bw()+
+	# theme(panel.grid = element_blank())+
+p_stations_codes =
+	DefaultPlot()+
+	geom_point(data = sites_plt, aes(x = Longitude, y = Latitude, color = "col"), size = 1)+
+	theme(legend.position = "none")+
+	geom_text_repel(data = sites_plt, aes(x = Longitude, y = Latitude, col="col",
+										  label = rownames(sites_plt)),
+					size = 3,
+					max.overlaps = 100,
+					min.segment.length = 0
+					# force_pull =2,
+					# force = 10,
+					)+
+	scale_colour_manual(name="",values = c("col"="#aa0010"))+
+	# scale_colour_manual(name="",values = c("col"="#1022a1"))+
+	labs(title = "Stations codes")
+p_stations_codes
+```
+
+
+```{r}
+# print(p_stations_codes)
+# ggsave(file="figures/stations_names_visualized.pdf",height=6, width=6)
+# ggsave(file="figures/stations_names_visualized.png",units="px",height=1500, width=1500)
+# dev.off()
+```
+
 #=======
-# DRPM 
+# DRPM + experimentation
 
 ```r
 > log(40)
@@ -94,12 +142,12 @@ trendYearStation_week("None")
 This last value should be the one for us to check if some station went over the limit of PM10, which is 40 μg m^(-3). But that 40 needed to be log-trasformed and scaled for us in the new data setting.
 Maybe we can add an horizontal line in the boxplot to show it if we want.
 
-
-## description
 Model obtained collecting 1000 mcmc iterates, using niter=60000; nburn=20000; nthin=40.
 ```{r}
 # load("../data/Federico/drpm_eta0_phi1_spcoes5.Rdata")
 # load("../data/Federico/drpm_eta0_phi1_spcoes5_v2.Rdata")
+
+base_folder = "DRPM"
 
 load("../data/Federico/drpm_eta0_phi1_spcoes5.Rdata")
 # questo resta il migliore, ma forse su certi tempi si può lavorare in modo adaptive
@@ -107,7 +155,6 @@ load("../data/Federico/drpm_eta0_phi1_spcoes5.Rdata")
 # perché gli altri test di fit hanno suggerito altre divisioni interessanti, in certi tempi
 
 drpm_model = drpm1 # was called drpm1 inside the rdata
-time_span = c(1:53)
 cat(crayon::red("\nLPML =",drpm_model$lpml, "\nWAIC =",drpm_model$waic))
 ```
 
@@ -129,19 +176,7 @@ abinder[50] = 1.5
 abinder[52] = 1.4
 abinder[53] = 1.4
 # plot(abinder,type="l")
-```
 
-```{r}
-# pdf("stations_names_visualized.pdf",height=10,width=10)
-plot(std_sites,col="white")
-
-text(std_sites$longitude,std_sites$latitude,labels=unique(df_wsc$IDStations),cex=0.4)
-text(std_sites$longitude,std_sites$latitude-0.05,labels=1:105,cex=0.4,col="gray")
-# dev.off()
-```
-
-## othe experiments modifications
-```{r}
 exclude=list()
 for (i in 1:53){
 	exclude[[i]]=list()
@@ -195,7 +230,7 @@ exclude[[53]][[2]] = c(80,20,69)
 ## cls see
 ```{r}
 df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
-for(time in time_span){
+for(time in time_span[1]){
 
 	salso_out = rep(0,105)
 	if(length(exclude[[time]])==0 ){
@@ -291,6 +326,7 @@ for(time in time_span){
 	}
 	salso_out_list[[time]] = salso_out
 	salso_out_matrix[time,] = salso_out
+	
 
 	################################################
 	df_temp = data.frame(
@@ -298,6 +334,9 @@ for(time in time_span){
 		Latitude = sites$latitude,
 		clusters = salso_out[1:105]
 	)
+	# increment nint until there is no error
+	cols = color_correct_clusters(df_temp,idea=2,verbose=0,nint=12)
+	
 	df_temp$Time = rep(time,dim(df_temp)[1])
 	df_cluster = rbind(df_cluster,df_temp)
 	
@@ -312,57 +351,64 @@ for(time in time_span){
 		# cat("Cluster",cl,"- size",length(ycurrent[which(clusters_now==cl)]),
 			# "- mean",mean(ycurrent[which(clusters_now==cl)]),"\n")
 	# }
-	
-	
-	cols = color_correct_clusters(df_temp,idea=2,verbose=0,nint=12)
-	# p = plot_graph_and_hist(df_temp,cols)
-	
-	# clusters_now = mode_correct_clusters(clusters_old,clusters_now)
-	# clusters_mode_corrected_list[[time]] = clusters_now
+
 }
 ```
+```{r}
+salso_out_lists[["DRPM"]] = salso_out_list
+```
 
-## time series plot tests
-
+## time series
 ```{r}
 cl_regions = list()
-for (i in 1:6){
+for (i in 1:10){
 	cl_regions[[i]] = numeric()
 }
+
+tssites = sites_plt
+tssites$cl = rep(0,105)
+
 for (st in 1:105){
 	mo = Mode(salso_out_matrix[,st])
-	cat("Station",st,"has mode cluster label equal to",mo,"\n")
+	# cat("Station",st,"has mode cluster label equal to",mo,"\n")
 	cl_regions[[mo]] = c(cl_regions[[mo]],st)
+	tssites$cl[st] = mo
 }
+
+## manual changes if we want to separately study some suspitious stations
+cl_regions[[1]] = setdiff(cl_regions[[1]],80)
+cl_regions[[5]] = 80
+tssites$cl[80] = 5
+
 cl_regions
 ```
 
-
 ```{r}
-cols=colora(12,"div",0)[-2]
-plot(sites[cl_regions[[1]],],col=cols[1],
-	 xlim=extrema(sites$longitude),
-	 ylim=extrema(sites$latitude),
-	 pch=19)
-for (i in 2:6){
-	points(sites[cl_regions[[i]],],col=cols[i],pch=19)
+for(a in 1:3){
+if(a==1)
+png(file=paste0("figures/",base_folder,"/Time series/Time series.png"),units="px",width = 1200, height = 600)
+else if (a==2){
+pdf(file=paste0("figures/",base_folder,"/Time series/Time series.pdf"),width = 14, height = 6)
+} else {
+svg(file=paste0("figures/",base_folder,"/Time series/Time series.svg"),width = 14, height = 6)
 }
-```
-```{r}
+
+layout(matrix(c(1,1,1,1,1,1,2,2,2,2,2,2), nrow = 1, byrow = T))
+# layout(matrix(c(1,2),nrow = 1, byrow = T),widths=c(6,5))
+cols = colora(12,"div",0)[-2]
+
 ys = matrix(NA,nrow=length(cl_regions),53)
 stdevys = matrix(NA,nrow=length(cl_regions),53)
-
 for (i in 1:length(cl_regions)){
 	ys[i,] = apply(y[cl_regions[[i]],2:54],2,mean)
-	stdevys[i,] = apply(y[cl_regions[[i]],2:54],2,var)
+	stdevys[i,] = sqrt(apply(y[cl_regions[[i]],2:54],2,var))
 }
-
-cols = colora(12,"div",1)[-2]
 alfa = 100
-par(mar=c(2,2,1,1))
 
-plot(ys[1,],type="l",ylim=extrema(na.omit(ys))+c(-0.3,+0.1),col=cols[1],lwd=2)
-polygon(c(1:53,53:1), c(ys[1,]-stdevys[1,],rev(ys[1,]+stdevys[1,])),
+plot(ys[1,],type="l",ylim=extrema(na.omit(ys))+c(-0.3,+0.1),col=cols[1],lwd=2,xlab="",ylab="")
+title(xlab="Weeks",ylab="PM10 values", mgp=c(2.5,2.5,0),cex.lab=1.2)
+
+polygon(c(1:53,53:1), c(ys[1,]-1/2*stdevys[1,],rev(ys[1,]+1/2*stdevys[1,])),
 		col = rgb(as.vector(col2rgb(cols[1]))[1],as.vector(col2rgb(cols[1]))[2],
 				  as.vector(col2rgb(cols[1]))[3],alfa,maxColorValue = 255),
 	border = NA)
@@ -370,156 +416,38 @@ lines(ys[1,],type="l",ylim=extrema(na.omit(ys)),col=cols[1],lwd=2)
 
 for (i in 2:length(cl_regions)){
 	points(ys[i,],type="l",col=cols[i],lwd=2)
-	polygon(c(1:53,53:1), c(ys[i,]-stdevys[i,],rev(ys[i,]+stdevys[i,])),
+	polygon(c(1:53,53:1), c(ys[i,]-1/2*stdevys[i,],rev(ys[i,]+1/2*stdevys[i,])),
 		col = rgb(as.vector(col2rgb(cols[i]))[1],as.vector(col2rgb(cols[i]))[2],
 				  as.vector(col2rgb(cols[i]))[3],alfa,maxColorValue = 255),
 	border = NA)
 }
-# y[cl_regions[[6]],2:54]
-```
 
+frame()
+# PP1 = DefaultPlot()+
+# geom_point(data = tssites, aes(x = Longitude, y = Latitude, color = cols[tssites$cl]), size = 4)+
+# theme(legend.position = "none")+
+# labs(title = "Stations partitioned")+
+# 	scale_colour_identity(guide="legend",labels=paste0("cl",length(unique(tssites$cl))),
+# 						  breaks=cols[length(unique(tssites$cl))])
+df_cluster_cut = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	clusters = tssites$cl,
+	Time = 1
+)
+cols_gr = cols[1:length(unique(tssites$cl))]
+PP1 = get_graph_plot(df_cluster_cut,titolo = "Cluster partition map",cols=cols_gr,verbose=0)
 
-```{r}
-interpola_NA <- function(obs) {
-  non_na_indices <- which(!is.na(obs))
-  na_indices <- which(is.na(obs))
-  # print(non_na_indices)
-  # print(na_indices)
-  
-  # loop on Na indices
-  for (na_index in na_indices) {
-    # Trova l'indice più vicino a sinistra e quello più vicino a destra
-    left_index <- suppressWarnings(max(non_na_indices[non_na_indices < na_index]))
-    right_index <- suppressWarnings(min(non_na_indices[non_na_indices > na_index]))
-    # cat("NA idx",na_index," - LR values = ",obs[left_index],",",obs[right_index],"\n")
+vps <- baseViewports()
+pushViewport(vps$inner, vps$figure, vps$plot)
+# Table grob
+grob <-  ggplotGrob(PP1)
+grid.draw(grob)
+popViewport(3)
 
-    # Esegui l'interpolazione se ci sono valori a sinistra e a destra
-    if (!is.na(left_index) && !is.na(right_index)) {
-      left_value <- obs[left_index]
-      right_value <- obs[right_index]
-      
-      # Calcola il valore interpolato
-      interpolated_value <- left_value + 
-        ((right_value - left_value) / (right_index - left_index)) * (na_index - left_index)
-      
-      # Sostituisci il valore NA con quello interpolato
-      obs[na_index] <- interpolated_value
-    }
-    if(is.na(obs[na_index])){
-    	obs[na_index] = na.omit(c(obs[left_index],obs[right_index]))
-    }
-	# cat(obs[na_index],"\n")
-  }
-  return(obs)
+dev.off()
 }
 ```
-
-
-```{r}
-# par(mar=c(4,4,4,0))
-yred=y[,2:54]
-plot(1:53,yred[1,],col="white",ylim=extrema(yred),xlab="",ylab="") # setup the canvas
-
-cols = colora(12,"div",0)[-2]
-maxncl = 8 # inspect clusters_mode_corrected_list
-nident = NaN
-
-for(i in 1:maxncl){
-	valori_curr_cl = rep(nident,53)
-	# cols_curr_cl = rep("white",53)
-	# cols_curr_cl = rep(cols[i],53)
-	for(tempo in 1:53){
-		# if (i %in% clusters_mode_corrected_list[[tempo]]) {
-		if (i %in% salso_out_list[[tempo]]) {
-			# valori_curr_cl[tempo] = mean(yred[which(clusters_mode_corrected_list[[tempo]]==i),tempo])
-			valori_curr_cl[tempo] = mean(yred[which(salso_out_list[[tempo]]==i),tempo])
-			
-			# cols_curr_cl[tempo] = cols[i]
-		}
-			cols_curr_cl[tempo] = cols_out_list[[tempo]][i]
-	}
-	
-	valori_curr_cl_nona = interpola_NA(valori_curr_cl)
-	# lines(1:53,valori_curr_cl,col=cols_curr_cl)
-	# plot(1:53,yred[1,],col="white",ylim=extrema(yred),xlab="",ylab="",main=paste("Cluster",i))
-	for (t in 1:52){
-		if(is.na(valori_curr_cl[t])){
-			lines(t:(t+1),c(valori_curr_cl_nona[t],valori_curr_cl_nona[t+1]),col=cols_curr_cl[t],lty=3)
-		} else {
-			lines(t:(t+1),c(valori_curr_cl[t],valori_curr_cl_nona[t+1]),col=cols_curr_cl[t],lwd=2)
-		}
-	}
-	
-	# for (t in 2:52){
-	# 	if(valori_curr_cl[t+1]==nident){
-	# 		lines(t:(t+1),c(valori_curr_cl[t],valori_curr_cl[t]),col=cols_curr_cl[t],lty=3)
-	# 	} else {
-	# 		lines(t:(t+1),c(valori_curr_cl[t],valori_curr_cl[t+1]),col=cols_curr_cl[t],lwd=2)
-	# 	}
-	# }
-	
-	# lines(1:53,valori_curr_cl,col=cols_curr_cl)
-	
-	# lines(which(valori_curr_cl != nident),
-	# 	   valori_curr_cl[which(valori_curr_cl != nident)]
-	# 	   ,col=cols_curr_cl[which(valori_curr_cl != nident)],pch=16)
-}
-title(ylab="log(PM10) values", line=2.4, cex.lab=1)
-title(xlab="Weeks", line=1.8, cex.lab=1)
-
-```
-
-
-Other idea: matrix of rows 1:53 and 105 cols, fill cels using the colors of the plots.
-```{r}
-mm = matrix(runif(53*105),53,105)
-for (t in 1:53){
-	curr_rho = salso_out_list[[t]][1:105]
-	for(cl in 1:max(curr_rho)){
-		mm[t,which(curr_rho==cl)] = cols_out_list[[t]][cl]
-		# mm[t,which(curr_rho==cl)] = mean(y[which(curr_rho==cl),t+1])
-	}
-}
-# ord = 1:105
-# ord = order(unique(df_wsc$Latitude))
-ord = order(unique(df_wsc$Longitude))
-# ord = order((unique(df_wsc$Longitude) + unique(df_wsc$Latitude))/2)
-
-mm = mm[,ord]
-```
-
-Idea for update: sort the stations based on area closeness.
-Define a variable ord in some way and use that to redefine mm maybe.
-
-E chiedi a ettore come usare le sue funzioni per le covariate, se si possono usare con colori divisi per cluster.
-Poi riordina il codice come nella forma sppm, aggiungendo anche sezioni per esplorare le differenza tra covariate dati i cluster.
-
-```{r}
-# Creare una matrice con colori
-par(mar=c(1,1,1,0))
-matrice_colori <- mm
-
-# pdf(file="tseries_test.pdf",width=13,height = 8)
-# png(file="tseries_test.png",width=1000,height = 600)
-
-# Creare il plot con la funzione RasterImage
-plot(1, type = "n", xlim = c(1, ncol(matrice_colori)), ylim = c(1, nrow(matrice_colori)), xlab = "", ylab = "", main = "Clusters' PM10 values - time trend",axes=FALSE)
-
-# Aggiungere la matrice di colori con RasterImage
-raster_image <- as.raster(matrice_colori)
-rasterImage(raster_image, 1, 1, ncol(matrice_colori), nrow(matrice_colori),interpolate=0)
-mtext(text=c(paste("",1:53)), side=2, line=-1,at=seq(53,1,length=53), las=1, cex=0.7)
-
-stazioni = c(paste("",1:105))
-mtext(text=stazioni[ord], side=1, line=-0.3,at=seq(1,105,length=105), las=2, cex=0.7)
-# mtext(text=unique(df_wsc$IDStations), side=1, line=-0.3,at=seq(1,105,length=105), las=2, cex=0.7)
-
-# Aggiungere una legenda (opzionale)
-# legend("topright", legend = colora(20,111,0), fill = colora(20,111,0), title = "Colori")
-
-# dev.off()
-```
-
 
 
 ## salso plots
@@ -536,7 +464,7 @@ for(time in time_span){
 	# plot(ssout,type="heatmap")
 	# plot(ssout,type="mds")
 	plot(ssout,type="pairs",data=std_sites)
-	text(0.2,0.98,paste0("Time ",time))
+	text(0.3,0.98,paste0("Time ",time," - ",base_folder))
 	# plot(ssout,type="dendrogram")
 	
 	dev.off()
@@ -547,13 +475,10 @@ for(time in time_span){
 
 ## ARI plot
 ```{r}
-library(mclust)
-library(fossil)
-##########################
-FIT = drpm_model # your fit
-LEN = max(time_span)
-##########################
+### ARI #######################################################################
+library(mclust) # if Adjusted RI
 
+LEN = max(time_span)
 # build the ARI matrix
 ARImats <- matrix(NA, nrow=LEN, ncol=LEN)
 rho_ARI <- list()
@@ -563,67 +488,31 @@ for(time in 1:LEN){
 for(k in 1: LEN){
 	for(kk in 1: LEN){
 		ARImats[k,kk] <- adjustedRandIndex(rho_ARI[[k]], rho_ARI[[kk]])
-		# ARImats[k,kk] <- rand.index(rho_ARI[[k]], rho_ARI[[kk]])
 	}
 }
-```
-
-```{r}
-titolo = "DRPM"
 ncols_ari = 100
 cols_ARI = colora(ncols_ari,79,0)
 # cols_ARI = rev(cols_ARI)
-
 brks = seq(-1,1,length.out=ncols_ari+1)
 
-# pdf(paste0("./figures/DRPM/ARI/ari.pdf"), height=8, width=10)
-# svg(paste0("./figures/DRPM/ARI/ari.svg"), height=8, width=10)
-# png(paste0("./figures/DRPM/ARI/ari.png"),  width=700,height=600)
+for(a in 1:2){
+if(a==1)
+png(paste0("./figures/",base_folder,"/ARI/ari.png"), width=700,height=600)
+else {
+svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=7, width=8)
+}
 
-# or see ?designer.colors for colors
-library(fields)
+	library(fields)
 image.plot(ARImats,
-		   main=paste0("Lagged ARI values - ",titolo),axes=FALSE,col=cols_ARI,
+		   main=paste0("Lagged ARI values - ",base_folder),axes=FALSE,col=cols_ARI,
 		   breaks=brks)
-mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
-mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.8)
-
-# dev.off()
-```
-
-## cls see
-```{r}
-clusters_old = NULL
-for(time in time_span[44]){
-	cat(crayon::red("Time",time,"\n"))
-
-	df_cluster_cut = df_cluster[df_cluster$Time==time,]
-	# clusters_now = df_cluster_cut$clusters
-	####### no mode correct if heat plot
-	# clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
-	# se fai heat plot non serve fare la mode correct
-	# perché la heat plot la usi per vedere anche i valori di pm10, non la coerenza temporale
-	# nei gruppi, che con la heat coloration si perde come visibilità (non so se è chiaro)
-	# df_cluster_cut$clusters = clusters_now
-
-	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=10)
-
-	library(grid)
-	### this
-	# q = get_graph_plot(df_cluster_cut,cols)
-	q = get_boxplot_plot(df_cluster_cut,cols,annotate=F)
-	
-	# Create a text
-
-	print(q)
-
-	### or this
-	p = plot_graph_and_hist(df_cluster_cut,cols,annotate=T)
-
-
-clusters_old = clusters_now
+mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.7)
+mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.7)
+dev.off()
 }
 ```
+
+
 ## cls save
 ```{r}
 clusters_old = NULL
@@ -642,16 +531,17 @@ for(time in time_span){
 	cur_num = sprintf("%02d", time)
 	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=12)
 	
-	### this
-	# q = get_graph_plot(df_cluster_cut,cols)
-	# print(q)
-	# ggsave(file=paste0("./figures/DRPM/Graph/Graph-",cur_num,".png"),
-	# units="px",width=2000, height=1400, dpi=300)
-	# dev.off()
+	### Graph
+	q = get_graph_plot(df_cluster_cut,cols,paste("Cluster map, time",time,"-",base_folder))
+	print(q)
+	ggsave(file=paste0("./figures/",base_folder,"/Graph/Graph-",cur_num,".png"),
+	units="px",width=2000, height=1400, dpi=300)
+	dev.off()
 	
-	### or this
-	p = plot_graph_and_hist(df_cluster_cut,cols)
-	ggsave(file=paste0("./figures/DRPM/Graph and Boxplot/Graph and Boxplot-",cur_num,".png"),
+	
+	### Graph and Boxplot
+	p = plot_graph_and_hist(df_cluster_cut,cols,titolo=paste("Time",time,"-",base_folder))
+	ggsave(file=paste0("./figures/",base_folder,"/Graph and Boxplot/Graph and Boxplot-",cur_num,".png"),
 		   plot=p,
 		   units="px",width=2500, height=1200, dpi=300) # maybe 1200 is better
 		   # units="px",width=2500, height=1400, dpi=300)
@@ -699,18 +589,68 @@ image_write_gif(image = img_animated, path = paste0(percorso,output_name,".gif")
 image_write_video(image = img_animated, path = paste0(percorso,output_name,".mp4"),framerate=frammeratte)
 ```
 
+## covariates plots
+relevant covariates
+```{r}
+# install.packages("svglite")
+library(svglite)
+
+for(time in time_span){
+	cat(crayon::red("Time",time,"\n"))
+
+	df_cluster_cut = df_cluster[df_cluster$Time==time,]
+	# clusters_now = df_cluster_cut$clusters
+	####### no mode correct if heat plot
+	# clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
+	# se fai heat plot non serve fare la mode correct
+	# perché la heat plot la usi per vedere anche i valori di pm10, non la coerenza temporale
+	# nei gruppi, che con la heat coloration si perde come visibilità (non so se è chiaro)
+	# df_cluster_cut$clusters = clusters_now
+
+	cur_num = sprintf("%02d", time)
+	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=12)
+	
+	p = Federica_covariates_plot(df_cluster_cut,cols,
+					 titolo = paste("Cluster map, time",time,"-",base_folder),var_selected_idxs)
+	# ggsave(p,file="test.png",)
+	# ggsave(file=paste0("./figures/",base_folder,"/With Covariates/With Covariates-",cur_num,".svg"),p,width=15, height=10)
+	ggsave(p,file=paste0("./figures/",base_folder,"/With Covariates/With Covariates-",cur_num,".png"),units="px",width=4500, height=3000, dpi=400)
+	dev.off()
+
+}
+```
+
+
+
+
+
+
 
 #=======
-# SPPM
+# sPPM
 ```{r}
 load("../data/sppm_c4_list.RData")
 # see sppm_C4_list[[time]]$Si
 ```
 
-## cls def
 ```{r}
-salso_out_list_SPPM = list()
-df_cluster_SPPM = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
+lpml_tot_sppm = waic_tot_sppm = 0
+for (time in 1:53){
+	lpml_tot_sppm = lpml_tot_sppm + sppm_C4_list[[time]]$lpml
+	waic_tot_sppm = waic_tot_sppm + sppm_C4_list[[time]]$WAIC
+}
+cat(crayon::red("\nLPML =",lpml_tot_sppm, "\nWAIC =",waic_tot_sppm))
+# niente ancora lontani da drpm
+```
+
+
+## cls def/see
+Here you should tune the salso(ecc) to maybe improve the cluster generation
+```{r}
+salso_out_list = list()
+salso_out_matrix = matrix(NA,nrow=53,ncol=105)
+
+df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
 for(time in time_span){
 	
 	# tune here your cluster generation
@@ -719,19 +659,21 @@ for(time in time_span){
 				   maxNClusters = 8
 				   )
 
-	salso_out_list_SPPM[[time]] = salso_out
-	################################################
+	salso_out_list[[time]] = salso_out
+	salso_out_matrix[time,] = salso_out
+
 	df_temp = data.frame(
 		Longitude = sites$longitude,
 		Latitude = sites$latitude,
 		clusters = salso_out[1:105]
 	)
+	# increment nint until there is no error
+	cols = color_correct_clusters(df_temp,idea=2,verbose=0,nint=15)
 	
-	# start from 12 and increase untile error disappears
-	cols = color_correct_clusters(df_temp,idea=2,verbose=0,nint=15) # test this to be ok with nint
+	################################################
 	
 	df_temp$Time = rep(time,dim(df_temp)[1])
-	df_cluster_SPPM = rbind(df_cluster_SPPM,df_temp)
+	df_cluster = rbind(df_cluster,df_temp)
 	
 	# clusters log
 	clusters_now = df_temp$clusters
@@ -746,12 +688,14 @@ for(time in time_span){
 
 	
 	################################################
-	# if you want to see results directly here, use these lines, otherwise use next section
+	
 	df_cluster_cut = df_temp 
-	# df_cluster_cut = df_cluster_SPPM[df_cluster_SPPM$Time==time,] # same def
+	# if you want to see results directly here, use these lines
+	
+	# df_cluster_cut = df_cluster[df_cluster$Time==time,] # same def
 	# cols = ... defined above
 
-	# salso_out = salso_out_list_SPPM[[time]]
+	# salso_out = salso_out_list[[time]]
 	# ssout = summary(salso_out)
 	# plot(ssout,type="heatmap")
 	# plot(ssout,type="mds")
@@ -765,33 +709,16 @@ for(time in time_span){
 }
 ```
 
-## cls see
+
+## plots save
 ```{r}
-for(time in time_span[1:10]){
-	cat(crayon::red("Time",time,"\n"))
-
-	df_cluster_cut = df_cluster_SPPM[df_cluster_SPPM$Time==time,]
-	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=15)
-
-	# salso_out = salso_out_list_SPPM[[time]]
-	# ssout = summary(salso_out)
-	# plot(ssout,type="heatmap")
-	# plot(ssout,type="mds")
-	# plot(ssout,type="pairs",data=std_sites)
-	# text(0.2,0.98,paste0("Time ",time))
-	# plot(ssout,type="dendrogram")
-
-	# q = get_graph_plot(df_cluster_cut,cols)
-	# print(q)
-	p = plot_graph_and_hist(df_cluster_cut,cols)
-}
+base_folder = "sPPM"
+salso_out_lists[[base_folder]] = salso_out_list
 ```
 
-## create plots
+### ari
 ```{r}
-base_folder = "SPPM"
-
-### ARI
+### ARI #######################################################################
 library(mclust) # if Adjusted RI
 
 LEN = max(time_span)
@@ -799,7 +726,7 @@ LEN = max(time_span)
 ARImats <- matrix(NA, nrow=LEN, ncol=LEN)
 rho_ARI <- list()
 for(time in 1:LEN){
-	rho_ARI[[time]] = salso_out_list_SPPM[[time]]
+	rho_ARI[[time]] = salso_out_list[[time]]
 }
 for(k in 1: LEN){
 	for(kk in 1: LEN){
@@ -810,26 +737,127 @@ ncols_ari = 100
 cols_ARI = colora(ncols_ari,79,0)
 # cols_ARI = rev(cols_ARI)
 brks = seq(-1,1,length.out=ncols_ari+1)
-# pdf(paste0("./figures/DRPM/ARI/ari.pdf"), height=8, width=10)
-# svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=8, width=10)
-# png(paste0("./figures/",base_folder,"/ARI/ari.png"),  width=700,height=600)
-# or see ?designer.colors for colors
-library(fields)
+
+for(a in 1:2){
+if(a==1)
+png(paste0("./figures/",base_folder,"/ARI/ari.png"), width=700,height=600)
+else {
+svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=7, width=8)
+}
+
+	library(fields)
 image.plot(ARImats,
 		   main=paste0("Lagged ARI values - ",base_folder),axes=FALSE,col=cols_ARI,
 		   breaks=brks)
-mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
-mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.8)
-# dev.off()
+mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.7)
+mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.7)
+dev.off()
+}
+```
+
+### time series
+```{r}
+cl_regions = list()
+for (i in 1:10){
+	cl_regions[[i]] = numeric()
+}
+
+tssites = sites_plt
+tssites$cl = rep(0,105)
+
+for (st in 1:105){
+	mo = Mode(salso_out_matrix[,st],verbose=1)
+	cat(crayon::red("Station",st,"has mode cluster label equal to",mo,"\n"))
+	cl_regions[[mo]] = c(cl_regions[[mo]],st)
+	tssites$cl[st] = mo
+}
 ```
 
 
-## cls save
+```{r}
+## manual changes if we want to separately study some suspitious stations
+
+cl_regions
+```
+
+```{r}
+### Time series ###############################################################
+library(grid)
+library(gridBase)
+library(gridExtra)
+
+for(a in 1:3){
+if(a==1)
+png(file=paste0("figures/",base_folder,"/Time series/Time series.png"),units="px",width = 1200, height = 600)
+else if (a==2){
+pdf(file=paste0("figures/",base_folder,"/Time series/Time series.pdf"),width = 14, height = 6)
+} else {
+svg(file=paste0("figures/",base_folder,"/Time series/Time series.svg"),width = 14, height = 6)
+}
+
+	
+layout(matrix(c(1,1,1,1,1,1,2,2,2,2,2,2), nrow = 1, byrow = T))
+# layout(matrix(c(1,2),nrow = 1, byrow = T),widths=c(6,5))
+cols = colora(12,"div",0)[-2]
+
+ys = matrix(NA,nrow=length(cl_regions),53)
+stdevys = matrix(NA,nrow=length(cl_regions),53)
+for (i in 1:length(cl_regions)){
+	ys[i,] = apply(y[cl_regions[[i]],2:54],2,mean)
+	stdevys[i,] = sqrt(apply(y[cl_regions[[i]],2:54],2,var))
+}
+alfa = 100
+
+plot(ys[1,],type="l",ylim=extrema(na.omit(ys))+c(-0.3,+0.1),col=cols[1],lwd=2,xlab="",ylab="")
+title(xlab="Weeks",ylab="PM10 values", mgp=c(2.5,2.5,0),cex.lab=1.2)
+
+polygon(c(1:53,53:1), c(ys[1,]-1/2*stdevys[1,],rev(ys[1,]+1/2*stdevys[1,])),
+		col = rgb(as.vector(col2rgb(cols[1]))[1],as.vector(col2rgb(cols[1]))[2],
+				  as.vector(col2rgb(cols[1]))[3],alfa,maxColorValue = 255),
+	border = NA)
+lines(ys[1,],type="l",ylim=extrema(na.omit(ys)),col=cols[1],lwd=2)
+
+for (i in 2:length(cl_regions)){
+	points(ys[i,],type="l",col=cols[i],lwd=2)
+	polygon(c(1:53,53:1), c(ys[i,]-1/2*stdevys[i,],rev(ys[i,]+1/2*stdevys[i,])),
+		col = rgb(as.vector(col2rgb(cols[i]))[1],as.vector(col2rgb(cols[i]))[2],
+				  as.vector(col2rgb(cols[i]))[3],alfa,maxColorValue = 255),
+	border = NA)
+}
+
+frame()
+# PP1 = DefaultPlot()+
+# geom_point(data = tssites, aes(x = Longitude, y = Latitude, color = cols[tssites$cl]), size = 4)+
+# theme(legend.position = "none")+
+# labs(title = "Stations partitioned")+
+# 	scale_colour_identity(guide="legend",labels=paste0("cl",length(unique(tssites$cl))),
+# 						  breaks=cols[length(unique(tssites$cl))])
+df_cluster_cut = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	clusters = tssites$cl,
+	Time = 1
+)
+cols_gr = cols
+PP1 = get_graph_plot(df_cluster_cut,titolo = "Clusters partition map",cols=cols_gr,verbose=0)
+
+vps <- baseViewports()
+pushViewport(vps$inner, vps$figure, vps$plot)
+# Table grob
+grob <-  ggplotGrob(PP1)
+grid.draw(grob)
+popViewport(3)
+
+dev.off()
+}
+```
+
+### the rest
 ```{r}
 for(time in time_span){
 	cat(crayon::red("Time",time,"\n"))
 
-	df_cluster_cut = df_cluster_SPPM[df_cluster_SPPM$Time==time,]
+	df_cluster_cut = df_cluster[df_cluster$Time==time,]
 	# clusters_now = df_cluster_cut$clusters
 	####### no mode correct if heat plot
 	# clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
@@ -843,20 +871,20 @@ for(time in time_span){
 
 	
 	### Salso
-	salso_out = salso_out_list_SPPM[[time]]
+	salso_out = salso_out_list[[time]]
 	ssout = summary(salso_out)
 	png(filename=paste0("./figures/",base_folder,"/Salso/Salso-",sprintf("%02d",time),".png"),
 		width=600,height=500)
 	# plot(ssout,type="heatmap")
 	# plot(ssout,type="mds")
 	plot(ssout,type="pairs",data=std_sites)
-	text(0.2,0.98,paste0("Time ",time))
+	text(0.3,0.98,paste0("Time ",time," - ",base_folder))
 	# plot(ssout,type="dendrogram")
 	dev.off()
 	
 	
 	### Graph
-	q = get_graph_plot(df_cluster_cut,cols)
+	q = get_graph_plot(df_cluster_cut,cols,paste("Cluster map, time",time,"-",base_folder))
 	print(q)
 	ggsave(file=paste0("./figures/",base_folder,"/Graph/Graph-",cur_num,".png"),
 	units="px",width=2000, height=1400, dpi=300)
@@ -864,14 +892,322 @@ for(time in time_span){
 	
 	
 	### Graph and Boxplot
-	p = plot_graph_and_hist(df_cluster_cut,cols)
+	p = plot_graph_and_hist(df_cluster_cut,cols,titolo=paste("Time",time,"-",base_folder))
 	ggsave(file=paste0("./figures/",base_folder,"/Graph and Boxplot/Graph and Boxplot-",cur_num,".png"),
 		   plot=p,
 		   units="px",width=2500, height=1200, dpi=300) # maybe 1200 is better
 		   # units="px",width=2500, height=1400, dpi=300)
 	dev.off()
+	
+	### Covariates
+	p = Federica_covariates_plot(df_cluster_cut,cols,
+					 titolo = paste("Cluster map, time",time,"-",base_folder),var_selected_idxs)
+	ggsave(p,file=paste0("./figures/",base_folder,"/With Covariates/With Covariates-",cur_num,".png"),units="px",width=4500, height=3000, dpi=400)
+	dev.off()
 }
 ```
+
+
+
+#=======
+# Gaussian PPmx
+```{r}
+gppmx_fit = readRDS("Gaussian_ppmX.RData")
+# read rho through gppmx_fit[[time]]$Si
+var_selected <- c("Altitude","EM_nox_sum","WE_mode_wind_direction_100m",
+				  "WE_wind_speed_100m_max", "LA_lvi")
+```
+
+```{r}
+lpml_tot_gppmx = waic_tot_gppmx = 0
+for (time in 1:53){
+	lpml_tot_gppmx = lpml_tot_gppmx + gppmx_fit[[time]]$lpml
+	waic_tot_gppmx = waic_tot_gppmx + gppmx_fit[[time]]$WAIC
+}
+cat(crayon::red("\nLPML =",lpml_tot_gppmx, "\nWAIC =",waic_tot_gppmx))
+# niente ancora lontani da drpm
+```
+
+
+## cls def/see
+Here you should tune the salso(ecc) to maybe improve the cluster generation
+```{r}
+salso_out_list = list()
+salso_out_matrix = matrix(NA,nrow=53,ncol=105)
+
+df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
+for(time in time_span){
+	
+	# tune here your cluster generation
+	salso_out <- salso(gppmx_fit[[time]]$Si,
+				   loss=binder(a=1.2), # example of a tuning
+				   maxNClusters = 8
+				   )
+
+	salso_out_list[[time]] = salso_out
+	salso_out_matrix[time,] = salso_out
+
+	df_temp = data.frame(
+		Longitude = sites$longitude,
+		Latitude = sites$latitude,
+		clusters = salso_out[1:105]
+	)
+	# increment nint until there is no error
+	cols = color_correct_clusters(df_temp,idea=2,verbose=0,nint=12)
+	
+	################################################
+	
+	df_temp$Time = rep(time,dim(df_temp)[1])
+	df_cluster = rbind(df_cluster,df_temp)
+	
+	# clusters log
+	clusters_now = df_temp$clusters
+	# n_clusters = max(clusters_now)
+	n_clusters = unique(clusters_now)
+	ycurrent = y[,paste0("w",time)]
+	cat(crayon::red("Time",time,"- #clusters =",length(unique(clusters_now)),"\n"))
+	# for (cl in n_clusters){
+		# cat("Cluster",cl,"- size",length(ycurrent[which(clusters_now==cl)]),
+			# "- mean",mean(ycurrent[which(clusters_now==cl)]),"\n")
+	# }
+
+	
+	################################################
+	
+	df_cluster_cut = df_temp 
+	# if you want to see results directly here, use these lines
+	
+	# df_cluster_cut = df_cluster[df_cluster$Time==time,] # same def
+	# cols = ... defined above
+
+	# salso_out = salso_out_list[[time]]
+	# ssout = summary(salso_out)
+	# plot(ssout,type="heatmap")
+	# plot(ssout,type="mds")
+	# plot(ssout,type="pairs",data=std_sites)
+	# text(0.2,0.98,paste0("Time ",time))
+	# plot(ssout,type="dendrogram")
+
+	# q = get_graph_plot(df_cluster_cut,cols)
+	# print(q)
+	# p = plot_graph_and_hist(df_cluster_cut,cols)
+	
+	################################################
+	# test for covariates plots
+	
+	# png("test.png",units="px",height = 2400,width = 2000)
+	# p = Federica_covariates_plot(df_cluster_cut,cols,
+	# 				 titolo = paste("Cluster map, time",time,"- Gaussian PPMx"),var_selected_idxs)
+	# ggsave(p,file="test.png",units="px",width=3500, height=3000, dpi=400)
+	# ggsave(p,file="test.pdf",width=15, height=10)
+	# dev.off()
+
+}
+```
+
+
+
+
+## plots save
+```{r}
+base_folder = "Gaussian PPMx"
+salso_out_lists[[base_folder]] = salso_out_list
+```
+
+### ari
+```{r}
+### ARI #######################################################################
+library(mclust) # if Adjusted RI
+
+LEN = max(time_span)
+# build the ARI matrix
+ARImats <- matrix(NA, nrow=LEN, ncol=LEN)
+rho_ARI <- list()
+for(time in 1:LEN){
+	rho_ARI[[time]] = salso_out_list[[time]]
+}
+for(k in 1: LEN){
+	for(kk in 1: LEN){
+		ARImats[k,kk] <- adjustedRandIndex(rho_ARI[[k]], rho_ARI[[kk]])
+	}
+}
+ncols_ari = 100
+cols_ARI = colora(ncols_ari,79,0)
+# cols_ARI = rev(cols_ARI)
+brks = seq(-1,1,length.out=ncols_ari+1)
+
+for(a in 1:2){
+if(a==1)
+png(paste0("./figures/",base_folder,"/ARI/ari.png"), width=700,height=600)
+else {
+svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=7, width=8)
+}
+
+	library(fields)
+image.plot(ARImats,
+		   main=paste0("Lagged ARI values - ",base_folder),axes=FALSE,col=cols_ARI,
+		   breaks=brks)
+mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.7)
+mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.7)
+dev.off()
+}
+```
+
+### time series
+```{r}
+cl_regions = list()
+for (i in 1:10){
+	cl_regions[[i]] = numeric()
+}
+
+tssites = sites_plt
+tssites$cl = rep(0,105)
+
+for (st in 1:105){
+	mo = Mode(salso_out_matrix[,st],verbose=1)
+	cat(crayon::red("Station",st,"has mode cluster label equal to",mo,"\n"))
+	cl_regions[[mo]] = c(cl_regions[[mo]],st)
+	tssites$cl[st] = mo
+}
+```
+
+
+```{r}
+## manual changes if we want to separately study some suspitious stations
+
+cl_regions
+```
+
+```{r}
+### Time series ###############################################################
+library(grid)
+library(gridBase)
+library(gridExtra)
+
+for(a in 1:3){
+if(a==1)
+png(file=paste0("figures/",base_folder,"/Time series/Time series.png"),units="px",width = 1200, height = 600)
+else if (a==2){
+pdf(file=paste0("figures/",base_folder,"/Time series/Time series.pdf"),width = 14, height = 6)
+} else {
+svg(file=paste0("figures/",base_folder,"/Time series/Time series.svg"),width = 14, height = 6)
+}
+
+	
+layout(matrix(c(1,1,1,1,1,1,2,2,2,2,2,2), nrow = 1, byrow = T))
+# layout(matrix(c(1,2),nrow = 1, byrow = T),widths=c(6,5))
+cols = colora(12,"div",0)[-2]
+
+ys = matrix(NA,nrow=length(cl_regions),53)
+stdevys = matrix(NA,nrow=length(cl_regions),53)
+for (i in 1:length(cl_regions)){
+	ys[i,] = apply(y[cl_regions[[i]],2:54],2,mean)
+	stdevys[i,] = sqrt(apply(y[cl_regions[[i]],2:54],2,var))
+}
+alfa = 100
+
+plot(ys[1,],type="l",ylim=extrema(na.omit(ys))+c(-0.3,+0.1),col=cols[1],lwd=2,xlab="",ylab="")
+title(xlab="Weeks",ylab="PM10 values", mgp=c(2.5,2.5,0),cex.lab=1.2)
+
+polygon(c(1:53,53:1), c(ys[1,]-1/2*stdevys[1,],rev(ys[1,]+1/2*stdevys[1,])),
+		col = rgb(as.vector(col2rgb(cols[1]))[1],as.vector(col2rgb(cols[1]))[2],
+				  as.vector(col2rgb(cols[1]))[3],alfa,maxColorValue = 255),
+	border = NA)
+lines(ys[1,],type="l",ylim=extrema(na.omit(ys)),col=cols[1],lwd=2)
+
+for (i in 2:length(cl_regions)){
+	points(ys[i,],type="l",col=cols[i],lwd=2)
+	polygon(c(1:53,53:1), c(ys[i,]-1/2*stdevys[i,],rev(ys[i,]+1/2*stdevys[i,])),
+		col = rgb(as.vector(col2rgb(cols[i]))[1],as.vector(col2rgb(cols[i]))[2],
+				  as.vector(col2rgb(cols[i]))[3],alfa,maxColorValue = 255),
+	border = NA)
+}
+
+frame()
+# PP1 = DefaultPlot()+
+# geom_point(data = tssites, aes(x = Longitude, y = Latitude, color = cols[tssites$cl]), size = 4)+
+# theme(legend.position = "none")+
+# labs(title = "Stations partitioned")+
+# 	scale_colour_identity(guide="legend",labels=paste0("cl",length(unique(tssites$cl))),
+# 						  breaks=cols[length(unique(tssites$cl))])
+df_cluster_cut = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	clusters = tssites$cl,
+	Time = 1
+)
+cols_gr = cols
+PP1 = get_graph_plot(df_cluster_cut,titolo = "Clusters partition map",cols=cols_gr,verbose=0)
+
+vps <- baseViewports()
+pushViewport(vps$inner, vps$figure, vps$plot)
+# Table grob
+grob <-  ggplotGrob(PP1)
+grid.draw(grob)
+popViewport(3)
+
+dev.off()
+}
+```
+
+### the rest
+```{r}
+for(time in time_span){
+	cat(crayon::red("Time",time,"\n"))
+
+	df_cluster_cut = df_cluster[df_cluster$Time==time,]
+	# clusters_now = df_cluster_cut$clusters
+	####### no mode correct if heat plot
+	# clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
+	# se fai heat plot non serve fare la mode correct
+	# perché la heat plot la usi per vedere anche i valori di pm10, non la coerenza temporale
+	# nei gruppi, che con la heat coloration si perde come visibilità (non so se è chiaro)
+	# df_cluster_cut$clusters = clusters_now
+
+	cur_num = sprintf("%02d", time)
+	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=15)
+
+	
+	### Salso
+	salso_out = salso_out_list[[time]]
+	ssout = summary(salso_out)
+	png(filename=paste0("./figures/",base_folder,"/Salso/Salso-",sprintf("%02d",time),".png"),
+		width=600,height=500)
+	# plot(ssout,type="heatmap")
+	# plot(ssout,type="mds")
+	plot(ssout,type="pairs",data=std_sites)
+	text(0.3,0.98,paste0("Time ",time," - ",base_folder))
+	# plot(ssout,type="dendrogram")
+	dev.off()
+	
+	
+	### Graph
+	q = get_graph_plot(df_cluster_cut,cols,paste("Cluster map, time",time,"-",base_folder))
+	print(q)
+	ggsave(file=paste0("./figures/",base_folder,"/Graph/Graph-",cur_num,".png"),
+	units="px",width=2000, height=1400, dpi=300)
+	dev.off()
+	
+	
+	### Graph and Boxplot
+	p = plot_graph_and_hist(df_cluster_cut,cols,titolo=paste("Time",time,"-",base_folder))
+	ggsave(file=paste0("./figures/",base_folder,"/Graph and Boxplot/Graph and Boxplot-",cur_num,".png"),
+		   plot=p,
+		   units="px",width=2500, height=1200, dpi=300) # maybe 1200 is better
+		   # units="px",width=2500, height=1400, dpi=300)
+	dev.off()
+	
+	### Covariates
+	p = Federica_covariates_plot(df_cluster_cut,cols,
+					 titolo = paste("Cluster map, time",time,"-",base_folder),var_selected_idxs)
+	ggsave(p,file=paste0("./figures/",base_folder,"/With Covariates/With Covariates-",cur_num,".png"),units="px",width=4500, height=3000, dpi=400)
+	dev.off()
+}
+```
+
+
+
+
 
 
 
@@ -883,29 +1219,40 @@ your models when done
 
 #======
 # ARI models
+need to run almost all the notebook sections for this
 ```{r}
 library(mclust) # if Adjusted RI
 LEN = max(time_span)
 
-ARIvec <- matrix(NA, nrow=1, ncol=LEN)
-for(k in 1: LEN){
-	ARIvec[k] <- adjustedRandIndex(salso_out_list[[k]], salso_out_list_SPPM[[k]])
-}	
-ncols_ari = 100
-cols_ARI = colora(ncols_ari,79,0)
-# cols_ARI = rev(cols_ARI)
-brks = seq(-1,1,length.out=ncols_ari+1)
-# pdf(paste0("./figures/DRPM/ARI/ari.pdf"), height=8, width=10)
-# svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=8, width=10)
-# png(paste0("./figures/",base_folder,"/ARI/ari.png"),  width=700,height=600)
-# or see ?designer.colors for colors
-library(fields)
-plot(1:53,ARIvec,type="l")
+compare_ARI = function(mod1,mod2){
+	ARIvec <- matrix(NA, nrow=1, ncol=LEN)
+	for(k in 1: LEN){
+		ARIvec[k] <- adjustedRandIndex(salso_out_lists[[mod1]][[k]][1:105],
+									   salso_out_lists[[mod2]][[k]][1:105])
+	}	
+	ncols_ari = 100
+	cols_ARI = colora(ncols_ari,79,0)
+	# cols_ARI = rev(cols_ARI)
+	brks = seq(-1,1,length.out=ncols_ari+1)
+	# pdf(paste0("./figures/DRPM/ARI/ari.pdf"), height=8, width=10)
+	# svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=8, width=10)
+	# png(paste0("./figures/",base_folder,"/ARI/ari.png"),  width=700,height=600)
+	library(fields)
+	plot(1:53,ARIvec,type="l",main=paste0("ARI values - ",mod1," vs ",mod2),ylim=c(-0.5,1))
+	abline(h=0,col="gray80",lty=3)
+	
+	image.plot(ARIvec,
+			   main=paste0("ARI values - ",mod1," vs ",mod2),axes=FALSE,col=cols_ARI,
+			   breaks=brks)
+	mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
 
-image.plot(ARIvec,
-		   main=paste0("ARI values - DRPM vs SPPM"),axes=FALSE,col=cols_ARI,
-		   breaks=brks)
-mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
+}
+
+mods = c("DRPM","sPPM","Gaussian PPMx")
+compare_ARI(mods[1],mods[2])
+compare_ARI(mods[1],mods[3])
+compare_ARI(mods[2],mods[3])
+
 # dev.off()
 ```
 

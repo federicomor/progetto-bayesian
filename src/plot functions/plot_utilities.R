@@ -1,5 +1,5 @@
 file_type=".mp4"
-folder = "./gifs/"
+folder = "plot functions/gifs/"
 #########################   UTILITIES #################################
 
 # Check if a station is inside each subregion
@@ -40,7 +40,7 @@ lerp_pm10_color <- function(val,colmin="yellow",colmax="#F80000") {
 	return_vals <- vector("list", length = length(val))
 	
 	for (i in seq_along(val)) {
-		if (!is.nan(val[i])) {
+		if (!is.na(val[i]) & !is.nan(val[i])) {
 			return_val <- color_0 + (color_f - color_0) * ((val[i] - min_val) / (max_val - min_val))
 			return_vals[[i]] <- return_val
 		} else {

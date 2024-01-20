@@ -78,3 +78,7 @@ curveppmx adding covariates
 
 confirm on the workflow
 how deep the results interpratation needs to be
+
+
+urban vs rural data
+ARI between different models
