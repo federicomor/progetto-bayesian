@@ -12,14 +12,17 @@
             	'DRPM/Graph/Graph-', 
             	'DRPM/Graph and Boxplot/Graph and Boxplot-', 
             	'DRPM/Salso/Salso-',
+            	'DRPM/With Covariates/With Covariates-',
 				
 				'sPPM/Graph/Graph-', 
             	'sPPM/Graph and Boxplot/Graph and Boxplot-', 
             	'sPPM/Salso/Salso-',
-            	
+            	'sPPM/With Covariates/With Covariates-',
+
             	'Gaussian PPMx/Graph/Graph-', 
             	'Gaussian PPMx/Graph and Boxplot/Graph and Boxplot-', 
-            	'Gaussian PPMx/Salso/Salso-'
+            	'Gaussian PPMx/Salso/Salso-',
+            	'Gaussian PPMx/With Covariates/With Covariates-'
             ]; // Aggiungi qui le tue cartelle
             var totalImages = 53;
 
@@ -140,6 +143,7 @@ h1:after, h1:before {
 <!-- ############# one model ############# -->
 <div id="image-slider">
 	<h1>One-model plots</h1>
+	Per i modelli senza covariate ho messo comunque i plot con le covariate (per ora quelle selezionate da Federica) che possono comunque essere utili per l'interpretazione magari.<br> Poi anziché la sezione dei four-plots potremmo fare quattro sezioni singole, una per modello, per anche spiegarli brevmente.<br><br>
 
 	<label for="model-select">Model </label>
 	<select id="model-select" onchange="changemodel()">
@@ -156,6 +160,7 @@ h1:after, h1:before {
 	<!-- <select id="plot-select"> -->
 		<option value="Graph and Boxplot">Graph and Boxplot</option>
 		<option value="Graph">Graph</option>
+		<option value="With Covariates">With Covariates</option>
 		<option value="Salso">Salso</option>
 		<option value="ARI">ARI</option>
 		<option value="Time series">Time series</option>
@@ -190,14 +195,12 @@ h1:after, h1:before {
         if (selectedplot =='ARI') {
             imagePath = selectedmodel + 'ARI/ari.svg';
         } else if (selectedplot == 'Time series') {
-        	imagePath = selectedmodel + 'Time series/Time series.svg';
-        } 
-        else {
+        	imagePath = selectedmodel + 'Time series/Time series.svg"';
+        } else {
             imagePath = selectedmodel + selectedplot + '/' + selectedplot + '-' + pad(currentValue, 2) + '.png';
         }
         // console.log(imagePath)
 		currentImage.innerHTML = '<img src="' + imagePath + '"alt="Image ' + currentValue + '" />';
-		// currentImage.innerHTML = '<img height="' + height + '" width="' + width + '"src="' + imagePath + '"alt="Image ' + currentValue + '" />';
 	}
 
 	function pad(number, length) {
@@ -216,6 +219,7 @@ h1:after, h1:before {
 <!-- update above part, change h1 title and variables ecc -->
 <div id="image-grid-four">
 	<h1>Four-model plots</h1>
+	In realtà penso la toglierò questa parte, meglio avere piuttosto quattro sezioni distinte, ognuna per modello. Cioè a me non convince molto, vediamo cosa ne pensiamo insieme.<br><br>
 
 	<!-- <br> -->
 	<label for="plot-select-grid">Plot </label>

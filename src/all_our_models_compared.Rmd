@@ -147,6 +147,8 @@ Model obtained collecting 1000 mcmc iterates, using niter=60000; nburn=20000; nt
 # load("../data/Federico/drpm_eta0_phi1_spcoes5.Rdata")
 # load("../data/Federico/drpm_eta0_phi1_spcoes5_v2.Rdata")
 
+base_folder = "DRPM"
+
 load("../data/Federico/drpm_eta0_phi1_spcoes5.Rdata")
 # questo resta il migliore, ma forse su certi tempi si può lavorare in modo adaptive
 # cambiando abinder o a mano in qualche modo
@@ -325,8 +327,6 @@ for(time in time_span){
 	salso_out_list[[time]] = salso_out
 	salso_out_matrix[time,] = salso_out
 	
-	# increment nint until there is no error
-	cols = color_correct_clusters(df_temp,idea=2,verbose=0,nint=12)
 
 	################################################
 	df_temp = data.frame(
@@ -334,6 +334,9 @@ for(time in time_span){
 		Latitude = sites$latitude,
 		clusters = salso_out[1:105]
 	)
+	# increment nint until there is no error
+	cols = color_correct_clusters(df_temp,idea=2,verbose=0,nint=12)
+	
 	df_temp$Time = rep(time,dim(df_temp)[1])
 	df_cluster = rbind(df_cluster,df_temp)
 	
@@ -355,10 +358,10 @@ for(time in time_span){
 salso_out_lists[["DRPM"]] = salso_out_list
 ```
 
-## tseries plot
+## time series
 ```{r}
 cl_regions = list()
-for (i in 1:6){
+for (i in 1:10){
 	cl_regions[[i]] = numeric()
 }
 
@@ -381,14 +384,16 @@ cl_regions
 ```
 
 ```{r}
-library(grid)
-library(gridBase)
-library(gridExtra)
+for(a in 1:3){
+if(a==1)
+png(file=paste0("figures/",base_folder,"/Time series/Time series.png"),units="px",width = 1200, height = 600)
+else if (a==2){
+pdf(file=paste0("figures/",base_folder,"/Time series/Time series.pdf"),width = 14, height = 6)
+} else {
+svg(file=paste0("figures/",base_folder,"/Time series/Time series.svg"),width = 14, height = 6)
+}
 
-# png(file="figures/tseries_test_new.png",units="px",width = 1200, height = 600)
-pdf(file="figures/tseries_test_new.pdf",width = 16, height = 6)
-
-layout(matrix(c(1,1,1,1,1,1,2,2,2,2,2), nrow = 1, byrow = T))
+layout(matrix(c(1,1,1,1,1,1,2,2,2,2,2,2), nrow = 1, byrow = T))
 # layout(matrix(c(1,2),nrow = 1, byrow = T),widths=c(6,5))
 cols = colora(12,"div",0)[-2]
 
@@ -441,6 +446,7 @@ grid.draw(grob)
 popViewport(3)
 
 dev.off()
+}
 ```
 
 
@@ -458,7 +464,7 @@ for(time in time_span){
 	# plot(ssout,type="heatmap")
 	# plot(ssout,type="mds")
 	plot(ssout,type="pairs",data=std_sites)
-	text(0.2,0.98,paste0("Time ",time))
+	text(0.3,0.98,paste0("Time ",time," - ",base_folder))
 	# plot(ssout,type="dendrogram")
 	
 	dev.off()
@@ -469,13 +475,10 @@ for(time in time_span){
 
 ## ARI plot
 ```{r}
-library(mclust)
-library(fossil)
-##########################
-FIT = drpm_model # your fit
-LEN = max(time_span)
-##########################
+### ARI #######################################################################
+library(mclust) # if Adjusted RI
 
+LEN = max(time_span)
 # build the ARI matrix
 ARImats <- matrix(NA, nrow=LEN, ncol=LEN)
 rho_ARI <- list()
@@ -485,67 +488,31 @@ for(time in 1:LEN){
 for(k in 1: LEN){
 	for(kk in 1: LEN){
 		ARImats[k,kk] <- adjustedRandIndex(rho_ARI[[k]], rho_ARI[[kk]])
-		# ARImats[k,kk] <- rand.index(rho_ARI[[k]], rho_ARI[[kk]])
 	}
 }
-```
-
-```{r}
-titolo = "DRPM"
 ncols_ari = 100
 cols_ARI = colora(ncols_ari,79,0)
 # cols_ARI = rev(cols_ARI)
-
 brks = seq(-1,1,length.out=ncols_ari+1)
 
-# pdf(paste0("./figures/DRPM/ARI/ari.pdf"), height=8, width=10)
-# svg(paste0("./figures/DRPM/ARI/ari.svg"), height=8, width=10)
-# png(paste0("./figures/DRPM/ARI/ari.png"),  width=700,height=600)
+for(a in 1:2){
+if(a==1)
+png(paste0("./figures/",base_folder,"/ARI/ari.png"), width=700,height=600)
+else {
+svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=7, width=8)
+}
 
-# or see ?designer.colors for colors
-library(fields)
+	library(fields)
 image.plot(ARImats,
-		   main=paste0("Lagged ARI values - ",titolo),axes=FALSE,col=cols_ARI,
+		   main=paste0("Lagged ARI values - ",base_folder),axes=FALSE,col=cols_ARI,
 		   breaks=brks)
-mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
-mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.8)
-
-# dev.off()
-```
-
-## cls see
-```{r}
-clusters_old = NULL
-for(time in time_span[44]){
-	cat(crayon::red("Time",time,"\n"))
-
-	df_cluster_cut = df_cluster[df_cluster$Time==time,]
-	# clusters_now = df_cluster_cut$clusters
-	####### no mode correct if heat plot
-	# clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
-	# se fai heat plot non serve fare la mode correct
-	# perché la heat plot la usi per vedere anche i valori di pm10, non la coerenza temporale
-	# nei gruppi, che con la heat coloration si perde come visibilità (non so se è chiaro)
-	# df_cluster_cut$clusters = clusters_now
-
-	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=10)
-
-	library(grid)
-	### this
-	# q = get_graph_plot(df_cluster_cut,cols)
-	q = get_boxplot_plot(df_cluster_cut,cols,annotate=F)
-	
-	# Create a text
-
-	print(q)
-
-	### or this
-	p = plot_graph_and_hist(df_cluster_cut,cols,annotate=T)
-
-
-clusters_old = clusters_now
+mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.7)
+mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.7)
+dev.off()
 }
 ```
+
+
 ## cls save
 ```{r}
 clusters_old = NULL
@@ -564,16 +531,17 @@ for(time in time_span){
 	cur_num = sprintf("%02d", time)
 	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=12)
 	
-	### this
-	# q = get_graph_plot(df_cluster_cut,cols)
-	# print(q)
-	# ggsave(file=paste0("./figures/DRPM/Graph/Graph-",cur_num,".png"),
-	# units="px",width=2000, height=1400, dpi=300)
-	# dev.off()
+	### Graph
+	q = get_graph_plot(df_cluster_cut,cols,paste("Cluster map, time",time,"-",base_folder))
+	print(q)
+	ggsave(file=paste0("./figures/",base_folder,"/Graph/Graph-",cur_num,".png"),
+	units="px",width=2000, height=1400, dpi=300)
+	dev.off()
 	
-	### or this
-	p = plot_graph_and_hist(df_cluster_cut,cols)
-	ggsave(file=paste0("./figures/DRPM/Graph and Boxplot/Graph and Boxplot-",cur_num,".png"),
+	
+	### Graph and Boxplot
+	p = plot_graph_and_hist(df_cluster_cut,cols,titolo=paste("Time",time,"-",base_folder))
+	ggsave(file=paste0("./figures/",base_folder,"/Graph and Boxplot/Graph and Boxplot-",cur_num,".png"),
 		   plot=p,
 		   units="px",width=2500, height=1200, dpi=300) # maybe 1200 is better
 		   # units="px",width=2500, height=1400, dpi=300)
@@ -620,6 +588,42 @@ frammeratte = 2
 image_write_gif(image = img_animated, path = paste0(percorso,output_name,".gif"),delay=1/frammeratte)
 image_write_video(image = img_animated, path = paste0(percorso,output_name,".mp4"),framerate=frammeratte)
 ```
+
+## covariates plots
+relevant covariates
+```{r}
+# install.packages("svglite")
+library(svglite)
+
+for(time in time_span){
+	cat(crayon::red("Time",time,"\n"))
+
+	df_cluster_cut = df_cluster[df_cluster$Time==time,]
+	# clusters_now = df_cluster_cut$clusters
+	####### no mode correct if heat plot
+	# clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
+	# se fai heat plot non serve fare la mode correct
+	# perché la heat plot la usi per vedere anche i valori di pm10, non la coerenza temporale
+	# nei gruppi, che con la heat coloration si perde come visibilità (non so se è chiaro)
+	# df_cluster_cut$clusters = clusters_now
+
+	cur_num = sprintf("%02d", time)
+	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=12)
+	
+	p = Federica_covariates_plot(df_cluster_cut,cols,
+					 titolo = paste("Cluster map, time",time,"-",base_folder),var_selected_idxs)
+	# ggsave(p,file="test.png",)
+	# ggsave(file=paste0("./figures/",base_folder,"/With Covariates/With Covariates-",cur_num,".svg"),p,width=15, height=10)
+	ggsave(p,file=paste0("./figures/",base_folder,"/With Covariates/With Covariates-",cur_num,".png"),units="px",width=4500, height=3000, dpi=400)
+	dev.off()
+
+}
+```
+
+
+
+
+
 
 
 #=======
@@ -874,7 +878,7 @@ for(time in time_span){
 	# plot(ssout,type="heatmap")
 	# plot(ssout,type="mds")
 	plot(ssout,type="pairs",data=std_sites)
-	text(0.2,0.98,paste0("Time ",time))
+	text(0.3,0.98,paste0("Time ",time," - ",base_folder))
 	# plot(ssout,type="dendrogram")
 	dev.off()
 	
@@ -894,6 +898,12 @@ for(time in time_span){
 		   units="px",width=2500, height=1200, dpi=300) # maybe 1200 is better
 		   # units="px",width=2500, height=1400, dpi=300)
 	dev.off()
+	
+	### Covariates
+	p = Federica_covariates_plot(df_cluster_cut,cols,
+					 titolo = paste("Cluster map, time",time,"-",base_folder),var_selected_idxs)
+	ggsave(p,file=paste0("./figures/",base_folder,"/With Covariates/With Covariates-",cur_num,".png"),units="px",width=4500, height=3000, dpi=400)
+	dev.off()
 }
 ```
 
@@ -904,6 +914,8 @@ for(time in time_span){
 ```{r}
 gppmx_fit = readRDS("Gaussian_ppmX.RData")
 # read rho through gppmx_fit[[time]]$Si
+var_selected <- c("Altitude","EM_nox_sum","WE_mode_wind_direction_100m",
+				  "WE_wind_speed_100m_max", "LA_lvi")
 ```
 
 ```{r}
@@ -979,8 +991,21 @@ for(time in time_span){
 	# q = get_graph_plot(df_cluster_cut,cols)
 	# print(q)
 	# p = plot_graph_and_hist(df_cluster_cut,cols)
+	
+	################################################
+	# test for covariates plots
+	
+	# png("test.png",units="px",height = 2400,width = 2000)
+	# p = Federica_covariates_plot(df_cluster_cut,cols,
+	# 				 titolo = paste("Cluster map, time",time,"- Gaussian PPMx"),var_selected_idxs)
+	# ggsave(p,file="test.png",units="px",width=3500, height=3000, dpi=400)
+	# ggsave(p,file="test.pdf",width=15, height=10)
+	# dev.off()
+
 }
 ```
+
+
 
 
 ## plots save
@@ -1151,7 +1176,7 @@ for(time in time_span){
 	# plot(ssout,type="heatmap")
 	# plot(ssout,type="mds")
 	plot(ssout,type="pairs",data=std_sites)
-	text(0.2,0.98,paste0("Time ",time))
+	text(0.3,0.98,paste0("Time ",time," - ",base_folder))
 	# plot(ssout,type="dendrogram")
 	dev.off()
 	
@@ -1170,6 +1195,12 @@ for(time in time_span){
 		   plot=p,
 		   units="px",width=2500, height=1200, dpi=300) # maybe 1200 is better
 		   # units="px",width=2500, height=1400, dpi=300)
+	dev.off()
+	
+	### Covariates
+	p = Federica_covariates_plot(df_cluster_cut,cols,
+					 titolo = paste("Cluster map, time",time,"-",base_folder),var_selected_idxs)
+	ggsave(p,file=paste0("./figures/",base_folder,"/With Covariates/With Covariates-",cur_num,".png"),units="px",width=4500, height=3000, dpi=400)
 	dev.off()
 }
 ```

@@ -1,5 +1,9 @@
 cat(crayon::cyan("\nGenerated these functions:\n"))
 
+library(grid)
+library(gridBase)
+library(gridExtra)
+
 ################################################################################
 #### mode correction
 mode_correct_clusters = function(cl_old, cl_cur,verbose=0,very_verbose=0){ # and returns cl_new the updated cl_cur
@@ -800,6 +804,141 @@ p = p +
 p = grid.arrange(q_graph, p, ncol=2,widths=c(1.8,1.2))
 # p = arrangeGrob(q_graph, p, ncol=2,widths=c(1.8,1.2))
 }
+
+
+
+Federica_covariates_plot = function(df_cluster_cut,cols=cols_default,titolo=paste("Time",time),covariates_idx){
+	clusters_now = df_cluster_cut$clusters
+	
+	# GRAPH #######################
+	q_graph = get_graph_plot(df_cluster_cut,cols,titolo = titolo)
+	n_clusters = unique(clusters_now)
+	clsize = table(clusters_now)
+	ycurrent = y[,paste0("w",time)]
+	clust_vals = clusters_now[1:105]
+	df_temp = data.frame(clusters=clust_vals,ycurrent=ycurrent)
+	
+	############ BOXPLOT PM10
+	p_boxplot_pm = ggplot(df_temp, aes(as.factor(clusters),ycurrent,
+							fill = cols[clusters]
+							# color = cols[clust_vals]
+	))+geom_boxplot(position = "identity") +
+	theme_bw()+
+	theme(legend.position = "none")+
+	scale_fill_identity(guide="legend",labels=paste0("cl",n_clusters),
+						breaks=cols[n_clusters])+
+	ylab("log(PM10) values")+
+	xlab("clusters")+
+	ylim(xlims)
+	
+	
+	############ BOXPLOT covariate
+	df_wsc_week = df_wsc[which(df_wsc$week==time),]
+	df_temp$Altitude = df_wsc_week$Altitude
+	df_temp$WE_wind_speed_100m_max = df_wsc_week$WE_wind_speed_100m_max
+	df_temp$LA_lvi = df_wsc_week$LA_lvi
+	df_temp$EM_nox_sum = df_wsc_week$EM_nox_sum
+
+										   
+	p_boxplot_Altitude = ggplot(df_temp, aes(as.factor(clusters),
+											 Altitude,fill = cols[clusters]))+
+		geom_boxplot(position = "identity") +
+		theme_bw()+
+		theme(legend.position = "none")+
+		scale_fill_identity(guide="legend",labels=paste0("cl",n_clusters),breaks=cols[n_clusters])+
+		ylab("Altitude")+
+		xlab("clusters")+
+		ylim(extrema(df_wsc$Altitude))
+	
+	p_boxplot_WE_wind_speed_100m_max = ggplot(df_temp, aes(as.factor(clusters),
+														   WE_wind_speed_100m_max,fill = cols[clusters]))+
+		geom_boxplot(position = "identity") +
+		theme_bw()+
+		theme(legend.position = "none")+
+		scale_fill_identity(guide="legend",labels=paste0("cl",n_clusters),breaks=cols[n_clusters])+
+		ylab("WE_wind_speed_100m_max")+
+		xlab("clusters")+
+		ylim(extrema(df_wsc$WE_wind_speed_100m_max))
+	
+	p_boxplot_LA_lvi = ggplot(df_temp, aes(as.factor(clusters),
+										   LA_lvi,fill = cols[clusters]))+
+		geom_boxplot(position = "identity") +
+		theme_bw()+
+		theme(legend.position = "none")+
+		scale_fill_identity(guide="legend",labels=paste0("cl",n_clusters),breaks=cols[n_clusters])+
+		ylab("LA_lvi")+
+		xlab("clusters")+
+		ylim(extrema(df_wsc$LA_lvi))
+	
+	p_boxplot_EM_nox_sum = ggplot(df_temp, aes(as.factor(clusters),
+											   EM_nox_sum,fill = cols[clusters]))+
+		geom_boxplot(position = "identity") +
+		theme_bw()+
+		theme(legend.position = "none")+
+		scale_fill_identity(guide="legend",labels=paste0("cl",n_clusters),breaks=cols[n_clusters])+
+		ylab("EM_nox_sum")+
+		xlab("clusters")+
+		ylim(extrema(df_wsc$EM_nox_sum))
+	
+	
+	library(lubridate)
+	# data_from_to = data_agc_lomb[intersect(which(data_agc_lomb$Time>=as.Date("2018-01-01")),
+								 	# which(data_agc_lomb$Time<=as.Date("2018-12-31"))),]
+	# data_from_to$week = week(data_from_to$Time)
+	# data_from_to = data_from_to[which(data_from_to$week==time),]
+	# OR this
+	data_from_to = df_wsc_week
+	
+	wind_arrows <- data.frame(
+		longitude = sites_plt$Longitude,
+		latitude = sites_plt$Latitude,
+		direction = cardinal_to_degree(data_from_to$WE_mode_wind_direction_100m),
+		Intensity = as.numeric(data_from_to$WE_wind_speed_100m_mean)
+	)
+	# Calcola le coordinate di fine delle frecce in base alla direzione 
+	# l'intensità verra colorata invece di cambiare in lunghezza
+	wind_arrows$end_longitude =( wind_arrows$longitude + sin(wind_arrows$direction)/10)
+	wind_arrows$end_latitude = ( wind_arrows$latitude + cos(wind_arrows$direction)/10)
+	# put a 0 in the NA
+	wind_arrows[is.na(wind_arrows)] <- 0
+	mappa_wind <- ggplot(data = wind_arrows) +
+		# geom_sf(data = shp_map, fill = color_background_map , color = "black", linewidth = 0.5,alpha=0.6)+
+		geom_sf(data = altre_regioni, fill = color_empty ,color = color_fill, linewidth = 0.1,alpha=0.1, show.legend = FALSE) +
+		geom_sf(data = lombardia_2, fill = color_empty, color = color_comuni_lombardia, linewidth = 0.3,alpha=0.7, show.legend = FALSE) +
+		
+		coord_sf(xlim = range(sites$longitude) + padding, ylim = range(sites$latitude) + padding, expand = FALSE)+
+		# coord_sf(xlim = range(na.omit(wind_arrows$longitude))+padding,
+				 # ylim = range(na.omit(wind_arrows$latitude))+padding, expand = FALSE)+
+		geom_segment(data = wind_arrows,
+					 aes(x = longitude, y = latitude, xend = end_longitude, yend = end_latitude,
+					 	color = Intensity),
+					 arrow = arrow(angle=10, type = "open", length = unit(0.2, "inches"), ends = "last"),
+					 lineend = "round", linewidth = 0.4,alpha=0.9 )+
+		theme_bw()+
+		theme(panel.grid = element_blank())+
+		labs(title="Wind map")+
+		ylab("")+
+		xlab("")
+	
+	p = grid.arrange(q_graph,
+					 p_boxplot_pm,
+					 p_boxplot_Altitude,
+					 p_boxplot_WE_wind_speed_100m_max,
+					 p_boxplot_LA_lvi,
+					 p_boxplot_EM_nox_sum,
+					 mappa_wind,
+					 ncol=2,
+					 # widths=c(1.8,1.2),
+					 layout_matrix = rbind(c(1,1,1,1,2,2,2),
+					 					   c(1,1,1,1,2,2,2),
+					 					   c(1,1,1,1,2,2,2),
+					 					   # c(1,1,1,1,2,2),
+					 					   c(3,4,5,6,7,7,7),
+					 					   c(3,4,5,6,7,7,7))
+	)
+	return(p)
+}
+
 
 easy_plot = function(clusters_input,nintput=30){
 	clusters_input = clusters_input[1:105]
