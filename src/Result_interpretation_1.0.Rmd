@@ -1,0 +1,133 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r,warning = FALSE}
+source("include.R") 
+source("plot functions/plotter.R")
+```
+
+```{r}
+interest_variables <- c("EM_nh3_livestock_mm",
+"LA_hvi",
+"LA_lvi",
+"Altitude",
+"EM_nox_sum",
+"WE_wind_speed_100m_max",
+"WE_mode_wind_direction_100m")
+```
+
+
+```{r}
+other_vars <- c("IDStations","Latitude","Longitude","week")
+df_interst <- df_weekly[,c(interest_variables,"AQ_pm10",other_vars)]
+head(df_interst)
+# small modification to not change functions
+colnames(df_interst)[which(colnames(df_interst)=="week") ] = "Time"
+```
+#  Map expanding radius: togliere la legenda
+
+```{r,warning=FALSE}
+initial_date = "2018-01-01"
+final_date = "2019-01-01"
+every = "year"
+
+# if you change the file_name from None it will create a mp4 video
+file_name = "None"
+
+chosen_var_name = "AQ_pm10" 
+
+circles_plot <- circlesPlot(initial_date,final_date,every,file_name,chosen_var_name)
+```
+
+# Grid map with chosen variable 
+```{r,warning=FALSE}
+initial_date = "2016-01-01"
+final_date = "2017-01-01"
+# if you leave every = "" it will display only initial and final
+every = ""
+
+# if you change the file_name from None it will create a mp4 video
+file_name = "None"
+
+chosen_variable_name = "WE_wind_speed_10m_mean"
+
+map = gridMap(initial_date,final_date,every,file_name,chosen_variable_name)
+```
+
+
+
+```{r}
+#########################   XY PLOT  #####################################
+cols = colora(6,970,show=F)
+xyPlot_weekly <- function(file_name,var1_name,var2_name,size_name){
+
+	data_from_to = df_interst
+	len_time = 12 # number of weeks
+	
+	
+	var1 = data_from_to[,var1_name][[1]]
+	var2 = data_from_to[,var2_name][[1]]
+	if(class(size_name)!="numeric"){
+		size = data_from_to[,size_name][[1]]
+	}else{
+		size = size_name
+	}
+	colors_factor = factor(data_from_to$IDStations)
+	
+	if(class(size_name)!="numeric"){
+		p <- ggplot(
+			data_from_to, 
+			aes(x = var1, y = var2, size = size, colour = colors_factor)) +
+			geom_point(alpha = 1) +
+			#scale_color_manual(values = cols) +
+			scale_color_viridis_d() +
+			scale_size(range = c(2, 12)) +
+			labs(x = var1, y = var2)+
+			guides(size = guide_legend(title = size_name), color = "none")+
+			theme_bw()
+	}else{
+		p <- ggplot(
+			data_from_to, 
+			aes(x = var1, y = var2, size = size, colour = colors_factor)) +
+			geom_point(alpha = 1,size=size,show.legend = FALSE) +
+			scale_color_viridis_d() +
+			scale_size(range = c(2, 12)) +
+			labs(x = var1_name, y =var2_name)+
+			theme_bw()
+	}
+	
+	return(animator(file_name,p,data_from_to,len_time,1080,1080,TRUE))
+	
+}
+```
+
+# xy color+size in time
+```{r,warning=FALSE}
+file_name= "xy_plot_pm10-WE_wind_speed_100m_max-Altitude"
+#file_name= "None"
+var1_name = "WE_wind_speed_100m_max" # x
+var2_name = "AQ_pm10" # y
+# you can change size to refer to a particular variable
+size_name = 3
+#size_name = "Altitude"
+
+xyplot <- xyPlot_weekly(file_name,var1_name,var2_name,size_name)
+xyplot
+```
+
+
+
+
+## 1 year - multiple stations
+```{r,warning=FALSE}
+initial_date = "2016-01-01"
+final_date = "2016-12-31"
+chosen_stations = 1:4
+file_name = "None"
+chosen_variable_name = "AQ_pm10"
+
+trendYearStation_plot <- trendYearStation(initial_date,final_date,chosen_stations,file_name,chosen_variable_name)
+```
+

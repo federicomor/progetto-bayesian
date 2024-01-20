@@ -93,10 +93,17 @@ circlesPlot <- function(initial_date,final_date,every,file_name,chosen_var_name)
 	
 	
 	
-	mappa_expanding <- stationPlot()+
+	mappa_expanding <- DefaultPlot()+
+		## add points for the stations
+		
+		
+		
 		geom_point(data =data_from_to, aes(x=Longitude,y=Latitude),
 				   size=lerp_pm10_radius(chosen_var),
 				   color = lerp_pm10_color(chosen_var), alpha=0.6)+
+		
+		geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = color_station_point) +
+		
 		labs(title=paste0("measurments of ",chosen_var_name))+
 		guides(color = guide_legend(title = chosen_var_name))
 
@@ -182,17 +189,17 @@ xyPlot <- function(initial_date,final_date,every,file_name,var1_name,var2_name,s
 			#scale_color_manual(values = cols) +
 			scale_color_viridis_d() +
 			scale_size(range = c(2, 12)) +
-			labs(x = var1_name, y =var2_name)+
+			labs(x = var1_name, y = var2_name)+
 			guides(size = guide_legend(title = size_name), color = "none")+
 			theme_bw()
 	}else{
 		p <- ggplot(
 			data_from_to, 
-			aes(x = var1, y=var2, size = size, colour = colors_factor)) +
-			geom_point(alpha = 1,size=size,show.legend = FALSE) +
+			aes(x = var1, y = var2, size = size, colour = colors_factor)) +
+			geom_point(alpha = 1,size = size,show.legend = FALSE) +
 			scale_color_viridis_d() +
 			scale_size(range = c(2, 12)) +
-			labs(x = var1_name, y =var2_name)+
+			labs(x = var1_name, y = var2_name)+
 			theme_bw()
 	}
 	

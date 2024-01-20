@@ -722,7 +722,7 @@ covariates_to_exclude = c("X","IDStations","Latitude","Longitude","Time","Altitu
 						  "AQ_pm10","WE_mode_wind_direction_10m","WE_mode_wind_direction_100m","day","LA_land_use")
 #not numerical or constant over same  (lat, long, alti and land_use)
 covar=df_weekly[,-which(colnames(df_weekly)%in% covariates_to_exclude)]
-k = dim(covar)[2]+3  #+3 if gonna use nonlinearities on time
+k = dim(covar)[2]+1  #+3 if gonna use nonlinearities on time
 count_for_selection_l=rep(0,k)
 count_for_selection_hs=rep(0,k)
 
@@ -741,7 +741,7 @@ for (st in stations){
   t2=(covs$week)^2
   sint=sin(covs$week)
   cost=cos(covs$week)
-  covs=cbind(covs,t2,sint,cost)
+  covs=cbind(covs,sint)
  
   covs=as.data.frame(covs)
   covariates=scale(covs,center = TRUE)     #normalization on the station
