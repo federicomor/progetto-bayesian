@@ -127,7 +127,7 @@ p_stations_codes
 ```
 
 #=======
-# DRPM 
+# DRPM + experimentation
 
 ```r
 > log(40)
@@ -629,6 +629,17 @@ load("../data/sppm_c4_list.RData")
 # see sppm_C4_list[[time]]$Si
 ```
 
+```{r}
+lpml_tot_sppm = waic_tot_sppm = 0
+for (time in 1:53){
+	lpml_tot_sppm = lpml_tot_sppm + sppm_C4_list[[time]]$lpml
+	waic_tot_sppm = waic_tot_sppm + sppm_C4_list[[time]]$WAIC
+}
+cat(crayon::red("\nLPML =",lpml_tot_sppm, "\nWAIC =",waic_tot_sppm))
+# niente ancora lontani da drpm
+```
+
+
 ## cls def/see
 Here you should tune the salso(ecc) to maybe improve the cluster generation
 ```{r}
@@ -893,6 +904,16 @@ for(time in time_span){
 ```{r}
 gppmx_fit = readRDS("Gaussian_ppmX.RData")
 # read rho through gppmx_fit[[time]]$Si
+```
+
+```{r}
+lpml_tot_gppmx = waic_tot_gppmx = 0
+for (time in 1:53){
+	lpml_tot_gppmx = lpml_tot_gppmx + gppmx_fit[[time]]$lpml
+	waic_tot_gppmx = waic_tot_gppmx + gppmx_fit[[time]]$WAIC
+}
+cat(crayon::red("\nLPML =",lpml_tot_gppmx, "\nWAIC =",waic_tot_gppmx))
+# niente ancora lontani da drpm
 ```
 
 
