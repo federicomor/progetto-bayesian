@@ -15,7 +15,8 @@ interest_variables <- c("EM_nh3_livestock_mm",
 "Altitude",
 "EM_nox_sum",
 "WE_wind_speed_100m_max",
-"WE_mode_wind_direction_100m")
+"WE_mode_wind_direction_100m",
+"WE_tot_precipitation")
 ```
 
 
@@ -41,25 +42,11 @@ chosen_var_name = "AQ_pm10"
 circles_plot <- circlesPlot(initial_date,final_date,every,file_name,chosen_var_name)
 ```
 
-# Grid map with chosen variable 
-```{r,warning=FALSE}
-initial_date = "2016-01-01"
-final_date = "2017-01-01"
-# if you leave every = "" it will display only initial and final
-every = ""
-
-# if you change the file_name from None it will create a mp4 video
-file_name = "None"
-
-chosen_variable_name = "WE_wind_speed_10m_mean"
-
-map = gridMap(initial_date,final_date,every,file_name,chosen_variable_name)
-```
 
 
 
+# XY PLOT function
 ```{r}
-#########################   XY PLOT  #####################################
 cols = colora(6,970,show=F)
 xyPlot_weekly <- function(file_name,var1_name,var2_name,size_name){
 
@@ -74,7 +61,7 @@ xyPlot_weekly <- function(file_name,var1_name,var2_name,size_name){
 	}else{
 		size = size_name
 	}
-	colors_factor = factor(data_from_to$IDStations)
+	colors_factor = factor(data_from_to$color_clusters)
 	
 	if(class(size_name)!="numeric"){
 		p <- ggplot(
@@ -103,31 +90,41 @@ xyPlot_weekly <- function(file_name,var1_name,var2_name,size_name){
 }
 ```
 
-# xy color+size in time
-```{r,warning=FALSE}
-file_name= "xy_plot_pm10-WE_wind_speed_100m_max-Altitude"
-#file_name= "None"
-var1_name = "WE_wind_speed_100m_max" # x
-var2_name = "AQ_pm10" # y
-# you can change size to refer to a particular variable
-size_name = 3
-#size_name = "Altitude"
+# cluster colors
+```{r}
+mode_clusters <- list(
+  c(1, 14, 19, 20, 21, 40, 41, 52, 62, 65, 66, 67, 69, 71, 74, 80, 83, 84, 102),
+  c(2, 3, 5, 7, 8, 9, 11, 12, 26, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 48, 50, 53, 56, 57, 61, 63, 64, 70, 72, 77, 82, 85, 87, 88, 90, 91, 98, 99),
+  c(4, 6, 10, 13, 15, 16, 17, 18, 22, 23, 24, 25, 27, 28, 39, 42, 43, 46, 49, 51, 54, 55, 58, 103, 105),
+  c(44, 45, 47, 59, 60, 68, 73, 75, 76, 78, 79, 81, 86, 89, 93, 94, 95, 96, 97, 100, 104),
+  c(92, 101)
+)
+colors_clusters = rep(1,105)
+for(i in 2:length(mode_clusters)){
+	colors_clusters[mode_clusters[[i]]] = i
+}
 
-xyplot <- xyPlot_weekly(file_name,var1_name,var2_name,size_name)
-xyplot
+df_interst$color_clusters = rep(1,dim(df_interst)[1])
+ii = 1
+for(st in unique(df_interst$IDStations)){
+	df_interst$color_clusters[df_interst$IDStations==st] = colors_clusters[ii]
+	ii = ii + 1	
+}
 ```
 
-
-
-
-## 1 year - multiple stations
+# xy color+size in time
 ```{r,warning=FALSE}
-initial_date = "2016-01-01"
-final_date = "2016-12-31"
-chosen_stations = 1:4
-file_name = "None"
-chosen_variable_name = "AQ_pm10"
+var2_name = "AQ_pm10" # y
+size_name = 3
+#size_name = "Altitude"
+#file_name= "None"
+for(vars in interest_variables){
+	file_name= paste0("xy_plot_pm10-",vars)
+	# you can change size to refer to a particular variable
 
-trendYearStation_plot <- trendYearStation(initial_date,final_date,chosen_stations,file_name,chosen_variable_name)
+	
+	xyplot <- xyPlot_weekly(file_name,vars,var2_name,size_name)
+	xyplot
+}
 ```
 
