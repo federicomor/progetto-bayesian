@@ -1,0 +1,25 @@
+model{  
+	for(i in 1:n){   ## regression model for y  #loop 
+	      mu[i] <- beta0 + beta[1]*x[i,1] + beta[2]*x[i,2] + beta[3]*x[i,3] + beta[4]*x[i,4] + beta[5]*x[i,5] + beta[6]*x[i,6] 
+
+	      y[i] ~ dnorm(mu[i],tau)  
+              
+	} # Manual JAGS
+	## priors
+        beta0 ~ dnorm(0,0.01)  ## intercept
+        for(i in 1:k){
+	     beta[i] ~ dnorm(0,0.01)   ## slopes
+        }
+	sigma ~ dunif(0,100)       ## residual std dev  # Gelman (2006) suggests this noninformative prior 
+                                                        # in the context of hierarchical models (grouped data)
+	tau <- pow(sigma,-2)       ## convert to precision
+
+	
+}
+
+
+
+
+
+
+
