@@ -621,7 +621,8 @@ easy_plot(clusters_now)
 sampled_station = floor(runif(1,0,105))
 cat("sampled_station =",sampled_station,"- that is station called",unique(df_weekly$IDStations)[sampled_station])
 
-# sampled_sation = 68, 2,5,42,52,81,38,39,104,98 buon trace plot
+# sampled_sation = 68, 
+#2,5,42,52,81,38,39,104,98 buon trace plot
 
 ```
  I TRACE PLOT CAMBIANO MOLTO CON LE STAZIONI SCELTE!!!
@@ -745,7 +746,7 @@ for (i  in 1:length(lista)){
 
 
 ```{r}
-saveRDS(lista, file="Gaussian_ppmX.RData")
+saveRDS(lista, file="Gaussian_ppmX2.RData")
 ```
 
 

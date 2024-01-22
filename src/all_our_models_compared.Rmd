@@ -1564,6 +1564,9 @@ PP1 = get_graph_plot(df_cluster_cut,titolo = "Mode clusters",cols=cols_gr,verbos
 PP1
 ```
 
+Non sembra esserci differenza tra i cluster con i 2 diversi modelli. cambia leggermente il lpml.
+
+
 
 work in progress
 ```{r,warning=F}
