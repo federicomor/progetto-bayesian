@@ -1,0 +1,586 @@
+---
+title: "na_filling"
+date: "2023-11-26"
+output: html_document
+---
+
+
+```{r}
+source("include.R")
+```
+
+# auxiliary functions
+```{r}
+interpola_NA <- function(obs) {
+  non_na_indices <- which(!is.na(obs))
+  na_indices <- which(is.na(obs))
+  # print(non_na_indices)
+  # print(na_indices)
+  
+  # loop on Na indices
+  for (na_index in na_indices) {
+    # Trova l'indice più vicino a sinistra e quello più vicino a destra
+    left_index <- suppressWarnings(max(non_na_indices[non_na_indices < na_index]))
+    right_index <- suppressWarnings(min(non_na_indices[non_na_indices > na_index]))
+    # cat("NA idx",na_index," - LR values = ",obs[left_index],",",obs[right_index],"\n")
+
+    # Esegui l'interpolazione se ci sono valori a sinistra e a destra
+    if (!is.na(left_index) && !is.na(right_index)) {
+      left_value <- obs[left_index]
+      right_value <- obs[right_index]
+      
+      # Calcola il valore interpolato
+      interpolated_value <- left_value + 
+        ((right_value - left_value) / (right_index - left_index)) * (na_index - left_index)
+      
+      # Sostituisci il valore NA con quello interpolato
+      obs[na_index] <- interpolated_value
+    }
+    if(is.na(obs[na_index])){
+    	obs[na_index] = na.omit(c(obs[left_index],obs[right_index]))
+    }
+	# cat(obs[na_index],"\n")
+  }
+  return(obs)
+}
+
+# example
+test <- c(NA,NA,10, 15, NA, 20, 24, 20, 18, NA, NA, 10, 9, 9, NA)
+print(test)
+result <- interpola_NA(test)
+print(round(result))
+
+
+na_summary = function(df){
+	for (c in colnames(df)){
+		cat(sprintf("%28s, #NAs = %f\n",c,sum(as.numeric(is.na(df[,c])))))
+	}
+}
+na_summary(df_2018)
+```
+
+
+# add DAY and WEEK columns
+```{r}
+library(lubridate)
+
+# add day
+# days = c("lunedì","martedì","mercoledì","giovedì","venerdì","sabato","domenica")
+day_names = weekdays(df_2018$Time)
+df_2018$day = as.factor(day_names)
+
+# add week
+df_2018$week = week(df_2018$Time)
+cat("we have #weeks =",max(df_2018$week))
+```
+
+
+```{r}
+# check result
+head(df_2018) # funziona, scorrere a destra in fondo per trovare day e week
+# print(df_2018[1:40,c("IDStations","Time","day","week")])
+
+df_2018[1:30,c(2:5,7,38,39)]
+
+unique(df_2018$week) # 53, perchè sono 52 complete più la 53esima che inizia lunedì 31 dicembre 2018
+```
+
+
+# UPDATE
+
+*Federico*
+1. We can ignore the NA and build directly the weekly division by the available days.
+Scorre sulle settimane, calcola quanti NA ci sono, e da lì crea la media.
+Media per ogni stazione però.
+
+## chek col type
+and convert the numeric variables from integer to doubles.
+Otherwise when later we replace with the mean it gives error 
+(mean is double while column is integer)
+
+```{r}
+for (c in colnames(df_2018)){
+	
+	if(typeof(df_2018[,c])=="integer" && c!="day") # fix error spotted by Federica
+		# quello in cui lunedì diventava 3
+		df_2018[,c] = as.double(df_2018[,c])
+}
+df_2018$LI_pigs_v2 = as.double(df_2018$LI_pigs_v2)
+df_2018$LI_bovine_v2 = as.double(df_2018$LI_bovine_v2)
+
+cat("\n")
+for (c in colnames(df_2018)){
+	cat(sprintf("%28s, %s\n",c,typeof(df_2018[,c])))
+}
+```
+
+
+## build df_weekly
+```{r}
+library(dplyr)
+
+# Crea un nuovo dataframe con solo i primi valori di ogni settimana
+# che dopo andremo a modificare nel for con la media dei valori.
+# Qui è solo per creare la struttura di df_weekly
+
+df_weekly <- df_2018 %>%
+  group_by(IDStations,week) %>%
+  slice(1) %>% # prendi la prima riga, poi la cambieremo
+  ungroup()
+
+head(df_weekly)
+colnames(df_weekly)
+assert(size(df_2018)[1] == 105*365)
+assert(size(df_weekly)[1] == 105*53)
+```
+
+
+```{r}
+df_weekly[1:30,c(2:5,7,38,39)]
+# ora day è sistemato
+```
+
+
+
+## fill df_weekly with weekly averages
+and fix na problems if they appear.
+
+Ie we loop on all the stations, selecting the covariates which have to be weekly-combined, poi le combiniamo, e assegnamo i valori combinati nel dataset df_weekly.
+
+La parte con interpola_NA non fa nulla se l'argomento è già pieno, altrimenti attua la modifica nei valori mancanti (che corrispondono a settimanetutte vuote, sostituite con le medie delle settimane prima e dopo di quella).
+
+```{r}
+stations = unique(df_2018$IDStations)
+problematic_stations = c("STA-CH0011A","STA-CH0033A","STA-CH0043A")
+
+problematic_cols = c("LI_pigs","LI_bovine","LI_pigs_v2","LI_bovine_v2")
+character_cols = c("WE_mode_wind_direction_10m","WE_mode_wind_direction_100m")
+skippable_cols = c("X","IDStations","Latitude","Longitude","Time","Altitude","day","week")
+
+
+for (st in stations){
+	cat(crayon::blue("Station",st,"\n"))
+	df_st = df_2018[df_2018$IDStations==st,] # extract covariates for station st
+	cnames = colnames(df_st)[7:37] # lavora solo sulle colonne necessarie
+	# Time, IDStations, Latitude, Longitude, day, week, ecc sono già a posto
+	
+	for (col in cnames){
+		# cat(crayon::green(col,"... "))
+		df_st_col = df_st[,c(col,"week")]
+		
+		if(col %in% skippable_cols){
+			next
+		}
+		if(col %in% problematic_cols && st %in% problematic_stations){
+			cat("We deal with problematic cols later.\n")
+			next
+		}
+		if(col %in% character_cols){
+			# Federica function, la parte del names(table ecc)
+			obs = df_st_col %>%
+					group_by(week) %>%
+					summarize(media = names(table(!!sym(col)))[which.max(table(!!sym(col)))])
+			# questa funzione prende la stringa lunga 365 e ne ritorna una lunga 53
+			# perché ci sono 53 settimane
+			obs=obs$media
+			df_weekly[which(df_weekly$IDStations==st), col] = obs
+		}
+		else{ # numerical cols
+			obs = df_st_col %>%
+					group_by(week) %>%
+					summarize(media = mean(!!sym(col), na.rm = TRUE))
+			obs=obs$media
+			obs_corrected = interpola_NA(obs)
+			df_weekly[which(df_weekly$IDStations==st), col] = obs_corrected
+		}
+	}
+}
+```
+
+
+```{r}
+df_2018[1:30,c(2:5,7,38,39)]
+df_weekly[1:10,c(2:5,7,38,39)]
+na_summary(df_weekly)
+
+```
+
+
+## correctness check
+run it multiple times
+```{r}
+st = sample(stations,1)
+w = sample(1:53,1)
+col = sample(cnames,1)
+
+# st = "STA.IT1904A"
+# w = 32
+# col = "WE_mode_wind_direction_100m"
+
+cat("### station",st,"\n")
+cat("### column",col,"\n")
+cat("### week",w,"\n\n")
+
+# problema: week 50, col direction_100m, st STA.IT1904A
+# risolto
+
+cat("original values\n")
+df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col]
+if(col=="WE_mode_wind_direction_100m" || col=="WE_mode_wind_direction_10m"){
+	table_freq = table(df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col])
+	names(table_freq)[which.max(table_freq)]
+}
+cat("computed mean\n")
+suppressWarnings({mean(df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col])})
+cat("df_weekly value\n")
+df_weekly[[intersect(which(df_weekly$IDStations==st),which(df_weekly$week==w)),col]]
+
+```
+
+
+```{r}
+st = sample(stations,1)
+col = sample(cnames,1)
+# col="AQ_pm10"
+
+title=paste("station",st,"- column",col)
+cols=colora(2,541,0)
+
+plot(df_2018[which(df_2018$IDStations==st),col],type="l",col=cols[1],main=title,
+	 ylab="values",xlab="days/weeks")
+
+lines(rep(as.vector(df_weekly[which(df_weekly$IDStations==st),col])[[1]],each=7),
+	  xlim=c(0,365),col=cols[2])
+
+# not very interesting maybe this acf, just exploring some plots
+# par(mar=c(4,4,3,2))
+# acf(as.vector(df_weekly[which(df_weekly$IDStations==st),col])[[1]],main=title)
+```
+
+
+
+
+*Federica*
+2. Con attenzione alle covariate non numeriche (vento). Con tipo media/mediana/argmax delle direzioni.
+
+
+```{r}
+weekly_wind_direction_10_m <- character(0)  # vettore che contiene dati settimanali 
+weekly_data_wind_direction_10_m <- character(0) # vettore finale con mode settimali per tutto l'anno tutte le stat
+weekly_wind_direction_100_m <- character(0) # vettore che contiene dati settimanali 
+weekly_data_wind_direction_100_m <- character(0) # vettore finale con mode settimali per tutto l'anno tutte le stat
+num_sett <- numeric(0)
+Id_stat <- df_2018$IDStations[1]
+
+for (i in 1:dim(df_2018)[1]) {
+  weekly_wind_direction_10_m <- c(weekly_wind_direction_10_m, df_2018$WE_mode_wind_direction_10m[i])
+  weekly_wind_direction_100_m <- c(weekly_wind_direction_100_m, df_2018$WE_mode_wind_direction_100m[i])
+
+  Id_stat_new <- df_2018$IDStations[i]
+  
+  if (df_2018$day[i] == 'lunedì') {
+  	table_freq <- table(weekly_wind_direction_10_m)
+    weekly_data_wind_direction_10_m <- c(weekly_data_wind_direction_10_m, names(table_freq)[which.max(table_freq)])
+    weekly_wind_direction_10_m <- character(0)
+    table_freq <- table(weekly_wind_direction_100_m)
+    weekly_data_wind_direction_100_m <- c(weekly_data_wind_direction_100_m, names(table_freq)[which.max(table_freq)])
+    weekly_wind_direction_100_m <- character(0)
+    # definisco vettore/colonna che mi dà numero di settimana nell'anno
+    val <- num_sett[lenght(num_sett)]+1
+    if (Id_stat != Id_stat_new)
+  {
+  	Id_stat = Id_stat_new
+  	val = 1
+  	
+  }
+    num_sett <- c(num_sett, val)
+    } 
+
+  
+}
+
+# nuove variabili settimanali 
+print(weekly_data_wind_direction_10_m)
+print(weekly_data_wind_direction_100_m)
+print(num_sett)
+
+```
+
+```{r}
+# check size
+# it should be 105 stations * 53 week
+assert(length(weekly_data_wind_direction_10_m) == 105*53)
+assert(length(weekly_data_wind_direction_100_m) == 105*53)
+
+# nice, we can add them to df_weekly
+## Update: già aggiunte nel loop così c'è tutto lì dentro, funziona
+# df_weekly$WE_mode_wind_direction_10m = weekly_data_wind_direction_10_m
+# df_weekly$WE_mode_wind_direction_100m = weekly_data_wind_direction_100_m
+```
+
+
+```{r}
+summary(df_weekly)
+```
+
+```{r}
+na_summary(df_weekly)
+```
+Ora nelle colonne problematiche esce 159 e 53 perché:
+- abbiamo le tre stazioni problematiche che sono vuote per tutte le 53 settimane 
+=> (53*3 = 159 NA segnati lì)
+- e ce n'è una che è sempre vuota anche nelle covariat v2 
+=> (53*1 = 53 NA segnati lì))
+
+Quindi qui abbiamo df_2018_week ora.
+
+*Giulia*
+3. Mentre per le tre problematiche recuperiamo i valori delle stazioni vicine e li riempiamo con la loro media.
+Vedi file scelte.png per quali stazioni considerare.
+
+Qui riempiamo df_2018_week$MaialiEcc nelle stazioni mancanti con la media delle medie di quelle selezionate nel file scelte.png.
+
+
+O altrimenti controllare se il dataset df_AGC non ha NA in quelle colonne e in quelle location.
+```{r}
+cat(crayon::italic("Loading AGC dataset, may took some time.\n"))
+load("../data/data_agc_lomb_part1.RData")
+load("../data/data_agc_lomb_part2.RData")
+AGC_Dataset = rbind(parte1, parte2)
+rm(parte1)
+rm(parte2)
+head(AGC_Dataset)
+```
+Mancano le colonne LI_pigs_v2 e LI_bovine_v2
+But we miss v2 only for one station so we can use the mean on the other two (very close)
+And use the AGC dataset to select the mean for the three stations (no nas)
+
+```{r}
+#lat=df_weekly$Latitude[(which(df_weekly$IDStations=="STA-CH0011A"))][1]
+#pig_11A=AGC_Dataset$LI_pigs[(which(AGC_Dataset$Latitude=="STA-CH0011A"))]
+```
+We can't because latitude and long of not all stations
+AGC_Dataset only contains some (?)
+ -> Stick to plan A
+
+
+
+
+
+This to check where nas to know i'm using right station
+```{r}
+#st = "STA-CH0011A"
+st="STA-CH0033A"
+#st="STA-CH0043A"
+w = 33
+col = "LI_bovine"
+
+cat("### station",st,"\n")
+cat("### column",col,"\n")
+cat("### week",w,"\n\n")
+
+
+cat("original values\n")
+df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col]
+if(col=="LI_bovine_v2"){
+	table_freq = table(df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col])
+	names(table_freq)[which.max(table_freq)]
+}
+cat("computed mean\n")
+suppressWarnings({mean(df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col])})
+cat("df_weekly value\n")
+df_weekly[[intersect(which(df_weekly$IDStations==st),which(df_weekly$week==w)),col]]
+
+```
+
+Sistemare pig_v2 e bovine_v2
+```{r}
+pigv2_11A=(df_weekly$LI_pigs_v2[(which(df_weekly$IDStations=="STA-CH0011A"))])
+pigv2_43A=(df_weekly$LI_pigs_v2[(which(df_weekly$IDStations=="STA-CH0043A"))])
+
+df_weekly$LI_pigs_v2[(which(df_weekly$IDStations=="STA-CH0033A"))]=(pigv2_11A+pigv2_43A)/2
+
+
+bovv2_11A=(df_weekly$LI_bovine_v2[(which(df_weekly$IDStations=="STA-CH0011A"))])
+bovv2_43A=(df_weekly$LI_bovine_v2[(which(df_weekly$IDStations=="STA-CH0043A"))])
+
+df_weekly$LI_bovine_v2[(which(df_weekly$IDStations=="STA-CH0033A"))]=(bovv2_11A+bovv2_43A)/2
+
+```
+
+
+
+
+
+E ora pigs e bovine
+
+Grafico amatoriale molto brutto ma non riesco a mettere id station su quello con la cartina della lombardia
+quindi uso questo per vedere le stazioni scelte o almeno ci provo
+zoom sulla parte che mi interessa
+```{r}
+sub=distinct(df_weekly[,2:4],df_weekly$IDStations,.keep_all=TRUE)
+plot(sub$Longitude,sub$Latitude,xlab="lon",ylab="lat", asp=1, xlim=c(8.5,9.5), ylim=c(45.5,46.5))
+text(sub$Longitude,sub$Latitude,sub$IDStations, cex=0.7)
+points(sub$Longitude[(which(sub$IDStations=="STA-CH0011A"))],sub$Latitude[(which(sub$IDStations=="STA-CH0011A"))],col='red')
+points(sub$Longitude[(which(sub$IDStations=="STA-CH0033A"))],sub$Latitude[(which(sub$IDStations=="STA-CH0033A"))],col='red')
+points(sub$Longitude[(which(sub$IDStations=="STA-CH0043A"))],sub$Latitude[(which(sub$IDStations=="STA-CH0043A"))],col='red')
+
+```
+Vedo STA.IT1510A,560,561,572
+
+
+
+
+```{r}
+pig_1=(df_weekly$LI_pigs[(which(df_weekly$IDStations=="STA.IT1510A"))])
+pig_2=(df_weekly$LI_pigs[(which(df_weekly$IDStations=="560"))])
+pig_3=(df_weekly$LI_pigs[(which(df_weekly$IDStations=="561"))])
+pig_4=(df_weekly$LI_pigs[(which(df_weekly$IDStations=="572"))])
+
+pig=(pig_1+pig_2+pig_3+pig_4)/4
+df_weekly$LI_pigs[(which(df_weekly$IDStations=="STA-CH0011A"))]=pig
+df_weekly$LI_pigs[(which(df_weekly$IDStations=="STA-CH0033A"))]=pig
+df_weekly$LI_pigs[(which(df_weekly$IDStations=="STA-CH0043A"))]=pig
+
+
+bov_1=(df_weekly$LI_bovine[(which(df_weekly$IDStations=="STA.IT1510A"))])
+bov_2=(df_weekly$LI_bovine[(which(df_weekly$IDStations=="560"))])
+bov_3=(df_weekly$LI_bovine[(which(df_weekly$IDStations=="561"))])
+bov_4=(df_weekly$LI_bovine[(which(df_weekly$IDStations=="572"))])
+
+bov=(bov_1+bov_2+bov_3+bov_4)/4
+df_weekly$LI_bovine[(which(df_weekly$IDStations=="STA-CH0011A"))]=bov
+df_weekly$LI_bovine[(which(df_weekly$IDStations=="STA-CH0033A"))]=bov
+df_weekly$LI_bovine[(which(df_weekly$IDStations=="STA-CH0043A"))]=bov
+
+```
+
+
+
+
+
+Check no more nas
+```{r}
+na_summary(df_weekly)
+```
+Sembra tutto a posto
+
+# final random checks
+```{r}
+df_weekly[1:10,c(2:5,7,38,39)] # day e week a posto
+head(df_weekly)
+```
+
+
+```{r}
+st = sample(stations,1)
+w = sample(1:53,1)
+col = sample(cnames,1)
+
+# st = "STA.IT1904A"
+# w = 32
+# col = "WE_mode_wind_direction_100m"
+
+cat("### station",st,"\n")
+cat("### column",col,"\n")
+cat("### week",w,"\n\n")
+
+# problema: week 50, col direction_100m, st STA.IT1904A
+# risolto
+
+cat("original values\n")
+df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col]
+if(col=="WE_mode_wind_direction_100m" || col=="WE_mode_wind_direction_10m"){
+	table_freq = table(df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col])
+	names(table_freq)[which.max(table_freq)]
+}
+cat("computed mean\n")
+suppressWarnings({mean(df_2018[intersect(which(df_2018$IDStations==st),which(df_2018$week==w)),col])})
+cat("df_weekly value\n")
+df_weekly[[intersect(which(df_weekly$IDStations==st),which(df_weekly$week==w)),col]]
+
+title=paste("station",st,"- column",col)
+cols=colora(2,541,0)
+
+plot(df_2018[which(df_2018$IDStations==st),col],type="l",col=cols[1],main=title,
+	 ylab="values",xlab="days/weeks")
+
+lines(rep(as.vector(df_weekly[which(df_weekly$IDStations==st),col])[[1]],each=7),
+	  xlim=c(0,365),col=cols[2])
+
+```
+
+
+
+## Fede: fixed year-end value error
+c'è (era) una stazione che ha un valore spaventosamente basso di pm10.
+È la stazione STA.IT0499A e ha log(pm10) = -0.456811.
+La data è 31/12, quindi forse si è fatta una media imprecisa, troncando la settimana.
+
+Sistemiamo il file na_missing (calcolando la weekly mean per il 31/12/2019 anche comprendendo i giorni del 2019) o lasciamo così? In generale tutti i valori del 31/12 sembrano bassi (vedi il prossimo plot) quindi ci sta correggere.
+
+Non c'è problema invece coi valori iniziali del 2018 perché il 01/01/2018 era un lunedì.
+
+```{r}
+# hist(df_weekly$AQ_pm10,breaks = 30)
+id_mistery = which(df_weekly$AQ_pm10<1)
+df_weekly[id_mistery,]
+```
+
+Se si vuole sistemare questo dovrebbe essere il codice.
+
+	January 2019        
+Su Mo Tu We Th Fr Sa 
+1  2  3  4  5 
+6  7  8  9 10 11 12 
+13 14 15 16 17 18 19 
+20 21 22 23 24 25 26 
+27 28 29 30 31
+
+```{r}
+old_values = c()
+new_values = c()
+
+df_fixed = df_weekly
+stations = unique(df_fixed$IDStations)
+for(st in stations){
+	df_st = df_agri[which(df_agri$IDStations==st),]
+	new_value = mean(na.omit(
+		df_st$AQ_pm10[intersect(which(df_st$Time>=as.Date("2018-12-31")),
+								which(df_st$Time<=as.Date("2019-01-06")))]
+	))
+	if(!is.na(new_value)){
+		df_fixed[intersect(which(df_fixed$IDStations==st),
+						   which(df_fixed$week==53)),"AQ_pm10"] = new_value
+	}
+	
+	cat("Station",st,
+		"- old value",
+		df_weekly[intersect(which(df_weekly$IDStations==st),which(df_weekly$week==53)),"AQ_pm10"][[1]],
+		" - new value",
+		df_fixed[intersect(which(df_fixed$IDStations==st),which(df_fixed$week==53)),"AQ_pm10"][[1]],
+		"\n")
+	
+	old_values = c(old_values,df_weekly[intersect(which(df_weekly$IDStations==st),which(df_weekly$week==53)),"AQ_pm10"][[1]])
+	new_values = c(new_values, new_value)
+	
+}
+
+plot(old_values,type="l",col="blue")
+lines(new_values,type="l",col="red")
+legend("bottomleft",c("old","new"),fill=c("blue","red"),bty="n")
+```
+
+```{r}
+df_fixed
+df_weekly
+
+na_summary(df_fixed)
+```
+
+# Write df_weekly
+```{r}
+df_weekly = df_fixed
+save(df_weekly, file= "../data/df_weekly.RData")
+```
+

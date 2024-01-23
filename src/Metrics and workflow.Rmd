@@ -1,0 +1,288 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+# workflow
+Expected/suggested structure of the notebook should be this.
+
+## setup
+Load stuff and use df_wsc (that is df_weekly_scaled_centered)!
+```{r,warning = FALSE}
+library(drpm)
+library(salso)
+
+# preparation
+source("include.R") # for having df_agri
+source("plot functions/plotter.R")
+
+# sites needs to stay defined from df_weekly (ie coords not scaled), for plotting functions
+sites = data.frame(
+	longitude = unique(df_weekly$Longitude), 
+	latitude = unique(df_weekly$Latitude))
+
+# so if you need space in your fits use this
+sites_fit = data.frame(
+	longitude = unique(df_wsc$Longitude), 
+	latitude = unique(df_wsc$Latitude))
+```
+better to leave this alone (less buggy but dont know why).
+```{r,warning=F}
+source("include_clusters_functions.R")
+```
+this part is needed for the cluster plots.
+```{r}
+stations = unique(df_wsc$IDStations)
+y=data.frame()
+
+for(st in stations){
+  y_we_pm10=cbind(as.data.frame(st),t(df_wsc[which(df_wsc$IDStations==st),"AQ_pm10"]))
+  y=rbind(y,y_we_pm10)
+}
+
+rownames(y) = NULL
+colnames(y)<- c("id",paste0("w", 1:53))
+df_wsc
+y
+```
+
+
+## fit
+Then do your fit.
+```{r}
+fit = my_nice_fit()
+```
+
+## trace plots
+Ecc.
+
+
+#=======
+# Metrics
+There are three which we can use: LPML, WAIC, and ARI.
+
+LPML and WAIC are all based on the LPPD (log posterior predictive density), where the idea is
+- we have a finite collection of models, which we want to evaluate
+- we dont know the real best one, so we just want to choose the best among them
+- we value good a model if supposing a new data arrives we can model well its law
+
+$$\text{LPPD(model }j) = \sum_{i=1}^n \log\left( m(y_i | {\bf{y}}, M_j) \right)$$
+
+
+## LPML
+LPML (Log Pseudo Marginal Likelihood)
+Evaluates the quality of the model as his accuracy in predicting new data.
+It's the LPPD but inside the log we dont use the full y_vector but y_vector removing observation i.
+So like a leave-one-out idea.
+*Higher means better.*
+
+$$\text{LPML(model }j) = \sum_{i=1}^n \log\left( m(y_i | {\bf{y}}_{(-y_i)}, M_j) \right)$$
+
+
+## WAIC
+WAIC (Watanabe–Akaike or Widely Applicable Information Criterion)
+This metrics values the trade off between model complexity and goodness of fit.
+It's the LPPD but with a penalization for model complexity.
+*Lower means better.*
+
+$$\text{WAIC(model }j) = -2\cdot\text{LPPD(model }j) + (\text{penalization term})$$
+
+
+## computation
+These indexes appears to be easily computable from the MCMC output, so in case your fit function does not provide them let me know and i will update this metric section.
+
+```{r}
+load("../data/Federico/fit_test.Rdata") # just to have a working example
+FIT = fit_test # your fit, for example here is Federico's drpm
+# and i can get those values as this
+cat("lpml =",FIT$lpml,"\n")
+cat("waic =",FIT$waic,"\n")
+```
+
+
+## ARI
+ARI (Adjusted Rand Index)
+Rand does not stand for random, it's just the guy who invented it which is called Rand.
+Morally it is a measure of the similarity between two data clusterings.
+A measure of agreement between partitions.
+
+Ie we get two partitions rho1 and rho2, and we can compute ARI(rho1,rho2) which is a value in [0,1] where - 0 means absolute no agreement in the partition, one cluster stuff in a way that the other has no similarity with that
+- 1 means total similarity
+
+For the computation, we take all the possible pairs which can be obtained from our set of units.
+Then we check how the units in that pair have been clustered according to rho1 and rho2:
+- there could be accordance, meaning that the two units were toghether or divided in both clusterings
+- there could be discordance, meaning that for a clustering the units were toghether and for the other clustering no, were divided
+
+This to get the RI. But ARI adjusts it to have it more standard, like in [0,1], with mean 0, something cute to work with.
+
+```{r}
+library(mclust) # library for ARI stuff
+
+irisHCvvv <- hc(modelName = "VVV", data = iris[,-5])
+rho1 <- hclass(irisHCvvv, 3)
+plot(rho1+0.2,col="blue",ylim=c(0,4),main=paste("ARI =",adjustedRandIndex(rho1,iris[,5])))
+points(iris[,5],col="red")
+legend("topleft",c("iris hclass","iris real labels"),fill=c("blue","red"),bty = "n")
+
+rho1 = kmeans(iris[,1:3],centers=3)$cluster
+plot(rho1+0.2,col="blue",ylim=c(0,4),main=paste("ARI =",adjustedRandIndex(rho1,iris[,5])))
+points(iris[,5],col="red")
+legend("topleft",c("iris kmeans","iris real labels"),fill=c("blue","red"),bty = "n")
+```
+
+## computation
+
+So the idea for our dataset is to compare subsequent-in-time clustering. Like rho(t) and rho(t+1).
+So high values of ARI (or in the ARI matrix visually) will say that the clustering for those time instants "agree", ie there is no abrupt change from time t to time t+1, and this should be good for us (we dont want clusters to change too quickly, it wouldn make sense, maybe just some stations will change).
+
+This will not be a real metric to evaluate performance, then, but more a visual check to see how the clusters are evolving in time.
+
+We can build a matrix as we can compare rho(t) with rho(t+k) actually. With k=53 for us.
+```{r}
+library(mclust)
+##########################
+load("../data/Federico/fit_test.Rdata") # just to have a working example
+FIT = fit_test # your fit
+time_span = size(fit_test$Si)[1] # or your time span: 53 in the real case, lower for the quick tests
+LEN = max(time_span)
+##########################
+
+# build the ARI matrix
+ARImats <- matrix(NA, nrow=LEN, ncol=LEN)
+rho_ARI <- list()
+for(k in 1:LEN){
+	rho_ARI[[k]] <- salso(t(FIT$Si[k,,]), loss="binder") # adjust with your fit $Si dimension
+}
+for(k in 1: LEN){
+	for(kk in 1: LEN){
+		ARImats[k,kk] <- adjustedRandIndex(rho_ARI[[k]], rho_ARI[[kk]])
+	}
+}
+ncolors = 80
+cols_ARI = colora(ncolors,56,0)
+# or see ?designer.colors for colors
+library(fields)
+image.plot(ARImats, main="Lagged ARI values",axes=FALSE,col=rev(cols_ARI),
+		   breaks=seq(0,1,length.out=ncolors+1))
+mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
+mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
+```
+
+Actually can also be useful about understanding for how much time run the MCMC.
+We can run it for few iterations and get rho1 (at a certain time t).
+Then run it a lot more times (author suggets like 50000 iterations) and get rho2.
+=> surely the long MCMC will give a better result, so the short MCMC could also be considered good if the rho1 and rho2 compared through the ARI are similar. If they are it means that taking less MCMC can still produce a valid result.
+But we have time, so for safety and accuracy we can just run long long MCMC iterations.
+
+#=======
+## create df_cluster
+I need this for the plots functions to work.
+```{r}
+# sites from df_weekly, not df_wsc
+sites = data.frame(
+	longitude = unique(df_weekly$Longitude), 
+	latitude = unique(df_weekly$Latitude))
+
+df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
+for(time in time_span){
+
+	# adapt this line according to what your fit produce
+	salso_out <- salso(t(FIT$Si[time,,]),loss="binder") # correct with your fit
+	
+	df_temp = data.frame(
+		Longitude = sites$longitude,
+		Latitude = sites$latitude,
+		clusters = salso_out[1:105]
+	)
+	df_temp$Time = rep(time,dim(df_temp)[1])
+	df_cluster = rbind(df_cluster,df_temp)
+}
+```
+choose colors.
+```{r}
+cols = colora(12,"div")[-2] # togliamo il giallino
+```
+
+## cluster plots
+```{r}
+clusters_old = NULL
+for(time in time_span){
+
+	df_cluster_cut = df_cluster[df_cluster$Time==time,]
+	clusters_now = df_cluster_cut$clusters
+	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
+	df_cluster_cut$clusters = clusters_now
+	
+	# choose one of the following functions
+	# p = get_hist_continuos_plot(df_cluster_cut)
+	# p = get_hist_color_plot(df_cluster_cut)
+	# p = get_hist_fill_plot(df_cluster_cut)
+	# p = get_boxplot_plot(df_cluster_cut)
+	p = get_graph_plot(df_cluster_cut)
+	
+	print(p)
+	clusters_old = clusters_now
+}
+```
+
+## all at once
+If you loop when you fit you can do this.
+```{r,warning= FALSE}
+clusters_old = NULL
+
+for (time in 1:6){
+	cat(crayon::red("Time (ie week)",time,"\n"))
+	df_time = df_wsc[which(df_wsc$week==time),]
+	y_fit = df_time$AQ_pm10
+	X = df_time[,-c(1:5,7)]
+
+	# use your functions to fit
+	fit = gaussian_ppmx(y_fit, X=X, Xpred=NULL,
+	                  meanModel=1,
+	                  cohesion=1,
+	                  M=1,
+	                  PPM = FALSE,
+	                  similarity_function=1,
+	                  consim=1,
+	                  calibrate=0,
+	                  simParms=c(0.0, 1.0, 0.1, 1.0, 2.0, 0.1, 1),
+	                  modelPriors=c(0, 100^2, 1, 1),
+	                  mh=c(0.5, 0.5),
+	                  draws=1100,burn=100,thin=1,
+	                  verbose=FALSE)
+	
+	clusters_now = salso(fit$Si,loss="binder")
+	clusters_now = clusters_now[1:105]
+	### Mode correct clusters
+	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
+	
+	df_temp = data.frame(
+		Longitude = unique(df_wsc$Longitude),
+		Latitude = unique(df_wsc$Latitude),
+		clusters = clusters_now[1:105]
+	)
+	df_temp$Time = rep(time,dim(df_temp)[1])
+	df_cluster_cut = df_temp
+	
+	
+	### Hist plot
+	# p = get_hist_color_plot(df_cluster_cut)
+	p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
+	print(p)
+	
+	### Graph plot
+	q = get_graph_plot(df_cluster_cut)
+	print(q)
+	
+	# or both together with
+	# plot_graph_and_hist(df_cluster_cut)
+	
+	clusters_old = clusters_now
+} # end for time
+
+# or something similar
+cat("LPML =",fit$lpml)
+cat("WAIC =",fit$WAIC)
+```
+

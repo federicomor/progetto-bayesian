@@ -1,0 +1,876 @@
+---
+title: "R Notebook"
+---
+
+# Linear regression
+
+```{r}
+source("include.R") 
+```
+
+jags to work on R 
+```{r}
+#Load the library
+library(rjags)   # to interface R with JAGS
+#if jags not installed gives error with link and instructions to install it for the first time
+ 
+library(coda)        
+library(plotrix)    # to  plot CIs
+
+library(glmnet) # lasso
+```
+
+
+
+
+
+# Dividing stations, save covariates in a dataframe
+```{r}
+head(df_weekly)
+
+covariates_to_exclude = c("X","IDStations","Latitude","Longitude","Time","Altitude",
+						  "AQ_pm10","WE_mode_wind_direction_10m","WE_mode_wind_direction_100m","day","LA_land_use")
+#not numerical or constant over same  (lat, long, alti and land_use)
+
+covariates=df_weekly[,-which(colnames(df_weekly)%in% covariates_to_exclude)]
+k = dim(covariates)[2]
+
+stations = unique(df_weekly$IDStations)
+print(stations)
+length(stations)
+```
+
+
+Can stay here to see detailed on one station and plots or jump to for cycle storing betas for each station
+
+
+# Analysis of one particular station
+Create variables for regression analysis
+```{r}
+#remove column pm_10 (target)
+#for now only using numerical covariates
+st="1264"   #start with an example, then will cycle on all
+
+y=df_weekly[which(df_weekly$IDStations==st),which(colnames(df_weekly)=="AQ_pm10")]
+y=as.numeric(y[[1]])
+y=scale(y)[1:53]    #normalization on the station
+
+
+covs = covariates[which(df_weekly$IDStations==st),]
+covs=as.data.frame(covs)
+covariates=scale(covs,center = TRUE)     #normalization on the station
+#jitter to avoid nans in constant columns
+for(i in 1:k){
+  if(sum(is.na(covariates[,i]))>0)
+    covs[,i]=jitter(covs[,i],0.01)
+}
+covs=scale(covs,center = TRUE)
+
+
+head(covs)
+```
+
+# check scaling
+```{r}
+par(mar=c(15,9,1,1))
+boxplot(covs,las=2)
+
+for (i in 1:size(covs)[2]){
+	cat(crayon::red(colnames(covs)[i]))
+	cat(" var =",var(covs[,i]),"\n")
+}
+```
+
+
+
+# prepare data
+```{r}
+data = list(y=y,
+            x=covs,
+            n=dim(covs)[1],
+            k=k)
+```
+
+### jags stuff
+Let's fix a list of initial value for the MCMC algorithm that JAGS will implement:
+```{r}
+inits = function() {list(beta0=0,
+                         beta=rep(0,k),
+                         sigma=100) }
+```
+
+
+
+# FIRST STEP
+```{r echo=T, results='hide'}
+modelRegress=jags.model("LinearReg.bug",data=data,inits=inits,n.adapt=1000,n.chains=1)
+```
+By default n.adapt=1000.
+sigma is Uniform on the interval (0,100)
+
+Prior not conjugate (?)
+
+
+# SECOND STEP
+```{r echo=T, results='hide'}
+update(modelRegress,n.iter=5000) #this is the burn-in period
+## this function DOES NOT record the sampled values of parameters
+```
+# THIRD STEP 
+we tell JAGS to generate MCMC samples that we will use to represent the posterior distribution 
+```{r}
+variable.names=c("beta0", "beta", "sigma") #parameters - see the file .bug - that will have 
+                                           # their values recorded
+n.iter=50000 
+thin=10  
+## the final sample size, i.e. the number of iterations to build the ergodic average, will be 5K
+
+```
+
+## output regression
+```{r echo=T, results='hide'}
+outputRegress=coda.samples(model=modelRegress,variable.names=variable.names,n.iter=n.iter,thin=thin)
+```
+
+The OUTPUT is mcmc.list object - coda-formatted object; it needs to be converted into a matrix, in order to be "readable".
+
+
+
+# OUTPUT ANALYSIS
+```{r}
+#### save(outputRegress,file='Jackman_regr_output.Rdata')
+
+##### upload the output if we have previuosly stored it and we don't want to run the MCMC again
+#### load('Jackman_regr_output.Rdata')
+
+data.out=as.matrix(outputRegress) # trasform the mcmc.list into a matrix,
+data.out=data.frame(data.out)     # or, better, into a dataframe (easiest to handle in R)
+attach(data.out)
+n.chain=dim(data.out)[1] 
+n.chain # this is the final sample size
+```
+
+# Summary statistics for the posterior 
+Use either packege CODA, or standard tools in R:
+```{r}
+size(data.out)
+
+summary(data.out)
+head(data.out)
+```
+
+## Autocorrelation plots
+```{r}
+par(mfrow=c(1,3))
+par(mar=c(2,2,3,1)) # bottom, left, top, right margins to not cut plot titles
+
+acf(data.out[,'beta0'],lwd=3,col="red3",main="autocorrelation of beta0")
+acf(data.out[,'beta.1.'],lwd=3,col="red3",main="autocorrelation of beta1")
+acf(data.out[,'sigma'],lwd=3,col="red3",main="autocorrelation of sigma_res")
+```
+## nice graphs posterior
+```{r}
+#sub-chain containing the beta sample
+beta.post <- data.out[,1:(k+1)]
+#posterior mean of the beta parameters
+beta.bayes  <- apply(beta.post,2,"mean")
+beta.bayes <- c(beta.bayes[k+1],beta.bayes[1:k])  #just to have beta0 in first position 
+beta.bayes
+#sub-chain whit the sigma_res samle
+sig.post= data.out[,'sigma']
+```
+
+## Comparison frequentist- bayesian
+```{r}
+#### MLE estimate
+mod = lm(y ~ .,data = data.frame(covs))
+#summary(mod)
+
+mod$coefficients  # Comparison 
+beta.bayes
+```
+# Posterior of $\beta_0$
+```{r}
+## Representation of the posterior chain of  beta0
+chain <- beta.post[,k+1]
+#Divide the plot device in three sub-graph regions
+#two square on the upper and a rectangle on the bottom
+
+par(mar=c(2,2,3,2)) # bottom, left, top, right margins to not cut plot titles
+layout(matrix(c(1,2,3,3),2,2,byrow=T))
+#trace-plot of the posterior chain
+plot(chain,type="l",main="Trace plot of beta0")
+# autocorrelation plot
+acf(chain,lwd=3,col="red3",main="autocorrelation of beta0")
+#Histogram
+hist(chain,nclass="fd",freq=F,main="Posterior of beta0",col="gray") 
+## Overlap the kernel-density 
+lines(density(chain),col="blue",lwd=2)
+## Posterior credible interval of beta0
+quantile(chain,prob=c(0.025,0.5,0.975))
+
+## Display the posterior credible interval on the graph
+abline(v=quantile(chain,prob=c(0.025)),col="red",lty=2,lwd=2)
+abline(v=quantile(chain,prob=c(0.5)),col="red",lty=1,lwd=2)
+abline(v=quantile(chain,prob=c(0.975)),col="red",lty=2,lwd=2)
+## Add the legend to the plot
+legend("topright",legend=c("posterior median", "95% Credible bounds","kernel density smoother"),lwd=c(2,2,2), col=c("red","red","blue"),lty=c(1,2,1))
+
+```
+
+# Posterior of $\beta_1$
+```{r}
+chain <- beta.post[,1]
+#Divide the plot device 
+par(mar=c(2,2,3,2)) # bottom, left, top, right margins to not cut plot titles
+layout(matrix(c(1,2,3,3),2,2,byrow=T))
+#trace-plot of the posterior chain
+plot(chain,type="l",main="Trace plot of beta1")
+# autocorrelation plot
+acf(chain,lwd=3,col="red3",main="autocorrelation of beta1")
+#Histogram
+hist(chain,nclass="fd",freq=F,main="Posterior of beta1",col="gray") 
+## Overlap the kernel-density 
+lines(density(chain),col="blue",lwd=2)
+#### Posterior credible interval of  beta1
+quantile(chain,prob=c(0.025,0.5,0.975))
+
+## Display the posterior credible interval on the graph
+abline(v=quantile(chain,prob=c(0.025)),col="red",lty=2,lwd=2)
+abline(v=quantile(chain,prob=c(0.5)),col="red",lty=1,lwd=2)
+abline(v=quantile(chain,prob=c(0.975)),col="red",lty=2,lwd=2)
+## Add the legend to the plot
+legend("topright",legend=c("posterior median", "95% Credible bounds","kernel density smoother"),lwd=c(2,2,2), col=c("red","red","blue"),lty=c(1,2,1))
+```
+
+## Posterior of $\beta_i$
+```{r}
+for (i in 1:k+1){
+	chain <- beta.post[,i]
+	#Divide the plot device 
+	par(mar=c(2,2,3,2)) # bottom, left, top, right margins to not cut plot titles
+	layout(matrix(c(1,2,3,3),2,2,byrow=T))
+	#trace-plot of the posterior chain
+	plot(chain,type="l",main=paste("Trace plot of beta",i))
+	# autocorrelation plot
+	acf(chain,lwd=3,col="red3",main=paste("autocorrelation of beta",i))
+	#Histogram
+	hist(chain,nclass="fd",freq=F,main=paste("Posterior of beta",i),col="gray") 
+	## Overlap the kernel-density 
+	lines(density(chain),col="blue",lwd=2)
+	#### Posterior credible interval of  beta1
+	# quantile(chain,prob=c(0.025,0.5,0.975))
+	
+	## Display the posterior credible interval on the graph
+	abline(v=quantile(chain,prob=c(0.025)),col="red",lty=2,lwd=2)
+	abline(v=quantile(chain,prob=c(0.5)),col="red",lty=1,lwd=2)
+	abline(v=quantile(chain,prob=c(0.975)),col="red",lty=2,lwd=2)
+	## Add the legend to the plot
+	legend("topright",legend=c("posterior median", "95% Credible bounds","kernel density smoother"),lwd=c(2,2,2), col=c("red","red","blue"),lty=c(1,2,1))
+}
+```
+# Posterior of $\sigma$: 
+```{r}
+##Representation of the posterior chain of sigma_res
+chain <-sig.post
+#Divide the plot device 
+par(mar=c(2,2,3,2)) # bottom, left, top, right margins to not cut plot titles
+layout(matrix(c(1,2,3,3),2,2,byrow=T))
+#trace-plot of the posterior chain
+plot(chain,type="l",main="Trace plot of sigma_res")
+# autocorrelation plot
+acf(chain,lwd=3,col="red3",main="autocorrelation of sigma_res")
+#Histogram
+hist(chain,nclass="fd",freq=F,main="Posterior of sigma_res",col="gray") 
+## Overlap the kernel-density 
+lines(density(chain),col="blue",lwd=2)
+## Posterior Credible bound of sigma_res
+quantile(chain,prob=c(0.05,0.5,0.95))
+
+## Display the posterior credible interval on the graph
+abline(v=quantile(chain,prob=c(0.025)),col="red",lty=2,lwd=2)
+abline(v=quantile(chain,prob=c(0.5)),col="red",lty=1,lwd=2)
+abline(v=quantile(chain,prob=c(0.975)),col="red",lty=2,lwd=2)
+## Add the legend to the plot
+legend("topright",legend=c("posterior median", "95% Credible bounds","kernel density smoother"),lwd=c(2,2,2), col=c("red","red","blue"),lty=c(1,2,1))
+```
+
+
+```{r}
+detach(data.out)
+```
+
+
+
+
+
+
+
+
+
+# saving all betas all stations
+```{r}
+bayesian_coefficients <- data.frame()
+frequentist_coefficients <- data.frame()
+
+vars_names = colnames(covariates)
+
+# stuff for lasso
+formula <- " y ~ ."
+lambda.grid <- 10^seq(5,-3,length=100)
+soglia = 0.001
+best_lasso_vect = c()
+
+best_variables_lasso <- data.frame(variables = c("(Intercept)",vars_names), checked = rep(0,(length(vars_names)+1)))
+
+
+
+yy=df_weekly$AQ_pm10
+
+linear_model_classic <- lm(yy ~.,data = data.frame(covs))
+summary(linear_model_classic)
+
+```
+# LASSO all stations
+```{r}
+y=df_weekly[,"AQ_pm10"]
+y=as.numeric(y[[1]])
+y=scale(y)
+
+covs=df_weekly[,vars_names]
+k=dim(covs)[2]
+
+covs=as.data.frame(covs)
+covariates=scale(covs)     #normalization on each single station
+
+
+x <- model.matrix(as.formula(formula),data.frame(covs))[,-1]
+fit.lasso <- glmnet(x,y, lambda = lambda.grid) 
+cv.lasso <- cv.glmnet(x,y,lambda=lambda.grid)
+
+bestlam.lasso <- cv.lasso$lambda.min
+
+coef.lasso <- predict(fit.lasso, s=bestlam.lasso, type = 'coefficients')
+coef.lasso =  data.frame(coef.lasso[,1])
+coef.lasso$variables = rownames(coef.lasso)
+colnames(coef.lasso)[1] = "coeff"
+soglia = 0.01
+final_coeff = coef.lasso[which(abs(coef.lasso$coeff)>soglia),"variables"]
+  
+final_coeff
+```
+
+# LASSO for variable selection
+loop across stations
+```{r}
+for (st in stations){
+ #covariates and target
+  y=df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]
+  y=as.numeric(y[[1]])
+  y=scale(y)[1:53]    #normalization on each single station ( 53 weeks)
+
+  covs=df_weekly[which(df_weekly$IDStations==st),vars_names]
+  k=dim(covs)[2]
+  
+  covs=as.data.frame(covs)
+  covariates=scale(covs)     #normalization on each single station
+  
+ #linear (frequentist)
+  linear_model_classic= lm(y ~ .,data = data.frame(covs))
+  frequentist_coefficients <- rbind(frequentist_coefficients,c(st,linear_model_classic$coefficients))
+  
+  # LASSO
+  #y = df_weekly$AQ_pm10[which(df_weekly$IDStations==st)]
+  x <- model.matrix(as.formula(formula),data.frame(covs))[,-1]
+  fit.lasso <- glmnet(x,y, lambda = lambda.grid) 
+  cv.lasso <- cv.glmnet(x,y,lambda=lambda.grid)
+
+  bestlam.lasso <- cv.lasso$lambda.min
+  best_lasso_vect = c(best_lasso_vect,bestlam.lasso)
+
+  coef.lasso <- predict(fit.lasso, s=bestlam.lasso, type = 'coefficients')
+  coef.lasso =  data.frame(coef.lasso[,1])
+  coef.lasso$variables = rownames(coef.lasso)
+  colnames(coef.lasso)[1] = "coeff"
+  final_coeff = coef.lasso[which(abs(coef.lasso$coeff)>soglia),"variables"]
+  
+  best_variables_lasso[which(best_variables_lasso$variables%in%final_coeff),"checked"] =
+  	best_variables_lasso[which(best_variables_lasso$variables%in%final_coeff),"checked"] +1
+  
+}
+#to give columns names
+colnames(frequentist_coefficients)<-c('station',names(beta.bayes))
+```
+
+# present results
+```{r}
+head(frequentist_coefficients)
+mean(best_lasso_vect)
+var(best_lasso_vect)
+best_variables_lasso
+hist(best_variables_lasso$checked,breaks = 29)
+
+
+num_variables_included = c()
+for(i in 1:105){
+	chosen_variables = best_variables_lasso[best_variables_lasso$checked>i,"variables"]
+	num_variables_included = c(num_variables_included,length(chosen_variables))
+}
+num_variables_included_soglia = 4
+soglia_lasso = 45
+plot(num_variables_included,type="l")
+abline(h = num_variables_included_soglia,col= "red")
+abline(v = soglia_lasso,col= "blue")
+```
+
+## summary linear model 
+with new vars all station all time
+```{r}
+dataframe_cut =df_weekly[,vars_names]
+yy=df_weekly$AQ_pm10
+
+linear_model_classic <- lm(yy ~.,data = data.frame(dataframe_cut))
+summary(linear_model_classic)
+```
+## set variables for the loop
+```{r}
+vars_names = best_variables_lasso[best_variables_lasso$checked>soglia_lasso,"variables"]
+vars_names = vars_names[2:num_variables_included_soglia]
+
+covs=df_weekly[which(df_weekly$IDStations==st),vars_names]
+k=dim(covs)[2]
+#save betas and sigma 
+variable.names=c("beta0", "sigma","beta" ) #parameters 
+n.iter=50000 
+thin=10  
+```
+
+
+# BAYESIAN LM all stations
+```{r}
+# It's the same code as before, but in a 'for' cycle
+index = 1
+for (st in stations){
+	cat(crayon::red("Station",st,index,"\n"))
+	index = index+1
+ #covariates and target
+  y=df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]
+  y=as.numeric(y[[1]])
+  y=scale(y)[1:53]    #normalization on each single station ( 53 weeks)
+
+  covs=df_weekly[which(df_weekly$IDStations==st),vars_names ]
+  
+  covs=as.data.frame(covs)
+  covariates=scale(covs)     #normalization on each single station
+  #jitter to avoid nans in constant columns
+  for(i in 1:k){
+    if(sum(is.na(covariates[,i]))>0)
+      covs[,i]=jitter(covs[,i],0.01)
+  }
+  covs=scale(covs)
+
+
+ #build model
+  data = list(y=y,
+            x=covs,
+            n=dim(covs)[1],
+            k=k)
+  inits = function() {list(beta0=0,
+                         beta=rep(0,k),
+                         sigma=100) }
+
+#run model  
+  modelRegress=jags.model("LinearReg.bug",data=data,inits=inits,n.adapt=1000,n.chains=1)
+  update(modelRegress,n.iter=5000) #this is the burn-in period
+  
+
+  outputRegress=coda.samples(model=modelRegress,variable.names=variable.names,n.iter=n.iter,thin=thin)
+  
+  data.out=as.matrix(outputRegress) # trasform the mcmc.list into a matrix,
+  data.out=data.frame(data.out)     # or, better, into a dataframe (easiest to handle in R)
+  attach(data.out)
+  n.chain=dim(data.out)[1] 
+
+ #the betas
+  beta.post <- data.out[,0:k+1]   #posterior mean of the beta parameters
+  beta.bayes  <- apply(beta.post,2,"mean")
+  beta.bayes <- c(beta.bayes[k+1],beta.bayes[1:k])  #just to put beta0 in first position
+  bayesian_coefficients <- rbind(bayesian_coefficients,c(st,beta.bayes))
+  
+  detach(data.out)
+}
+#to give columns names
+colnames(bayesian_coefficients)<-c('station',names(beta.bayes))
+```
+
+
+
+#present results
+```{r}
+head(bayesian_coefficients)
+```
+# SAVE THE BETA!
+```{r}
+
+```
+
+# Lasso regression classic model
+```{r}
+formula <- " y ~ ."
+linear_model_classic <- lm(formula,data = data.frame(covs))
+summary(linear_model_classic)
+
+#predictors matrix and response vector
+x <- model.matrix(as.formula(formula),data.frame(covs))[,-1]
+y = df_weekly$AQ_pm10[which(df_weekly$IDStations==st)]
+
+lambda.grid <- 10^seq(5,-3,length=100)
+fit.lasso <- glmnet(x,y, lambda = lambda.grid) 
+
+plot(fit.lasso,xvar='lambda',label=TRUE, col = rainbow(dim(x)[2]))
+legend('topright', dimnames(x)[[2]], col =  rainbow(dim(x)[2]), lty=1, cex=1)
+
+#cross validation for lambda
+cv.lasso <- cv.glmnet(x,y,lambda=lambda.grid)
+
+bestlam.lasso <- cv.lasso$lambda.min
+bestlam.lasso
+
+plot(cv.lasso)
+abline(v=log(bestlam.lasso), lty=1)
+
+
+coef.lasso <- predict(fit.lasso, s=bestlam.lasso, type = 'coefficients')
+coef.lasso =  data.frame(coef.lasso[,1])
+coef.lasso$variables = rownames(coef.lasso)
+colnames(coef.lasso)[1] = "coeff"
+final_coeff = coef.lasso[which(abs(coef.lasso$coeff)>0.001),"variables"]
+
+
+```
+
+
+
+
+
+# Jags variable selection on one station
+Bayesian variable selection with jags
+https://darrenjw.wordpress.com/2012/11/20/getting-started-with-bayesian-variable-selection-using-jags-and-rjags/
+
+Start by running include, dividing stations and dataset preparation block before this
+```{r}
+data = list(y=y,
+            x=covs,
+            n=dim(covs)[1],
+            k=k)
+
+inits = function() {list(beta0=0,
+                         beta=rep(0,k),
+                         sigma=100,
+                         betaT=rep(0,k), ind=rep(0,k))}
+
+modelRegress=jags.model("LinearRegSel.bug",data=data,inits=inits,n.adapt=1000,n.chains=1)
+```
+
+```{r}
+update(modelRegress,n.iter=1000)
+output=coda.samples(model=modelRegress,
+        variable.names=c("beta0","beta","ind","tau"),
+        n.iter=10000,thin=1)
+print(summary(output))
+#plot(output)
+```
+
+
+
+
+
+In theory we should just look at quantiles for ind
+  1 if to keep 
+  0 if can remove
+from here it looks like no really important covariates (none significative at 2.5%)
+(in LinearRegSel there is a dbern that is the probability of keeping a covariate, 
+       I put it at 0.75 to bias model to keep more covariates, but feel free to try other values)
+
+
+Can't plot result (error: figure margins too large) 
+It works if from console you input  x11(); plot(output)
+(Careful: it prints and then resets and prints successive on same page)
+
+We could just put a threshold onto ind to save them in a list for each cycle and then choose the ones that appear more often
+
+
+
+
+# On all stations
+Same for as before but with this
+```{r}
+variable.names=c("beta0", "beta", "sigma") 
+n.iter=50000 
+thin=10  
+index = 1
+bayesian_coefficients <- data.frame()
+covariates_to_exclude = c("X","IDStations","Latitude","Longitude","Time","Altitude",
+						  "AQ_pm10","WE_mode_wind_direction_10m","WE_mode_wind_direction_100m","day","LA_land_use")
+#not numerical or constant over same  (lat, long, alti and land_use)
+covar=df_weekly[,-which(colnames(df_weekly)%in% covariates_to_exclude)]
+k = dim(covar)[2]
+count_for_selection=rep(0,k)
+
+
+for (st in stations){
+	cat(crayon::red("Station",st,index,"\n"))
+	index = index+1
+ #covariates and target
+  y=df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]
+  y=as.numeric(y[[1]])
+  y=scale(y)[1:53]    #normalization on each single station ( 53 weeks)
+  
+  covs=covar[which(df_weekly$IDStations==st),]
+ 
+  covs=as.data.frame(covs)
+  covariates=scale(covs,center = TRUE)     #normalization on the station
+  #jitter to avoid nans in constant columns
+  for(i in 1:k){
+    if(sum(is.na(covariates[,i]))>0)
+      covs[,i]=jitter(covs[,i],0.01)
+  }
+  covs=scale(covs, center=TRUE)
+
+  
+
+ #build model
+  data = list(y=y,
+            x=covs,
+            n=dim(covs)[1],
+            k=k)
+
+  inits = function() {list(beta0=0,
+                         beta=rep(0,k),
+                         sigma=100,
+                         betaT=rep(0,k), ind=rep(0,k))}
+
+ #run model  
+  modelRegress=jags.model("LinearRegSel.bug",data=data,inits=inits,n.adapt=1000,n.chains=1)
+  update(modelRegress,n.iter=5000)
+  
+  outputRegress=coda.samples(model=modelRegress,variable.names=c(variable.names,"ind"),n.iter=n.iter,thin=thin)
+  #print(summary(outputRegress))
+  #print(summary(outputRegress)$quantiles[30:57,])   #print of ind 
+  
+  #to count how many time we keep a variable (since ind binary)
+  count_for_selection=count_for_selection+summary(outputRegress)$quantiles[30:57,2]
+  
+  
+  data.out=as.matrix(outputRegress) # trasform the mcmc.list into a matrix,
+  data.out=data.frame(data.out)     # or, better, into a dataframe (easiest to handle in R)
+  attach(data.out)
+  n.chain=dim(data.out)[1] 
+
+ #the betas
+  beta.post <- data.out[,0:k+1]   #posterior mean of the beta parameters
+  beta.bayes  <- apply(beta.post,2,"mean")
+  beta.bayes <- c(beta.bayes[k+1],beta.bayes[1:k])  #just to put beta0 in first position
+  bayesian_coefficients <- rbind(bayesian_coefficients,c(st,beta.bayes))
+  
+  detach(data.out)
+}
+#to give columns names
+colnames(bayesian_coefficients)<-c('station',names(beta.bayes))
+
+count_for_selection=as.data.frame(t(count_for_selection))
+colnames(count_for_selection)<-colnames(covar)
+print(count_for_selection)
+```
+
+```{r}
+saveRDS(count_for_selection,"count_at_50p.RData")
+```
+
+
+
+```{r}
+temp75=readRDS("count_at_75p.RData")
+temp50=readRDS("count_at_50p.RData") #2nd quantile always 0 not useful, using third quantile
+#difference never more than 8 
+temp20=readRDS("count_at_20p.RData") #always 0 not useful
+```
+
+The smaller the ratio, the more the model tends to discard a variable -> kept only with higher confidence (at 50%) and
+    distribution of acceptance more polarized (all discarded or all kept) 
+-> Choose higher ratio of "probability to keep" or selection quite pointless
+
+Anyway counts always between 50 and 60 -> no variables are visibly better or more informative
+
+
+
+
+
+
+
+
+# Bayesian lasso and Horseshoe
+https://search.r-project.org/CRAN/refmans/monomvn/html/blasso.html
+https://cran.r-project.org/web/packages/horseshoe/horseshoe.pdf
+```{r}
+library(horseshoe)
+library(monomvn)
+
+
+index = 1
+covariates_to_exclude = c("X","IDStations","Latitude","Longitude","Time","Altitude",
+						  "AQ_pm10","WE_mode_wind_direction_10m","WE_mode_wind_direction_100m","day","LA_land_use")
+#not numerical or constant over same  (lat, long, alti and land_use)
+covar=df_weekly[,-which(colnames(df_weekly)%in% covariates_to_exclude)]
+k = dim(covar)[2]+1  #+3 if gonna use nonlinearities on time
+count_for_selection_l=rep(0,k)
+count_for_selection_hs=rep(0,k)
+
+
+for (st in stations){
+	cat(crayon::red("Station",st,index,"\n"))
+	index = index+1
+ #covariates and target
+  y=df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]
+  y=as.numeric(y[[1]])
+  y=scale(y)[1:53]    #normalization on each single station ( 53 weeks)
+  
+  covs=covar[which(df_weekly$IDStations==st),]
+  
+  #to add nonlinearities on time
+  t2=(covs$week)^2
+  sint=sin(covs$week)
+  cost=cos(covs$week)
+  covs=cbind(covs,t2,sint,cost)
+ 
+  covs=as.data.frame(covs)
+  covariates=scale(covs,center = TRUE)     #normalization on the station
+  #jitter to avoid nans in constant columns
+  for(i in 1:k){
+    if(sum(is.na(covariates[,i]))>0)
+      covs[,i]=jitter(covs[,i],0.01)
+  }
+  covs=scale(covs, center=TRUE)
+
+  
+  X=covs
+  
+ #lasso
+  model_lasso=blasso(X, y)
+  #probability for each variable of being selected
+  count_l=rep(0,k)
+  count_l[which(summary(model_lasso, burnin=200,lambda2=1,M=5)$bn0>0.7)]=1  #can change threshold
+  count_for_selection_l=count_for_selection_l + count_l
+  
+
+ #horseshoe
+  model_hs=horseshoe(y, X, method.tau="fixed",tau=0.01, method.sigma="fixed", Sigma2=100, burn=1000, nmc=5000, thin=10, alpha=0.05)
+  #selected variables
+  count_for_selection_hs=count_for_selection_hs + HS.var.select(model_hs, y, method = "intervals")
+  
+}
+
+count_for_selection_l=as.data.frame(t(count_for_selection_l))
+colnames(count_for_selection_l)<-colnames(covs)
+print(count_for_selection_l)
+
+#count_for_selection_hs=as.data.frame(t(count_for_selection_hs))
+#colnames(count_for_selection_hs)<-colnames(covs)
+#print(count_for_selection_hs)
+#looks like horseshoe rejecting all variables -> useless
+
+```
+
+
+
+```{r}
+#saveRDS(count_for_selection_l,"count_for_selection_l.RData")
+#saveRDS(count_for_selection_hs,"count_for_selection_hs.RData")
+#saveRDS(count_for_selection_l,"c_for_sel_l_with_nonlin_on_time.RData") 
+
+#sel_cov=readRDS("c_for_sel_l_with_nonlin_on_time.RData")
+```
+
+
+
+
+
+## Linear model with only selected covariates
+```{r}
+index = 1
+covariates_to_keep = c("WE_tot_precipitation","WE_surface_pressure","EM_nh3_livestock_mm","LA_hvi","LA_lvi")
+#not numerical or constant over same  (lat, long, alti and land_use)
+covar=df_weekly[,which(colnames(df_weekly)%in% covariates_to_keep)]
+k = dim(covar)[2]+1  #+1 if gonna use sint on time
+bayesian_coefficients=rep(0,k)
+
+
+for (st in stations){
+	cat(crayon::red("Station",st,index,"\n"))
+	index = index+1
+ #covariates and target
+  y=df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]
+  y=as.numeric(y[[1]])
+  y=scale(y)[1:53]    #normalization on each single station ( 53 weeks)
+  
+  covs=covar[which(df_weekly$IDStations==st),]
+  
+  #to add nonlinearities on time
+  sint=sin(df_weekly[which(df_weekly$IDStations==st),]$week)
+  covs=cbind(covs,sint)
+ 
+  covs=as.data.frame(covs)
+  covariates=scale(covs,center = TRUE)     #normalization on the station
+  #jitter to avoid nans in constant columns
+  for(i in 1:k){
+    if(sum(is.na(covariates[,i]))>0)
+      covs[,i]=jitter(covs[,i],0.01)
+  }
+  covs=scale(covs, center=TRUE)
+  covs=as.data.frame(covs)
+
+  
+  #build model
+  data = list(y=y,
+            x=covs,
+            n=dim(covs)[1],
+            k=k)
+  inits = function() {list(beta0=0,
+                         beta=rep(0,k),
+                         sigma=100) }
+
+#run model  
+  modelRegress=jags.model("LinearRegCov.bug",data=data,inits=inits,n.adapt=1000,n.chains=1)
+  update(modelRegress,n.iter=5000) #this is the burn-in period
+  
+
+  outputRegress=coda.samples(model=modelRegress,variable.names=c("beta0", "beta", "sigma"),n.iter=5000,thin=10)
+  
+  data.out=as.matrix(outputRegress) # trasform the mcmc.list into a matrix,
+  data.out=data.frame(data.out)     # or, better, into a dataframe (easiest to handle in R)
+  attach(data.out)
+  n.chain=dim(data.out)[1] 
+
+ #the betas
+  beta.post <- data.out[,0:k+1]   #posterior mean of the beta parameters
+  beta.bayes  <- apply(beta.post,2,"mean")
+  beta.bayes <- c(beta.bayes[k+1],beta.bayes[1:k])  #just to put beta0 in first position
+  bayesian_coefficients <- bayesian_coefficients + beta.bayes
+  
+  detach(data.out)
+  
+}
+
+#to give columns names
+bayesian_coefficients = t(as.data.frame(bayesian_coefficients))
+colnames(bayesian_coefficients)<-c("beta0",covariates_to_keep,"sint")
+bayesian_coefficients=bayesian_coefficients/len(stations)
+
+```
+
+
+```{r}
+#saveRDS(bayesian_coefficients,"betas_lin_mod.RData")
+```
+
+

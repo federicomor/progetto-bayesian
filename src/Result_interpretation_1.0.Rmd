@@ -1,0 +1,130 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r,warning = FALSE}
+source("include.R") 
+source("plot functions/plotter.R")
+```
+
+```{r}
+interest_variables <- c("EM_nh3_livestock_mm",
+"LA_hvi",
+"LA_lvi",
+"Altitude",
+"EM_nox_sum",
+"WE_wind_speed_100m_max",
+"WE_mode_wind_direction_100m",
+"WE_tot_precipitation")
+```
+
+
+```{r}
+other_vars <- c("IDStations","Latitude","Longitude","week")
+df_interst <- df_weekly[,c(interest_variables,"AQ_pm10",other_vars)]
+head(df_interst)
+# small modification to not change functions
+colnames(df_interst)[which(colnames(df_interst)=="week") ] = "Time"
+```
+#  Map expanding radius: togliere la legenda
+
+```{r,warning=FALSE}
+initial_date = "2018-01-01"
+final_date = "2019-01-01"
+every = "year"
+
+# if you change the file_name from None it will create a mp4 video
+file_name = "None"
+
+chosen_var_name = "AQ_pm10" 
+
+circles_plot <- circlesPlot(initial_date,final_date,every,file_name,chosen_var_name)
+```
+
+
+
+
+# XY PLOT function
+```{r}
+cols = colora(6,970,show=F)
+xyPlot_weekly <- function(file_name,var1_name,var2_name,size_name){
+
+	data_from_to = df_interst
+	len_time = 12 # number of weeks
+	
+	
+	var1 = data_from_to[,var1_name][[1]]
+	var2 = data_from_to[,var2_name][[1]]
+	if(class(size_name)!="numeric"){
+		size = data_from_to[,size_name][[1]]
+	}else{
+		size = size_name
+	}
+	colors_factor = factor(data_from_to$color_clusters)
+	
+	if(class(size_name)!="numeric"){
+		p <- ggplot(
+			data_from_to, 
+			aes(x = var1, y = var2, size = size, colour = colors_factor)) +
+			geom_point(alpha = 1) +
+			#scale_color_manual(values = cols) +
+			scale_color_viridis_d() +
+			scale_size(range = c(2, 12)) +
+			labs(x = var1, y = var2)+
+			guides(size = guide_legend(title = size_name), color = "none")+
+			theme_bw()
+	}else{
+		p <- ggplot(
+			data_from_to, 
+			aes(x = var1, y = var2, size = size, colour = colors_factor)) +
+			geom_point(alpha = 1,size=size,show.legend = FALSE) +
+			scale_color_viridis_d() +
+			scale_size(range = c(2, 12)) +
+			labs(x = var1_name, y =var2_name)+
+			theme_bw()
+	}
+	
+	return(animator(file_name,p,data_from_to,len_time,1080,1080,TRUE))
+	
+}
+```
+
+# cluster colors
+```{r}
+mode_clusters <- list(
+  c(1, 14, 19, 20, 21, 40, 41, 52, 62, 65, 66, 67, 69, 71, 74, 80, 83, 84, 102),
+  c(2, 3, 5, 7, 8, 9, 11, 12, 26, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 48, 50, 53, 56, 57, 61, 63, 64, 70, 72, 77, 82, 85, 87, 88, 90, 91, 98, 99),
+  c(4, 6, 10, 13, 15, 16, 17, 18, 22, 23, 24, 25, 27, 28, 39, 42, 43, 46, 49, 51, 54, 55, 58, 103, 105),
+  c(44, 45, 47, 59, 60, 68, 73, 75, 76, 78, 79, 81, 86, 89, 93, 94, 95, 96, 97, 100, 104),
+  c(92, 101)
+)
+colors_clusters = rep(1,105)
+for(i in 2:length(mode_clusters)){
+	colors_clusters[mode_clusters[[i]]] = i
+}
+
+df_interst$color_clusters = rep(1,dim(df_interst)[1])
+ii = 1
+for(st in unique(df_interst$IDStations)){
+	df_interst$color_clusters[df_interst$IDStations==st] = colors_clusters[ii]
+	ii = ii + 1	
+}
+```
+
+# xy color+size in time
+```{r,warning=FALSE}
+var2_name = "AQ_pm10" # y
+size_name = 3
+#size_name = "Altitude"
+#file_name= "None"
+for(vars in interest_variables){
+	file_name= paste0("xy_plot_pm10-",vars)
+	# you can change size to refer to a particular variable
+
+	
+	xyplot <- xyPlot_weekly(file_name,vars,var2_name,size_name)
+	xyplot
+}
+```
+

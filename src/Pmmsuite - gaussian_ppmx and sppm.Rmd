@@ -1,0 +1,406 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+
+```{r,warning=FALSE}
+source("include.R") # why didnt you use it above, in your code? :'/
+source("plot functions/plotter.R")
+```
+
+If we include this alone seems to work better (dont know why).
+```{r}
+source("include_clusters_functions.R")
+```
+
+# cluster plots stuff
+Stuff needed for the plot functions to work
+```{r}
+cols = colora(10,"div")[-2] # divergent palette; togliamo il giallino
+
+y=data.frame()
+
+for(st in stations){
+  y_we_pm10=cbind(as.data.frame(st),t(df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]))
+  y=rbind(y,y_we_pm10)
+}
+
+rownames(y) = NULL
+colnames(y)<- c("id",paste0("w", 1:53))
+df_weekly
+y
+# this y needs to not be overwritten
+```
+
+
+```{r}
+library(salso)
+library(ppmSuite)
+```
+
+Sometimes it fails the execution (dont know why). In that case:
+- go to the file include_clusters_function.R and run it all (ctrl+alt+R)
+- come back here and now it should run finely
+
+# gaussian_ppmx
+
+## loop fit
+```{r}
+clusters_old = NULL
+
+for (time in 1:6){
+	cat(crayon::red("Time (ie week)",time,"\n"))
+	df_time = df_weekly[which(df_weekly$week==time),]
+	y_fit = df_time$AQ_pm10
+	X = df_time[,-c(1:5,7)]
+
+	fit = gaussian_ppmx(y_fit, X=X, Xpred=NULL,
+	                  meanModel=1,
+	                  cohesion=1,
+	                  M=1,
+	                  PPM = FALSE,
+	                  similarity_function=1,
+	                  consim=1,
+	                  calibrate=0,
+	                  simParms=c(0.0, 1.0, 0.1, 1.0, 2.0, 0.1, 1),
+	                  modelPriors=c(0, 100^2, 1, 1),
+	                  mh=c(0.5, 0.5),
+	                  draws=1100,burn=100,thin=1,
+	                  verbose=FALSE)
+	
+	clusters_now = salso(fit$Si,loss="binder")
+	clusters_now = clusters_now[1:105]
+	### Mode correct clusters
+	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
+	
+	df_temp = data.frame(
+		Longitude = unique(df_weekly$Longitude),
+		Latitude = unique(df_weekly$Latitude),
+		clusters = clusters_now[1:105]
+	)
+	df_temp$Time = rep(time,dim(df_temp)[1])
+	df_cluster_cut = df_temp
+	
+	
+	### Hist plot
+	# p = get_hist_color_plot(df_cluster_cut)
+	p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
+	print(p)
+	
+	### Graph plot
+	q = get_graph_plot(df_cluster_cut)
+	print(q)
+	
+	# or both together with
+	# plot_graph_and_hist(df_cluster_cut)
+	
+	clusters_old = clusters_now
+} # end for time
+
+cat(fit$lpml)
+cat(fit$WAIC)
+```
+# Model sppm
+
+## loop fit
+```{r}
+clusters_old = NULL
+
+for (time in 1:5){
+	cat(crayon::red("Time (ie week)",time,"\n"))
+	df_time = df_weekly[which(df_weekly$week==time),]
+	y_fit = df_time$AQ_pm10
+	s = data.frame(
+		lat = unique(df_weekly$Latitude),
+		long = unique(df_weekly$Longitude)
+	)
+
+	fit = sppm(y_fit,s,
+	    s.pred=NULL,
+	    cohesion=3,
+	    M=1,
+	    modelPriors=c(0, 100^2, 10, 10),
+	    cParms=c(1, 1.5, 0, 1, 2, 2),
+	    mh=c(0.5, 0.5),
+	    draws=1100,burn=100,thin=1)
+	
+	clusters_now = salso(fit$Si,loss="binder")
+	clusters_now = clusters_now[1:105]
+	### Mode correct clusters
+	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
+	
+	df_temp = data.frame(
+		Longitude = unique(df_weekly$Longitude),
+		Latitude = unique(df_weekly$Latitude),
+		clusters = clusters_now[1:105]
+	)
+	df_temp$Time = rep(time,dim(df_temp)[1])
+	df_cluster_cut = df_temp
+	
+	
+	### Hist plot
+	# p = get_hist_color_plot(df_cluster_cut)
+	# p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
+	# print(p)
+	
+	### Graph plot
+	# q = get_graph_plot(df_cluster_cut)
+	# print(q)
+	
+	# or both together with
+	plot_graph_and_hist(df_cluster_cut)
+	
+	clusters_old = clusters_now
+} # end for time
+```
+
+# curve_ppmx
+
+## time management considerations
+```{r}
+# Example with balanced data.
+# generate data for two clusters with 10 subjects each.
+
+nobs <- 10
+nsubject <- 2*10
+
+set.seed(101)
+xx <- seq(0,2*pi, length=nobs)
+y_fit <- cbind(replicate(n=10, 3*sin(xx)*as.numeric(xx<=pi) + rnorm(nobs,0,0.4)),
+			   replicate(n=10, 3*cos(xx)*as.numeric(xx<=pi) + rnorm(nobs,0,0.4)))
+
+# lenght(y_fit)
+dat <- data.frame(y_fit=c(y_fit),
+                  z=rep(1:nobs, times=nsubject),
+                  Name=rep(1:nsubject, each=nobs))
+
+subject_obs_vec <- dat$Name
+
+nknots <- 15
+
+# Small number of iterates for illustrative purposes only
+niter <- 5000
+nburn <- 2000
+nthin <- 3
+nout <- (niter-nburn)/nthin
+
+z <- dat$z
+
+## the order here is c(mu0, s20, v, k0, nu0, a0, alpha)
+## If simularity is N-NIG then k0 and nu0 are used but v is not
+## If simularity is N-N then v is used but no k0 and nu0
+simparms <- c(0.0, 1.0, 0.1, 1.0, 1.0, 0.1, 1)
+
+fits <- list()
+
+# fit vgrf only
+y_fit <- dat$y_fit
+
+modelPriors <- c(0.5,      # Asig
+                 1000^2,   # s2_mu
+                 0,        # mb0
+                 1000^2,   # s2b0
+                 1,        # as2b0
+                 1,        # bs2b0
+                 1,        # at
+                 1.0/0.05) # bt
+dat
+
+
+for(subj in 1:nsubject){
+	if(subj==1){
+		plot(1:nobs,dat[which(dat$Name==subj),"y_fit"],type="l",col="red",ylim=c(-4,4))
+	} else {
+		lines(dat[which(dat$Name==subj),"y_fit"],type="l",col="red")
+	}
+}
+for(i in 11:20){
+	lines(dat[which(dat$Name==i),"y_fit"],type="l",col="blue")
+}
+```
+
+Caso problematico in cui ci sono due cluster all'inizio ma ad un certo punto il modello dovrebbe darne solo uno, quando si riuniscono.
+
+Gaussian ppmx non sembra accorgersi, dà anche molti cluster.
+```{r}
+fit = gaussian_ppmx(y_fit, X=NULL, Xpred=NULL,
+                  meanModel=1,
+                  cohesion=1,
+                  M=1,
+                  PPM = FALSE,
+                  similarity_function=1,
+                  consim=1,
+                  calibrate=0,
+                  simParms=c(0.0, 1.0, 0.1, 1.0, 2.0, 0.1, 1),
+                  modelPriors=c(0, 100^2, 1, 1),
+                  mh=c(0.5, 0.5),
+                  draws=1100,burn=100,thin=1,
+                  verbose=FALSE)
+clusters_now = salso(fit$Si,loss="binder",maxNClusters = 8)
+clusters_now
+
+cols = colora(12,"div")[-c(2)]
+for(subj in 1:nsubject){
+	if(subj==1){
+		plot(1:nobs,dat[which(dat$Name==subj),"y_fit"],type="l",col=cols[clusters_now[subj]],ylim=c(-4,4))
+	} else {
+		lines(dat[which(dat$Name==subj),"y_fit"],type="l",col=cols[clusters_now[subj]])
+	}
+}
+```
+
+
+
+Curve ppmx dà due cluster ma perché in effetti ce ne sono due all'inizio, ma non notifica quando si reincontrano.
+```{r}
+fit <- curve_ppmx(y=cbind(y_fit), z=z,
+             subject=subject_obs_vec,
+             Xcon = NULL, Xcat = NULL,
+             Xconp=NULL, Xcatp=NULL,
+             PPM=TRUE, M=1,
+             q=3, rw_order=1, balanced=1,
+             nknots=nknots,  npredobs=1,
+             Aparm=100,
+             modelPriors=modelPriors,
+             similarity_function=1,
+             consim=1, calibrate=0,
+             simParms=simparms,
+             mh=c(0.1, 1e-4),
+             draws=niter,
+             burn=nburn,
+             thin=nthin)
+
+clusters_now = salso(fit$Si,loss="binder",maxNClusters = 8)
+clusters_now
+
+Hmat <- fit$Hmat
+
+# For a point estimate of partition, take first MCMC interate
+# This is done only for illustrative purposes.  Recommend using
+# the salso R package.
+
+p.est <- fit$Si[1,]
+
+nc <- length(unique(p.est))
+
+oldpar <- par(no.readonly = TRUE)
+
+# Plot individual subject fits.
+
+tmp <- c(1,6,11,16)
+par(mfrow=c(2,2))
+for(j in tmp){
+  bmn <- apply(fit$beta[j,,],1,mean)
+  b0mn <- mean(fit$beta0[,j])
+
+  ytmp <- y_fit[dat$Name==j]
+
+  b0vec <- rep(b0mn, nobs)
+
+  plot(1:nobs,c(ytmp),
+		  type='n',ylab="Response",
+		  xlab="Time")
+
+  points(1:nobs,ytmp)
+  lines(1:nobs,  b0vec+Hmat%*%bmn, col=p.est[j],lwd=2)
+
+}
+
+# plot all curves in one plot
+par(mfrow=c(1,1))
+
+plot(dat$z, dat$y_fit, type="n",ylab="",xlab="Time")
+
+for(j in 1:nsubject){
+
+  bmn <- apply(fit$beta[j,,],1,mean)
+  b0mn <- mean(fit$beta0[,j])
+
+  b0vec <- rep(b0mn, nobs)
+
+  lines((1:nobs),  b0vec+Hmat%*%bmn, col=p.est[j],lwd=0.5)
+
+}
+
+
+par(oldpar)
+```
+
+It says "number of clusters = 2", so i guess that the time parameter is there ok, but the fit does not account for the possibility of changing clusters with time.
+
+For example the data was built in such a way that there are 2 clusters at the beginning, but then they merge into a sigle one. While the fit cant account for that.
+
+
+## loop fit
+Ie now on our data.
+```{r}
+nknots <- 15 
+niter <- 5000
+nburn <- 2000
+nthin <- 3 # we consider every nthin iteartions 
+nout <- (niter-nburn)/nthin # the number of interatio that we coniser from the mcmc
+simparms <- c(0.0, 1.0, 0.1, 1.0, 1.0, 0.1, 1) # WHAT IS THEIR MEANING IF WE DON'T USE COV
+modelPriors <- c(0.5, # Asig
+                 1000^2, # s2_mu
+                 0, # mb0
+                 1000^2, # s2b0
+                 1, # as2b0
+                 1, # bs2b0
+                 1, # at
+                 1.0/0.05) # bt
+
+clusters_old = NULL
+
+for (time in 1:4){
+	cat(crayon::red("Time (ie week)",time,"\n"))
+	df_time = df_weekly[which(df_weekly$week==time),]
+	y_fit = df_time$AQ_pm10
+	z = rep(time,105)
+	subject = unique(df_weekly$IDStations)
+
+	fit <- curve_ppmx(y=cbind(y_fit), z, subject,
+                  Xcon = NULL, Xcat = NULL,
+                  Xconp=NULL, Xcatp=NULL,
+                  PPM=TRUE, M=1,
+                  q=3, rw_order=1, balanced=1,
+                  nknots=nknots, npredobs=1,
+                  Aparm=100,
+                  modelPriors=modelPriors,
+                  similarity_function=1,
+                  consim=1, calibrate=0,
+                  simParms=simparms,
+                  mh=c(0.1, 1e-4),
+                  draws=niter,
+                  burn=nburn,
+                  thin=nthin)
+	
+	clusters_now = salso(fit$Si,loss="binder")
+	clusters_now = clusters_now[1:105]
+	### Mode correct clusters
+	clusters_now = mode_correct_clusters(clusters_old,clusters_now)
+	
+	df_temp = data.frame(
+		Longitude = unique(df_weekly$Longitude),
+		Latitude = unique(df_weekly$Latitude),
+		clusters = clusters_now[1:105]
+	)
+	df_temp$Time = rep(time,dim(df_temp)[1])
+	df_cluster_cut = df_temp
+	
+	### Hist plot
+	# p = get_hist_color_plot(df_cluster_cut)
+	# p = get_hist_fill_plot(df_cluster_cut) # choose one of these two
+	# print(p)
+	
+	### Graph plot
+	# q = get_graph_plot(df_cluster_cut)
+	# print(q)
+	
+	# or both together with
+	plot_graph_and_hist(df_cluster_cut)
+	
+	clusters_old = clusters_now
+} # end for time
+```
+

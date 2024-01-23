@@ -1,5 +1,5 @@
 file_type=".mp4"
-folder = "./gifs/"
+folder = "plot functions/gifs/"
 #########################   UTILITIES #################################
 
 # Check if a station is inside each subregion
@@ -17,9 +17,9 @@ cardinal_to_degree <- function(cardinal) {
 }
 
 # LERP FUNCTIONS
-lerp_pm10_radius <- function(val){
-	radius_0 = 1
-	radius_f = 10
+lerp_pm10_radius <- function(val,rmin=1,rmax=10){
+	radius_0 = rmin
+	radius_f = rmax
 	min_max = range(val[!is.na(val)])
 	min_val = min_max[1]
 	max_val = min_max[2]
@@ -29,9 +29,9 @@ lerp_pm10_radius <- function(val){
 	return(return_val) 
 }
 
-lerp_pm10_color <- function(val) {
-	color_0 <- col2rgb("yellow")
-	color_f <- col2rgb("#F80000")
+lerp_pm10_color <- function(val,colmin="yellow",colmax="#F80000") {
+	color_0 <- col2rgb(colmin)
+	color_f <- col2rgb(colmax)
 	
 	min_max <- range(val[!is.na(val)])
 	min_val <- min_max[1]
@@ -40,7 +40,7 @@ lerp_pm10_color <- function(val) {
 	return_vals <- vector("list", length = length(val))
 	
 	for (i in seq_along(val)) {
-		if (!is.nan(val[i])) {
+		if (!is.na(val[i]) & !is.nan(val[i])) {
 			return_val <- color_0 + (color_f - color_0) * ((val[i] - min_val) / (max_val - min_val))
 			return_vals[[i]] <- return_val
 		} else {

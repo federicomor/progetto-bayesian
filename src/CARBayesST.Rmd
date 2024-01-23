@@ -1,0 +1,291 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+source("include.R") 
+```
+
+```{r}
+library(CARBayesST)
+library(sp)
+library(proxy)
+library(coda)
+```
+```{r}
+head(df_wsc)
+```
+# ORDER BY TIME
+The values in each column of these matrices should be ordered so that the first K data points are the set of all K spatial locations at time1, the next K are the set of spatial locations for time 2 and so on.
+```{r}
+ordered_by_time <- df_wsc[order(df_wsc$Time), ]
+head(ordered_by_time)
+```
+# SET COVARIATES
+```{r}
+all_covar = colnames(ordered_by_time)
+
+covariates_to_exclude = c("X","IDStations",
+						  "Latitude","Longitude","Time","day","week"
+						  )
+EM_covariates_to_exclude =all_covar[grep("EM_",all_covar)]
+
+covariates_to_exclude = c(covariates_to_exclude,EM_covariates_to_exclude)
+covariates=ordered_by_time[,-which(all_covar%in% covariates_to_exclude)]
+### after 1 iteration - selected variables (AR(1))
+
+covariates=ordered_by_time[,-which(colnames(covariates)%in%var_removed)] head(covariates)
+```
+
+# neighbourhood matrix
+```{r}
+spatial_coord = ordered_by_time[ordered_by_time$Time=="2018-01-01",c("IDStations","Latitude","Longitude")]
+head(spatial_coord)
+
+coordinates(spatial_coord) <- c("Longitude", "Latitude")
+
+# Calculate the pairwise Euclidean distance matrix
+dist_matrix <- as.matrix(proxy::dist(coordinates(spatial_coord), method = "Euclidean"))
+dim(dist_matrix)
+formula = as.formula("AQ_pm10~.")
+```
+# LINEAR
+```{r}
+mod_linear<-ST.CARlinear(formula= formula,
+		   family = "gaussian",
+		   data=covariates,
+		   W= dist_matrix,
+		   burnin = 1000,
+		   n.sample = 25000,
+		   thin=10, 
+		   n.chains=1, 
+		   n.cores=1,
+		   prior.mean.beta=NULL,
+		   prior.var.beta=NULL,
+		   prior.mean.alpha=NULL,
+		   prior.var.alpha=NULL,
+		   prior.nu2=NULL, 
+		   prior.tau2=NULL,
+		   rho.slo=NULL,
+		   rho.int=NULL,
+		   MALA=TRUE,
+		   verbose=TRUE)
+
+```
+# AR
+```{r}
+burnin = 2500
+n_sample = 40000
+mod_AR1_2<-ST.CARar(formula= formula,
+		   family = "gaussian",
+		   data=covariates,
+		   W= dist_matrix,
+		   burnin = burnin,
+		   n.sample = n_sample,
+		   thin=10,  
+		   n.chains=1, 
+		   n.cores=1,
+		   prior.mean.beta=NULL,
+		   prior.var.beta=NULL,
+		   prior.nu2=NULL, 
+		   AR=1, #1 or 2
+		   rho.S=NULL,
+		   rho.T=NULL, 
+		   MALA=TRUE,
+		   verbose=TRUE)
+```
+
+# AR2
+```{r}
+mod_AR2<-ST.CARar(formula= formula,
+		   family = "gaussian",
+		   data=covariates,
+		   W= dist_matrix,
+		   burnin = burnin,
+		   n.sample = n_sample,
+		   thin=10,  
+		   n.chains=1, 
+		   n.cores=1,
+		   prior.mean.beta=NULL,
+		   prior.var.beta=NULL,
+		   prior.nu2=NULL, 
+		   AR=2, #1 or 2
+		   rho.S=NULL,
+		   rho.T=NULL, 
+		   MALA=TRUE,
+		   verbose=TRUE)
+```
+
+# ADAPTIVE AR sloooooooow
+2 hours (10,1000,1)
+```{r}
+# mod_ARadaptive<-ST.CARadaptive(formula= formula,
+# 		   family = "gaussian",
+# 		   data=covariates,
+# 		   W= dist_matrix,
+# 		   burnin = 5000,
+# 		   n.sample = 50000,
+# 		   thin=3, 
+# 		   prior.mean.beta=NULL,
+# 		   prior.var.beta=NULL,
+# 		   prior.nu2=NULL, 
+# 		   prior.tau2=NULL,
+# 		   rho=NULL,
+# 		   epsilon=0,
+# 		   MALA=TRUE,
+# 		   verbose=TRUE)
+```
+
+
+
+# ST.CARlocalised, ST.CARsepspatial, CLUSTERends: 
+only binomial or poisson: response must be integer valued
+seems useless for our goal
+divide into groups low medium high?
+```{r}
+#model_list = list(mod_linear,mod_AR1,mod_AR2)
+#mod = model_list[[2]]
+saveRDS(mod_AR1, file = "AR(1)_model_carbayesST.RData")
+mod = readRDS("AR(1)_model_carbayesST.RData")
+```
+
+
+# MCMC analysis
+
+## samples
+ 
+```{r}
+summary(mod$samples)
+```
+
+## mcmc plots
+### betas
+```{r}
+mcmc_matrix = as.matrix(mod$samples$beta)
+for(i in 1:dim(mcmc_matrix)[2]){
+	plot(mcmc_matrix[,i],type="l",cex.axis=0.8)
+}
+```
+### other parameters
+```{r}
+mcmc_matrix = as.matrix(mod$samples$rho)
+for(i in 1:dim(mcmc_matrix)[2]){
+	plot(mcmc_matrix[,i],type="l",cex.axis=0.8)
+}
+```
+
+# print the model
+```{r}
+#print(mod)
+```
+
+```{r}
+summary_results = mod$summary.results
+summary_results = data.frame(summary_results)
+
+
+# Identify variables with credible intervals excluding zero
+selected_variables <- summary_results[summary_results$X2.5. > 0 | summary_results$X97.5. < 0, ]
+
+print(selected_variables)
+print(rownames(selected_variables)[1:23])
+
+var_removed = rownames(summary_results[!(rownames(summary_results)%in%rownames(selected_variables)),])
+print(var_removed)
+```
+
+
+# acceptance probabilities
+```{r}
+mod$accept
+```
+# metrics
+```{r}
+# Create an empty matrix with specified row and column names
+metrics_matrix <- matrix(NA, nrow = 4, ncol = 6, dimnames = list(c("linear", "ar1", "ar2", "ar adaptive"), c("DIC", "p.d", "WAIC", "p.w", "LMPL", "loglikelihood")))
+
+k = 1
+for (mod in model_list) {
+  metrics_matrix[k, ] <- mod$modelfit
+  k = k + 1
+}
+
+# Convert the matrix to a data frame if needed
+metrics_dataframe <- as.data.frame(metrics_matrix)
+metrics_dataframe[,c(3,5)]
+
+```
+          DIC           p.d          WAIC           p.w          LMPL 
+    -5525.360      1460.358     -5485.842      1251.694      2669.273 
+loglikelihood 
+     4223.037 
+
+
+# residuals
+```{r}
+resid = residuals(mod)
+plot(resid,type="l")
+```
+
+# NOTES
+- adaptive was too slow ( talking about a day to run) and poor results
+- between AR1, AR2 and LINEAR the first was the best in terms of metrics
+- the select variables (95% CI) didn't include EMission variables, so I run again the AR1 without them
+
+
+
+
+# Example of ANOVA: could be used to evaluate the clusterings! 		
+```{r}
+# Load required libraries
+library(MASS)  # For mvrnorm function (multivariate normal distribution)
+library(spdep) # For spatial dependency functions
+library(stats)  # For kronecker function
+
+# Setup the regular lattice
+x.easting <- 1:10
+x.northing <- 1:10
+Grid <- expand.grid(x.easting, x.northing)
+K <- nrow(Grid)
+N <- 10
+N.all <- N * K
+
+# Setup spatial (W) and temporal (D) neighbourhood matrices
+distance <- as.matrix(dist(Grid))
+W <- array(0, c(K, K))
+W[distance == 1] <- 1
+
+D <- array(0, c(N, N))
+for (i in 1:N) {
+  for (j in 1:N) {
+    if (abs((i - j)) == 1) D[i, j] <- 1
+  }
+}
+
+# Simulate the elements in the linear predictor and the data
+gamma <- rnorm(n = N.all, mean = 0, sd = 0.001)
+x <- rnorm(n = N.all, mean = 0, sd = 1)
+beta <- 0.1
+
+Q.W <- 0.99 * (diag(apply(W, 2, sum)) - W) + 0.01 * diag(rep(1, K))
+Q.W.inv <- solve(Q.W)
+phi <- mvrnorm(n = 1, mu = rep(0, K), Sigma = (0.01 * Q.W.inv))
+
+Q.D <- 0.99 * (diag(apply(D, 2, sum)) - D) + 0.01 * diag(rep(1, N))
+Q.D.inv <- solve(Q.D)
+delta<-mvrnorm(n=1,mu=rep(0,N),Sigma=(0.01*Q.D.inv))
+phi.long <- rep(phi, N)
+delta.long <- kronecker(delta, rep(1, K))
+
+LP <- 4 + x * beta + phi.long + delta.long + gamma
+mean <- exp(LP)
+Y <- rpois(n = N.all, lambda = mean)
+
+# Run the model (commented out for now)
+mod <- ST.CARanova(formula = Y ~ x, family = "poisson", interaction = TRUE, W = W, burnin = 10, n.sample = 50)
+summary(model)
+model$summary.results
+```
+
+
+

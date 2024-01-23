@@ -10,4 +10,5 @@ data/data_agc_lomb.Rdata
 data/Agrimonia_Dataset_v_3_0_0.csv
 data/AGC_Dataset_v_3_0_0.csv
 .Rhistory
-*.html
+src/*.html
+data/drpm_comparison.Rdata

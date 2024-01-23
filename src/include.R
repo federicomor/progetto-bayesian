@@ -5,6 +5,16 @@
 
 # morally always needed
 library(ggplot2)
+library(grDevices)
+library(png)
+
+Mode <- function(x,verbose=0) {
+	ux <- unique(x)
+	if(verbose){
+		print(table(x))
+	}
+	ux[which.max(tabulate(match(x, ux)))]
+}
 
 ########################
 # useful aliases
@@ -59,9 +69,63 @@ cat(crayon::italic("Created DATE_FORMAT = \"%Y-%m-%d\" variable for date compari
 cat(crayon::italic("Usage example: df_agri$Time >= as.Date(\"2017-01-01\",DATE_FORMAT).\n"))
 cat(crayon::italic("Actually also this works: df_agri$Time >= as.Date(\"2017-01-01\").\n\n"))
 
-load("../data/df_weekly.Rdata")
-cat(crayon::cyan(h,"Loaded weekly divided dataset. Available as"),crayon::red("df_weekly.\n\n"))
+load("../data/df_weekly.Rdata") # here it is not log-trasformed, we asser it
+if(!(min(df_weekly$AQ_pm10)>2 && max(df_weekly$AQ_pm10)>78)){
+	warning("Dataset seems already log-transformed when it shouldn't be.")
+}
+# extrema(df_weekly$AQ_pm10)
+# [1] 2.428571 79.857143
 
+# df_weekly_no_log_transf = df_weekly # so here we make a copy of it, the original one
+df_weekly$AQ_pm10 = log(df_weekly$AQ_pm10) # here we overwrite df_weekly to be log-transformed
+# extrema(df_weekly$AQ_pm10)
+# [1] 0.8873032 4.3802393
+
+cat(crayon::cyan(h,"Loaded weekly divided dataset(s). Available as"),
+	crayon::red("df_weekly.\n"))
+
+df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0011A")] = "STA.CH0011A"
+df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0033A")] = "STA.CH0033A"
+df_weekly$IDStations[which(df_weekly$IDStations=="STA-CH0043A")] = "STA.CH0043A"
+cat(crayon::italic("Uniformed names of stations (some were STA-ecc and some STA.ecc; now are all STA.ecc).\nOnly of df_weekly and the following df_weekly_scaled_centered (ie df_wsc).\n"))
+cat(crayon::italic("This name change was also needed for the graph cluster plot function.\n\n"))
+
+
+
+
+df_weekly_scaled_centered = df_weekly
+# colnames(df_weekly_scaled_centered)
+numerical_covariates_to_scale = c(3,4,6,8:10,12:20,22:37)
+df_weekly_scaled_centered[,numerical_covariates_to_scale] = scale(df_weekly_scaled_centered[,numerical_covariates_to_scale],center=TRUE,scale=TRUE)
+df_weekly_scaled_centered$AQ_pm10 = scale(df_weekly_scaled_centered$AQ_pm10,center=TRUE,scale=FALSE)
+cat(crayon::cyan(h,"Created scaled df_weekly dataset. Available as"),
+	crayon::red("df_weekly_scaled_centered"),
+	crayon::cyan("(or"),
+	crayon::red("df_wsc).\n")) # add centering on the PM10
+cat(crayon::italic(
+	"Scaled variables were c(3,4,6,8:10,12:20,22:37)
+Untouched variables were
+   (col 1) X, 
+   (col 2) IDStations,
+   (col 5) Time,
+  (col 11) WE_mode_wind_direction_10m,
+  (col 21) WE_mode_wind_direction_100,
+  (col 38) day,
+  (col 39) week
+------------------------------------------------------
+  (col 7) AQ_pm10 has been centered, not scaled
+(col 3&4) Latitude and Longitude have also been scaled
+          (fits were better in this way)\n\n"))
+
+# par(mfrow=c(2,2))
+# par(mar=c(9,2,1,1))
+# boxplot(df_weekly_scaled_centered[,c(3,4,6,8:10,12:20,22:37)],title="scaled variables",las=2,cex=0.4)
+# par(mar=c(3,3,2,2))
+# plot(df_weekly_scaled_centered$Latitude,df_weekly_scaled_centered$Longitude,main="std coordinates (look at axes)")
+# boxplot(df_weekly_scaled_centered$AQ_pm10,main="AQ_pm10 values")
+# boxplot(df_weekly_scaled_centered[,c(7,38,39)],title="remained variables",las=2,cex=0.4)
+
+df_wsc = df_weekly_scaled_centered # short alias
 
 
 ########################
@@ -85,16 +149,29 @@ create_df_stat = function(df_data){
 }
 
 cat(crayon::cyan(h,"Created stations split function Available as"),crayon::red("create_df_stat(df).\n"))
-cat(crayon::italic("Use it as my_df_stat = create_df_stat(df_2018).\nThen for example my_df_stat[[\"1264\"]] retrieves the dataset for station 1264.\n"))
+cat(crayon::italic("Use it as my_df_stat = create_df_stat(df_2018).\nThen for example my_df_stat[[\"1264\"]] retrieves the dataset for station 1264.\n\n"))
 
 ########################
 # function to get colors for plotting
 ########################
-fun_colori = function(len=2, seed=33, show=1){
+library(RColorBrewer)
+fun_colori = function(len=2, seed=33, show=1, seed_div = "Set3"){
 	hcols_ = hcl.pals()
 	if(seed=="rand"){
 		seed = round(runif(1,0,115))
 		col.ramp_ = hcl.colors(len,palette=hcols_[seed%%115+1])
+	}
+	if(seed=="div"){ # create a divergent palette
+		col.ramp_ = brewer.pal(len, seed_div)
+		# possible seed_div choices (and max len supported)
+		# Set3	    12
+		# Paired    12
+		# Pastel1   9
+		# Set1	    9
+		# Accent    8
+		# Dark2     8
+		# Pastel2   8
+		# Set2	    8
 	}
 	else{
 		col.ramp_ = hcl.colors(len,palette=hcols_[seed%%115+1])
@@ -114,7 +191,7 @@ colori_fun = colorami = colora = fun_colori # aliases
 # usage: cols = colora(7,456) for getting a palette of seed 456 with 7 colors
 
 cat(crayon::cyan(h,"Created function to get color palettes. Available as"),crayon::red("colora(len, seed, show).\n"))
-cat(crayon::italic("Try for example colora(10,56,1).\n\n"))
+cat(crayon::italic("Try for example colora(10,56,1).\n"))
 
 
 ########################
@@ -194,7 +271,7 @@ what_is[["LA_land_use"]] = "Land use across 44 sectors \n[ categorical ]"
 what_is[["LA_soil_use"]] = "Lombardy soil use across 21 sectors \n[ categorical ]"
 
 cat(crayon::cyan(h,"Created utility to explain covariates. Available as"),crayon::red("spiega(string).\n"))
-cat(crayon::italic("Try for example spiega(\"wind\")."))
+cat(crayon::italic("Try for example spiega(\"wind\").\n\n"))
 
-rm(h)
+# rm(h)
 

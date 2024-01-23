@@ -4,13 +4,19 @@ color_empty = "white"
 color_station = "yellow"
 color_fill = "forestgreen"
 lombardia_2 = altre_regioni[altre_regioni$NAME_1 == "Lombardia",]
-DefaultPlot <- function(){
+DefaultPlot <- function(add_bg=FALSE){
 	# crea mappa lombardia
-	mappa_stations <- ggplot() +
+	if (add_bg==TRUE) {
+		mappa_stations <- ggplot() +
+			background_image(img_lombardy)
+	} else {
+		mappa_stations <- ggplot()
+	}
+	mappa_stations = mappa_stations	+
 		geom_sf(data = altre_regioni, fill = color_empty ,color = color_fill, linewidth = 0.1,alpha=0.1, show.legend = FALSE) +
 		geom_sf(data = lombardia_2, fill = color_empty, color = color_comuni_lombardia, linewidth = 0.3,alpha=0.7, show.legend = FALSE) +
 		
-		coord_sf(xlim = range(sites$longitude) + pad, ylim = range(sites$latitude) + pad, expand = FALSE)+
+		coord_sf(xlim = range(sites$longitude) + padding, ylim = range(sites$latitude) + padding, expand = FALSE)+
 		
 		theme_bw()+
 		theme(panel.grid = element_blank())
@@ -35,7 +41,7 @@ stationPlot <- function(){
 		geom_sf(data = lombardia,aes(fill = station_inside), color = color_comuni_lombardia, linewidth = 0.1,alpha=0.7, show.legend = FALSE) +
 		scale_fill_manual(values = c(color_station, color_empty),na.value = color_fill) +  # Define colors for inside/outside stations
 		
-		coord_sf(xlim = range(sites$longitude) + pad, ylim = range(sites$latitude) + pad, expand = FALSE)+
+		coord_sf(xlim = range(sites$longitude) + padding, ylim = range(sites$latitude) + padding, expand = FALSE)+
 		geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = color_station_point) +
 		
 		theme_bw()+
@@ -87,10 +93,17 @@ circlesPlot <- function(initial_date,final_date,every,file_name,chosen_var_name)
 	
 	
 	
-	mappa_expanding <- stationPlot()+
+	mappa_expanding <- DefaultPlot()+
+		## add points for the stations
+		
+		
+		
 		geom_point(data =data_from_to, aes(x=Longitude,y=Latitude),
 				   size=lerp_pm10_radius(chosen_var),
 				   color = lerp_pm10_color(chosen_var), alpha=0.6)+
+		
+		geom_point(data = sites, aes(x = longitude, y = latitude), size = 1, shape = 23, fill = color_station_point) +
+		
 		labs(title=paste0("measurments of ",chosen_var_name))+
 		guides(color = guide_legend(title = chosen_var_name))
 
@@ -134,8 +147,8 @@ windPlot <- function(initial_date,final_date,every,file_name){
 	mappa_wind <- ggplot(data = wind_arrows) +
 		
 		geom_sf(data = shp_map, fill = color_background_map , color = "black", linewidth = 0.5,alpha=0.6)+
-		coord_sf(xlim = range(na.omit(wind_arrows$longitude))+pad,
-				 ylim = range(na.omit(wind_arrows$latitude))+pad, expand = FALSE)+
+		coord_sf(xlim = range(na.omit(wind_arrows$longitude))+padding,
+				 ylim = range(na.omit(wind_arrows$latitude))+padding, expand = FALSE)+
 		
 		geom_segment(data = wind_arrows,
 					 aes(x = longitude, y = latitude, xend = end_longitude, yend = end_latitude,
@@ -176,17 +189,17 @@ xyPlot <- function(initial_date,final_date,every,file_name,var1_name,var2_name,s
 			#scale_color_manual(values = cols) +
 			scale_color_viridis_d() +
 			scale_size(range = c(2, 12)) +
-			labs(x = var1_name, y =var2_name)+
+			labs(x = var1_name, y = var2_name)+
 			guides(size = guide_legend(title = size_name), color = "none")+
 			theme_bw()
 	}else{
 		p <- ggplot(
 			data_from_to, 
-			aes(x = var1, y=var2, size = size, colour = colors_factor)) +
-			geom_point(alpha = 1,size=size,show.legend = FALSE) +
+			aes(x = var1, y = var2, size = size, colour = colors_factor)) +
+			geom_point(alpha = 1,size = size,show.legend = FALSE) +
 			scale_color_viridis_d() +
 			scale_size(range = c(2, 12)) +
-			labs(x = var1_name, y =var2_name)+
+			labs(x = var1_name, y = var2_name)+
 			theme_bw()
 	}
 	
