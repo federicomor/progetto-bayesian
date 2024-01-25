@@ -6,6 +6,9 @@ output: html_notebook
 ```{r,warning = FALSE}
 source("include.R") 
 source("plot functions/plotter.R")
+
+source("include_clusters_functions.R")
+library(patchwork)
 ```
 
 ```{r}
@@ -24,10 +27,11 @@ interest_variables <- c("EM_nh3_livestock_mm",
 other_vars <- c("IDStations","Latitude","Longitude","week")
 df_interst <- df_weekly[,c(interest_variables,"AQ_pm10",other_vars)]
 head(df_interst)
+df_interst$logAltitude = log(df_interst$Altitude)
 # small modification to not change functions
 colnames(df_interst)[which(colnames(df_interst)=="week") ] = "Time"
 ```
-#  Map expanding radius: togliere la legenda
+#  Map expanding radius
 
 ```{r,warning=FALSE}
 initial_date = "2018-01-01"
@@ -126,5 +130,129 @@ for(vars in interest_variables){
 	xyplot <- xyPlot_weekly(file_name,vars,var2_name,size_name)
 	xyplot
 }
+
+xyplot <- xyPlot_weekly(paste0("xy_plot_pm10-","logAltitude"),"logAltitude",var2_name,size_name)
 ```
+
+
+## cls see
+```{r}
+df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
+mode_clusters_vect = rep(0,105)
+
+
+sites = data.frame(
+	longitude = unique(df_weekly$Longitude), 
+	latitude = unique(df_weekly$Latitude))
+
+df_temp = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	clusters = colors_clusters
+)
+
+
+# clusters log
+clusters_now = df_temp$clusters
+# n_clusters = max(clusters_now)
+n_clusters = unique(clusters_now)
+
+stations = unique(df_wsc$IDStations)
+y=data.frame()
+
+for(st in stations){
+  y_we_pm10=cbind(as.data.frame(st),t(df_wsc[which(df_wsc$IDStations==st),"AQ_pm10"]))
+  y=rbind(y,y_we_pm10)
+}
+
+# time = 2
+# cols = color_correct_clusters(df_temp,idea=2,verbose=0,nint=13)
+p = get_graph_plot(df_temp,titolo="Mode Clusters")
+p
+map = gridMap("2016-01-01","2016-01-01","","None","Altitude")
+map
+```
+
+# settings
+```{r}
+cols = colora(2,800,show=T)
+color_low =  cols[2]
+color_high = cols[1]
+
+filter_date_list = filter_date(data_agc_lomb,"2016-01-01","2016-01-01","")
+data_from_to = filter_date_list[[1]]
+
+chosen_variable = as.numeric((data_from_to[,"Altitude"]))
+
+df_cluster_cut = df_temp
+cols=cols_default
+titolo = "ciao"
+verbose = 0
+
+clusters_now = df_cluster_cut$clusters
+edges_list = assemble_edges_list(clusters_now)
+```
+
+# plot composition
+```{r}
+p  <-  ggplot() +
+
+	geom_tile(data = data_from_to, aes(x = Longitude, y = Latitude, fill = chosen_variable), 
+			  colour = "grey50",alpha = 0.9) +
+	
+	scale_fill_gradient(low = color_low, high = color_high,na.value = "gray",trans = "sqrt",  # Apply a logarithmic transformation (adjust as needed)
+  oob = scales::squish  # Squish out-of-bounds values to the nearest limit
+) +
+	labs(title = chosen_variable_name, fill = chosen_variable_name)+
+		
+		
+	geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
+										  # color = cols[factor(clusters)]), size = 2)+
+										  color = cols[clusters_now]), size = 2)+
+	labs(title = titolo)
+
+
+```
+
+
+```{r}
+q = p
+actual_clusters = c()
+for(cl in 1:len(edges_list)){
+	edges_to_plot = edges_list[[cl]]
+	if(!is.null(edges_to_plot)){
+		actual_clusters = c(actual_clusters,cl)
+		if(verbose==1){
+			cat("procesing cluster",cl,"\n")
+			print(actual_clusters)
+		}
+	q = q + geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
+							 color = cols[as.numeric(cluster)]),
+						 # color = paste0("cl",cl)),
+						 linewidth=1.2,
+						 data = edges_to_plot,show.legend = TRUE)+
+		guides(color = guide_legend(title = "Clusters"))
+	}
+}
+
+q = q +
+	scale_colour_identity(guide="legend",labels=paste0("cl",actual_clusters),
+						  breaks=cols[actual_clusters])
+qf = q +
+	geom_sf(data = altre_regioni, fill = color_empty ,color = color_fill, linewidth = 0.1,alpha=0.01, show.legend = FALSE) +
+	geom_sf(data = lombardia_2, fill = color_empty, color = "yellow", linewidth = 0.3,alpha=0.07, show.legend = FALSE) +
+	
+	coord_sf(xlim = range(sites$longitude) + padding, ylim = range(sites$latitude) + padding, expand = FALSE)+
+	
+	theme_bw()+
+	theme(panel.grid = element_blank())
+
+print(qf)
+
+
+
+
+```
+`
+
 
