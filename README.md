@@ -50,7 +50,7 @@ Report here at https://it.overleaf.com/6577451481wwsqvrgxswjy#c9ce5d
 	- 2.2. DRPM, space plus time (Federico)
 	- 2.3. Gaussian PPMx, only covariates (Federica) 
 	- 2.4. Curve PPMx, covariates and time
-- 2.5  Giulia's linear model (?)
+        - 2.5. Giulia's linear model (?)
  -  2.6  CARBayesST + covariate selection, so Ettore and Giulia work, to prepare for the models with covariates  (only cited as a bad attempt) + variable selection, different for every model but summerized in 1
 
 3. Model choice
