@@ -49,7 +49,7 @@ Report here at https://it.overleaf.com/6577451481wwsqvrgxswjy#c9ce5d
 	- 2.1. SPPM, as it is just spatial, like the start point
 	- 2.2. DRPM, space plus time (Federico)
 	- 2.3. CARBayesST + covariate selection, so Ettore and Giulia work, to prepare for the models with covariates
-	- 2.4. Gaussian PPMx, only covariates
+	- 2.4. Gaussian PPMx, only covariates (Federica) 
 	- 2.5. Curve PPMx, covariates and time
 
 	+ variable selection, different for every model but summerized in 1
