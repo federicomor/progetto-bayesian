@@ -23,6 +23,7 @@ See also that for understand how to create the plots of the clusters.
 - Gaussian PPMx (Federica): just covariates
 - SPPM (Oswaldo): just space
 - Curve ppmx (Aby): time and covariates
+- Linear (Giulia): time and covariates, simple baseline model
 
 | Model                    | Time     | Space    | Covariates | Clustering|
 |--------------------------|----------|----------|------------|-----------|
@@ -31,6 +32,7 @@ See also that for understand how to create the plots of the clusters.
 | SPPM (Oswaldo)           |  X       |    ✓       | X      | ✓      |
 | Curve PPMx (Aby)         |   ✓     | X           |  ✓     | ✓      |
 | CarBayesST               |   ✓     | ✓           |  ✓      |  X    |
+| Linear                   |    ✓    |    X        |    ✓    |   X    |
 
 
 The models without time means that time is not inside the model. Then we can "force" time to be included by looping or doing some other tricks, but time will never be inside the model.
@@ -42,7 +44,7 @@ Report here at https://it.overleaf.com/6577451481wwsqvrgxswjy#c9ce5d
 
 1. Data inspection + problem presentation
 	- 1.0 Introduction (Ettore)
-	- 1.1. NAs treatment, stations descarded 
+	- 1.1. NAs treatment, stations descarded (Giulia)
 	- 1.2. trends, choice of the year (Federico, but help may be needed)
 	- ?
 2. Models 
@@ -50,8 +52,8 @@ Report here at https://it.overleaf.com/6577451481wwsqvrgxswjy#c9ce5d
 	- 2.2. DRPM, space plus time (Federico)
 	- 2.3. Gaussian PPMx, only covariates (Federica) 
 	- 2.4. Curve PPMx, covariates and time
-        - 2.5. Giulia's linear model (?)
- -  2.6  CARBayesST + covariate selection, so Ettore and Giulia work, to prepare for the models with covariates  (only cited as a bad attempt) + variable selection, different for every model but summerized in 1
+        - 2.5. Giulia's linear model (Giulia)
+ -  2.6  CARBayesST + covariate selection, so Ettore and Giulia work, to prepare for the models with covariates  (only cited as a not determinant attempt) + variable selection, different for every model but summerized in 1 
 
 3. Model choice
 	- 3.1. model comparison with the metrics used (Federico)
