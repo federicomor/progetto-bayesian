@@ -43,32 +43,32 @@ Report here at https://it.overleaf.com/6577451481wwsqvrgxswjy#c9ce5d
 1. Data inspection + problem presentation
 	- 1.0 Introduction (Ettore)
 	- 1.1. NAs treatment, stations descarded 
-	- 1.2. trends, choice of the year 
+	- 1.2. trends, choice of the year (Federico, but help may be needed)
 	- ?
 2. Models 
-	- 2.1. SPPM (as it is just spatial, like the start point)
-	- 2.2. DRPM (space plus time)  
-	- 2.3. CARBayesST + covariate selection (Ettore and Giulia work, to prepare for the models with covariates)
-	- 2.4. Gaussian PPMx (only covariates)
-	- 2.5. Curve PPMx (covariates and time)
+	- 2.1. SPPM, as it is just spatial, like the start point
+	- 2.2. DRPM, space plus time (Federico)
+	- 2.3. CARBayesST + covariate selection, so Ettore and Giulia work, to prepare for the models with covariates
+	- 2.4. Gaussian PPMx, only covariates
+	- 2.5. Curve PPMx, covariates and time
 
-	+ variable selection ( different for every model but summerized in 1)
+	+ variable selection, different for every model but summerized in 1
 
 3. Model choice
-	- 3.1. model comparison with the metrics used 
+	- 3.1. model comparison with the metrics used (Federico)
 	- 3.2. why model X is the "best" 
-	- CV (?), MSE, ARI  and other metrics used to compare the models
+	- CV (?), MSE, ARI  and other metrics used to compare the models (Federico)
 4. Analysis of the results
 	- 4.1. How do we interpret the model? Why some covariates seem more important than others? (Ettore)
 5. Conclusion (Ettore)
 6. Further Developments (Ettore)
 	- 6.1. model averaging Package‘AICcmodavg’
-	- 6.2.  weekend-weekday division
+	- 6.2. weekend-weekday division
 	- 6.3. prior dall'anno precedente
 7. Appendix
 	- plot librairies, animations, html... (Ettore)
 	-
-link
+link (Federico)
 
 
 interpratation of the clusters
