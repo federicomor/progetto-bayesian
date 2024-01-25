@@ -1759,7 +1759,7 @@ ggsave(paste0("./figures/Federico/time_series_tests/plt_modemap.png"),
 #=======
 # Curve PPmx
 ```{r}
-load("../data/all_fits_curveppmx.Rdata")
+load("../src/all_fits_curveppmx.Rdata")
 ```
 
 
