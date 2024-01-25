@@ -951,14 +951,19 @@ for(time in time_span){
 # sPPM
 ```{r}
 load("../data/sppm_c4_list.RData")
-# see sppm_C4_list[[time]]$Si
 ```
+
+```{r}
+FIT = sppm_C4_list
+base_folder = "sPPM"
+```
+
 
 ```{r}
 lpml_tot_sppm = waic_tot_sppm = 0
 for (time in 1:53){
-	lpml_tot_sppm = lpml_tot_sppm + sppm_C4_list[[time]]$lpml
-	waic_tot_sppm = waic_tot_sppm + sppm_C4_list[[time]]$WAIC
+	lpml_tot_sppm = lpml_tot_sppm + FIT[[time]]$lpml
+	waic_tot_sppm = waic_tot_sppm + FIT[[time]]$WAIC
 }
 cat(crayon::red("\nLPML =",lpml_tot_sppm, "\nWAIC =",waic_tot_sppm))
 # niente ancora lontani da drpm
@@ -975,7 +980,7 @@ df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=
 for(time in time_span){
 	
 	# tune here your cluster generation
-	salso_out <- salso(sppm_C4_list[[time]]$Si,
+	salso_out <- salso(FIT[[time]]$Si,
 				   loss=binder(a=1.2),
 				   maxNClusters = 8
 				   )
@@ -1033,7 +1038,6 @@ for(time in time_span){
 
 ## plots save
 ```{r}
-base_folder = "sPPM"
 salso_out_lists[[base_folder]] = salso_out_list
 ```
 
@@ -1234,17 +1238,15 @@ for(time in time_span){
 #=======
 # Gaussian PPmx
 ```{r}
-gppmx_fit = readRDS("Gaussian_ppmX.RData")
-# read rho through gppmx_fit[[time]]$Si
-var_selected <- c("Altitude","EM_nox_sum","WE_mode_wind_direction_100m",
-				  "WE_wind_speed_100m_max", "LA_lvi")
+FIT = readRDS("Gaussian_ppmX.RData")
+base_folder = "Gaussian PPMx"
 ```
 
 ```{r}
 lpml_tot_gppmx = waic_tot_gppmx = 0
 for (time in 1:53){
-	lpml_tot_gppmx = lpml_tot_gppmx + gppmx_fit[[time]]$lpml
-	waic_tot_gppmx = waic_tot_gppmx + gppmx_fit[[time]]$WAIC
+	lpml_tot_gppmx = lpml_tot_gppmx + FIT[[time]]$lpml
+	waic_tot_gppmx = waic_tot_gppmx + FIT[[time]]$WAIC
 }
 cat(crayon::red("\nLPML =",lpml_tot_gppmx, "\nWAIC =",waic_tot_gppmx))
 # niente ancora lontani da drpm
@@ -1261,7 +1263,7 @@ df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=
 for(time in time_span){
 	
 	# tune here your cluster generation
-	salso_out <- salso(gppmx_fit[[time]]$Si,
+	salso_out <- salso(FIT[[time]]$Si,
 				   loss=binder(a=1.2), # example of a tuning
 				   maxNClusters = 8
 				   )
@@ -1332,7 +1334,6 @@ for(time in time_span){
 
 ## plots save
 ```{r}
-base_folder = "Gaussian PPMx"
 salso_out_lists[[base_folder]] = salso_out_list
 ```
 
