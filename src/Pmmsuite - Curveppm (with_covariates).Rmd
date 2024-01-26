@@ -57,31 +57,36 @@ plot(std_sites)
 ```
 
 
+
+
+## fit
+
 Fix number of stations, ...
 ```{r}
-# load("../data/df_weekly.Rdata")
-
+var_selected <- c("Altitude","EM_nox_sum","WE_mode_wind_direction_100m","WE_wind_speed_100m_max", "LA_lvi")
 
 nobs <- 53 # number of week for each stations
-nsubject <- length(unique(df_weekly$IDStations)) # number od station
+nsubject <- length(unique(df_wsc$IDStations)) # number of station
 
 # input data for the curve_PPmX function
 y_fit = matrix(nrow = 0, ncol = nobs) 
-y_fit = df_weekly$AQ_pm10
-
-# 
+y_fit = df_wsc$AQ_pm10
 dat <- data.frame(y_fit=c(y_fit),
                    z=rep(1:nobs, times=nsubject), # is the time
                    Name=rep(1:nsubject, each=nobs))
-allXcons = list()
-Xcon1 = data.frame(altitude = df_weekly$Altitude[seq(from=1, by = 53, length.out=105)],
-				   EM_nox_sum = df_weekly$EM_nox_sum[seq(from=1, by = 53, length.out=105)])
-#Xcon2 = data.frame(altitude = df_weekly$Altitude[seq(from=2, by = 53, length.out=105)],
-				#   EM_nox_sum = df_weekly$EM_nox_sum[seq(from=2, by = 53, length.out=105)])
 
-for (i in 1:53) {
-	allXcons[[i]] = data.frame(altitude = df_weekly$Altitude[seq(from=i, by = 53, length.out=105)],
-				   EM_nox_sum = df_weekly$EM_nox_sum[seq(from=i, by = 53, length.out=105)])
+allXcons = list()
+allXcats = list()
+for (time in 1:53) {
+	allXcons[[time]] = data.frame(
+		Altitude = df_wsc$Altitude[seq(from=i, by = 53, length.out=105)],
+		EM_nox_sum = df_wsc$EM_nox_sum[seq(from=i, by = 53, length.out=105)],
+		WE_wind_speed_100m_max = df_wsc$WE_wind_speed_100m_max[seq(from=i, by = 53, length.out=105)],
+		LA_lvi = df_wsc$LA_lvi[seq(from=i, by = 53, length.out=105)]
+	)
+	allXcats[[time]] = data.frame(
+		WE_mode_wind_direction_100m = df_wsc$WE_mode_wind_direction_100m[seq(from=i, by = 53, length.out=105)]
+	)
 }
 
 subject_obs_vec <- dat$Name
@@ -92,11 +97,12 @@ z <- dat$z
 
 Hyperparameters
 ```{r}
-nknots <- 15 
+nknots <- 20
 niter <- 20000
 nburn <- 10000
-nthin <- 10 # we consider every nthin iteartions 
+nthin <- 20 # we consider every nthin iteartions 
 nout <- (niter-nburn)/nthin # the number of interatio that we coniser from the mcmc
+cat("Getting",nout,"total iterations")
 ```
 
 Similarity function parameters
@@ -111,7 +117,7 @@ simparms <- c(0.0, 1.0, 0.1, 1.0, 1.0, 0.1, 1) # WHAT IS THEIR MEANING IF WE DON
 Prior:
 ```{r}
 modelPriors <- c(0.5, # Asig
-                 1000^2, # s2_mu
+                 100^2, # s2_mu
                  0, # mb0
                  1000^2, # s2b0
                  1, # as2b0
@@ -121,21 +127,44 @@ modelPriors <- c(0.5, # Asig
 ```
 
 ```{r}
+df <- data.frame(
+  DirezioneVento = c("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+)
+
+# Definire un vettore di direzioni ordinate
+direzioni_ordinate <- c("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+
+# Creare una funzione di mapping per assegnare i numeri
+mappa_direzioni <- function(direzione) {
+  return(match(direzione, direzioni_ordinate) - 1)
+}
+```
+
+
+```{r}
 all_fits = list()
-for (time in 1:2){
+for (time in 1){
   fit <- curve_ppmx(y=cbind(y_fit), z=z,
                   subject=subject_obs_vec,
-                  Xcon = allXcons[[time]], Xcat = NULL,
-                  Xconp=NULL, Xcatp=NULL,
-                  PPM=FALSE, M=1,
-                  q=3, rw_order=1, balanced=1,
-                  nknots=nknots, npredobs=1,
-                  Aparm=100,
-                  modelPriors=modelPriors,
+                  Xcon = allXcons[[time]], 
+  				  Xcat = as.data.frame(apply(allXcats[[time]],2,mappa_direzioni)),
+                  Xconp=NULL, 
+  				  Xcatp=NULL,
+                  PPM=FALSE, 
+  				  M=1,
+                  q=3, 
+  				  rw_order=1,
+  				  balanced=1,
+                  nknots=nknots, 
+  				  npredobs=1,
+                  Aparm=60,
                   similarity_function=1,
-                  consim=1, calibrate=0,
+                  consim=1,
+  				  calibrate=0,
+                  
+  				  modelPriors=modelPriors,
                   simParms=simparms,
-                  mh=c(0.1, 1e-4),
+                  mh=c(0.2, 0.2),
                   draws=niter,
                   burn=nburn,
                   thin=nthin
@@ -144,10 +173,11 @@ for (time in 1:2){
   all_fits[[time]] = fit  
   
   salso_out = salso(fit$Si,loss=binder(a=1.2),maxNClusters = 8)
-  easy_plot(salso_out)
+  easy_plot(salso_out,nint=12)
   
 }
-save(all_fits, file="all_fits_curveppmx.Rdata")
+
+# save(all_fits, file="all_fits_curveppmx.Rdata")
 ```
 
 Don't run this codes its just for debugging!!!!

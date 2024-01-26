@@ -1963,12 +1963,20 @@ tssites = sites_plt
 tssites$cl = rep(0,105)
 
 for (st in 1:105){
-	mo = Mode(salso_out_matrix[,st])
+	# mo = Mode(salso_out_matrix[,st])
+	mo = cppmx[st]
 	# cat("Station",st,"has mode cluster label equal to",mo,"\n")
 	cl_regions[[mo]] = c(cl_regions[[mo]],st)
 	tssites$cl[st] = mo
 }
 cl_regions
+```
+
+
+```{r}
+cppmx = c(1,1,1,2,1,2,2,3,2,2,1,3,2,2,4,1,1,2,1,5,1,4,2,2,2,1,2,2,1,1,1,1,1,1,1,1,1,1,2,2,1,4,
+1,1,1,2,1,1,2,1,1,6,1,2,2,2,1,1,1,1,3,4,1,1,4,4,4,2,5,1,4,1,1,4,1,1,1,1,1,6,2,1,4,4,
+1,1,1,1,1,1,1,7,1,1,1,2,1,1,1,1,7,4,4,1,1)
 ```
 
 ```{r}
