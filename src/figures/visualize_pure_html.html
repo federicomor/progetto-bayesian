@@ -3,8 +3,14 @@
 <head>
 	<!-- ############# Load images ############# -->
 	<link rel="preload" href="DRPM/ARI/ari.png" as="image"/>
-	<link rel="preload" href="SPPM/ARI/ari.png" as="image"/>
+	<link rel="preload" href="sPPM/ARI/ari.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/ARI/ari.png" as="image"/>
 	<link rel="preload" href="Gaussian PPMx/ARI/ari.png" as="image"/>
+
+	<link rel="preload" href="DRPM/ARI/ari.svg" as="image"/>
+	<link rel="preload" href="sPPM/ARI/ari.svg" as="image"/>
+	<link rel="preload" href="Curve PPMx/ARI/ari.svg" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/ARI/ari.svg" as="image"/>
 	
 	<link rel="preload" href="DRPM/Time Series/AQ_pm10.png" as="image"/>
 	<link rel="preload" href="DRPM/Time Series/Altitude.png" as="image"/>
@@ -37,6 +43,38 @@
 	<link rel="preload" href="DRPM/Time Series/WE_wind_speed_10m_max.png" as="image"/>
 	<link rel="preload" href="DRPM/Time Series/WE_wind_speed_10m_mean.png" as="image"/>
 	<link rel="preload" href="DRPM/Time Series/plt_modemap.png" as="image"/>
+
+	<link rel="preload" href="sPPM/Time Series/AQ_pm10.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/Altitude.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/EM_nh3_agr_soils.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/EM_nh3_agr_waste_burn.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/EM_nh3_livestock_mm.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/EM_nh3_sum.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/EM_nox_sum.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/EM_nox_traffic.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/EM_so2_sum.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/LA_hvi.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/LA_land_use.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/LA_lvi.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/LI_bovine.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/LI_bovine_v2.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/LI_pigs.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/LI_pigs_v2.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_blh_layer_max.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_blh_layer_min.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_precipitation_t.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_rh_max.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_rh_mean.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_rh_min.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_solar_radiation.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_surface_pressure.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_temp_2m.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_tot_precipitation.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_wind_speed_100m_max.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_wind_speed_100m_mean.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_wind_speed_10m_max.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_wind_speed_10m_mean.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/plt_modemap.png" as="image"/>
 
 	<link rel="preload" href="Gaussian PPMx/Time Series/AQ_pm10.png" as="image"/>
 	<link rel="preload" href="Gaussian PPMx/Time Series/Altitude.png" as="image"/>
@@ -241,7 +279,7 @@
 	<select id="model-select" onchange="changemodel()">
 	<!-- <select id="model-select"> -->
 		<option value="DRPM/">DRPM</option>
-		<option value="sPPM/">SPPM</option>
+		<option value="sPPM/">sPPM</option>
 		<option value="Gaussian PPMx/">Gaussian PPMx</option>
 		<option value="Curve PPMx/">Curve PPMx</option>
 	</select>
@@ -491,7 +529,7 @@
 	<select id="model-select-cova" onchange="changemodel_cova()">
 	<!-- <select id="model-select"> -->
 		<option value="DRPM/">DRPM</option>
-		<option value="sPPM/">SPPM</option>
+		<option value="sPPM/">sPPM</option>
 		<option value="Gaussian PPMx/">Gaussian PPMx</option>
 		<option value="Curve PPMx/">Curve PPMx</option>
 	</select>

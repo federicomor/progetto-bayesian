@@ -59,7 +59,7 @@ plot(std_sites)
 
 
 
-## fit
+# fit
 
 Fix number of stations, ...
 ```{r}
@@ -98,9 +98,15 @@ z <- dat$z
 Hyperparameters
 ```{r}
 nknots <- 20
-niter <- 20000
-nburn <- 10000
-nthin <- 20 # we consider every nthin iteartions 
+
+# niter <- 20000
+# nburn <- 10000
+# nthin <- 10 # we consider every nthin iteartions 
+
+niter <- 10000
+nburn <- 5000
+nthin <- 5 # we consider every nthin iteartions
+
 nout <- (niter-nburn)/nthin # the number of interatio that we coniser from the mcmc
 cat("Getting",nout,"total iterations")
 ```
@@ -143,7 +149,15 @@ mappa_direzioni <- function(direzione) {
 
 ```{r}
 all_fits = list()
-for (time in 1){
+```
+
+
+```{r}
+for (time in 17:53){
+
+	cat(crayon::red("##############\n"))
+	cat(crayon::red("Fitting time",time,"\n"))
+	cat(crayon::red("##############\n"))
   fit <- curve_ppmx(y=cbind(y_fit), z=z,
                   subject=subject_obs_vec,
                   Xcon = allXcons[[time]], 
@@ -171,15 +185,52 @@ for (time in 1){
   				  )
 
   all_fits[[time]] = fit  
-  
-  salso_out = salso(fit$Si,loss=binder(a=1.2),maxNClusters = 8)
-  easy_plot(salso_out,nint=12)
-  
-}
 
-# save(all_fits, file="all_fits_curveppmx.Rdata")
+}
 ```
 
+```{r}
+save(all_fits, file="curveppmx_fed_update.Rdata")
+
+```
+
+
+```{r}
+for(time in 14:17){
+	cat(time,"\n")
+	salso_out = salso(all_fits[[time]]$Si,loss=binder(a=1.2),maxNClusters = 8)
+	# print(salso_out)
+	easy_plot(salso_out,nint=15)
+}
+```
+
+
+```{r}
+```
+
+
+# trace plots
+```{r}
+sampled_station = floor(runif(1,1,106))
+cat("sampled_station =",sampled_station,"- that is station called",unique(df_weekly$IDStations)[sampled_station])
+```
+
+```{r}
+plot(fit$sig2[,sampled_station],type="l",
+		 main=bquote("Trace plot of " * sigma2 * " at time (=week) " * .(t) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+```
+
+```{r}
+plot(fit$beta0[,sampled_station],type="l",
+		 main=bquote("Trace plot of " * beta * " at time (=week) " * .(t) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+```
+
+
+# old stuff
 Don't run this codes its just for debugging!!!!
 ```{r}
 fits <- list()
