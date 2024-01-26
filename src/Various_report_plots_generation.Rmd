@@ -1,0 +1,87 @@
+---
+title: "R Notebook"
+output: html_document
+---
+
+```{r}
+source("include.R")
+```
+
+
+## na time series plot
+```{r}
+load("../data/df_agri.Rdata")
+df_agri_full = df_agri
+rm(df_agri)
+```
+
+```{r}
+size(df_agri_full)[1] == 2192 *141 # days * stations
+```
+
+
+```{r}
+# colnames(df_agri)
+# load("../data/Cleaned_data.Rdata")
+df_agri = df_agri_full
+
+stations = unique(df_agri$IDStations)
+nas = as.data.frame(matrix(nrow=2192,ncol=length(unique(stations))))
+df_stat = create_df_stat(df_agri)
+for (j in 1:length(unique(stations)) ){
+	nas[,j] = df_stat[[stations[j]]]$AQ_pm10
+}
+nas = matrix(as.integer(!is.na(nas)),nrow = 2192,ncol=length(unique(stations)))
+rownames(nas)=1:nrow(nas)
+colnames(nas) = stations
+# head(nas)
+```
+
+
+```{r}
+# pdf("na_time_series.pdf",width=10,height=9)
+# png("na_time_series.png",width=800,height=800)
+colora(3,"rand",1)
+cols = colora(3,111)
+cols = colora(3,86)
+
+cols = colora(3,69)
+cols = cols[c(2,3,1)]
+
+```
+
+
+```{r}
+# pdf("../FIGURES presentation-report/na_time_series.pdf",height = 6,width=10)
+library(fields)
+par(mar=c(2,1,2,3))
+brks = seq(-1,1,length.out=2+1)
+image(nas,
+		   # main=paste0("PM10 data, missing values (in white) by stations and years"),
+	  axes=FALSE,col=cols[2:1],
+		   breaks=brks)
+
+abline(v=c(366,731,1096,1461,1827)/2192,col=cols[3])
+mtext(text=c(paste("",2016:2021)), side=1, line=0.08,at=seq(0.1,0.9,length=6), las=1, cex=0.7)
+# mtext(text=c(paste("",1:141)), side=4, line=0.1,at=seq(0,1,length=141), las=1, cex=0.4)
+
+# dev.off()
+```
+
+
+```{r}
+# heatmap(t(nas[,1:length(unique(stations))]),Colv=NA, Rowv=NA,col = c("gray", "darkred"), scale='none',xlab="days",ylab="stations",
+# heatmap(t(nas[,1:length(unique(stations))]),Colv=NA, Rowv=NA,col = c("white",cols[1]), scale='none',xlab="days",ylab="stations",
+heatmap(t(nas[,1:length(unique(stations))]),
+		Colv=NA, Rowv=NA,
+		col = c(cols[2],cols[1]),
+		scale='none',xlab="days",ylab="stations",
+		cexRow = 0.3,
+		margins = c(3, 3),main="NA time series (white are NAs) all data",
+		# add.expr = abline(v=c(366,731,1096,1461,1827),col="#231292",lwd=1))
+		add.expr = abline(v=c(366,731,1096,1461,1827),col=cols[3],lwd=1))
+text(x = 100, y = 100, labels = "2020", col = "orange", cex = 1.5)
+# dev.off()
+```
+
+# ecc
