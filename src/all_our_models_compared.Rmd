@@ -1236,7 +1236,7 @@ for(time in time_span){
 
 
 #=======
-# Gaussian PPmx
+# Gaussian PPmx - ref
 ```{r}
 FIT = readRDS("Gaussian_ppmX.RData")
 base_folder = "Gaussian PPMx"
@@ -1359,11 +1359,13 @@ cols_ARI = colora(ncols_ari,79,0)
 # cols_ARI = rev(cols_ARI)
 brks = seq(-1,1,length.out=ncols_ari+1)
 
-for(a in 1:2){
+for(a in 1:3){
 if(a==1)
 png(paste0("./figures/",base_folder,"/ARI/ari.png"), width=700,height=600)
-else {
+else if (a==2){
 svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=7, width=8)
+} else {
+pdf(paste0("./figures/",base_folder,"/ARI/ari.pdf"), height=7, width=8)
 }
 
 	library(fields)
@@ -1459,9 +1461,9 @@ cl_regions
 
 ```{r}
 ## manual changes if we want to separately study some suspitious stations
-cl_regions[[4]] = setdiff(cl_regions[[4]],80)
-cl_regions[[5]] = 80
-tssites$cl[80] = 5
+# cl_regions[[4]] = setdiff(cl_regions[[4]],80)
+# cl_regions[[5]] = 80
+# tssites$cl[80] = 5
 # cl_regions[[1]] = setdiff(cl_regions[[1]],c(80,20))
 # cl_regions[[6]] = 80
 # tssites$cl[80] = 6
@@ -1582,8 +1584,8 @@ for (i in 1:length(cl_regions)){
 	ys[i,] = apply(cova[cl_regions[[i]],2:54],2,median)
 	# stdevys[i,] = sqrt(apply(cova[cl_regions[[i]],2:54],2,var))
 	# stdevys[i,] = apply(cova[cl_regions[[i]],2:54],2,IQR)
-	move_up[i,] = apply(cova[cl_regions[[i]],2:54],2,quantile,0.80)
-	move_dn[i,] = apply(cova[cl_regions[[i]],2:54],2,quantile,0.20)
+	move_up[i,] = apply(cova[cl_regions[[i]],2:54],2,quantile,0.75)
+	move_dn[i,] = apply(cova[cl_regions[[i]],2:54],2,quantile,0.25)
 }
 
 
@@ -1742,10 +1744,10 @@ geom_line(aes(x=1:53,y=ys[10,],col=paste0(cols[10])),size=lsize)+
 
 print(pts[[cova_name]])
 
-# ggsave(paste0("./figures/Federico/time_series_tests/",cova_name,".png"),
-	   # plot = pts[[cova_name]],units="px",width=2200,height = 1400)
+ggsave(paste0("./figures/",base_folder,"/Time Series/",cova_name,".png"),
+	   plot = pts[[cova_name]],units="px",width=2200,height = 1400)
 }
-ggsave(paste0("./figures/Federico/time_series_tests/plt_modemap.png"),
+ggsave(paste0("./figures/",base_folder,"/Time Series/plt_modemap.png"),
 	   # plot = plt_modemap,units="px",width=2200,height = 1400)
 	   plot = plt_modemap,units="px",width=1200,height = 1200)
 
@@ -1759,11 +1761,7 @@ ggsave(paste0("./figures/Federico/time_series_tests/plt_modemap.png"),
 #=======
 # Curve PPmx
 ```{r}
-load("../src/all_fits_curveppmx.Rdata")
-```
-
-
-```{r}
+load("../data/all_fits_curveppmx.Rdata")
 FIT = all_fits
 base_folder = "Curve PPMx"
 ```
