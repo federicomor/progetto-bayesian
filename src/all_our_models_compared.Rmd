@@ -1784,11 +1784,11 @@ salso_out_list = list()
 salso_out_matrix = matrix(NA,nrow=53,ncol=105)
 
 df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
-for(time in time_span){
+for(time in time_span[1:20]){
 	
 	# tune here your cluster generation
 	salso_out <- salso(FIT[[time]]$Si,
-				   loss=binder(a=1.4), # example of a tuning
+				   loss=binder(a=1.2), # example of a tuning
 				   maxNClusters = 8
 				   )
 
@@ -1839,7 +1839,7 @@ for(time in time_span){
 
 	# q = get_graph_plot(df_cluster_cut,cols)
 	# print(q)
-	# p = plot_graph_and_hist(df_cluster_cut,cols)
+	p = plot_graph_and_hist(df_cluster_cut,cols)
 	
 	################################################
 	# test for covariates plots
@@ -2301,5 +2301,28 @@ compare_ARI(mods[2],mods[3])
 # dev.off()
 ```
 
+
 # Trace plots
+```{r}
+sampled_station = floor(runif(1,1,106))
+cat("sampled_station =",sampled_station,"- that is station called",unique(df_weekly$IDStations)[sampled_station])
+```
+
+```{r}
+for(t in 1:20){
+plot(FIT[[t]]$sig2[,sampled_station],type="l",
+		 main=bquote("Trace plot of " * mu * " at time (=week) " * .(t) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+}
+```
+
+```{r}
+for(t in 1:18){
+plot(FIT[[t]]$theta[sampled_station,t,],type="l",
+		 main=bquote("Trace plot of " * theta * " at time (=week) " * .(t) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+}
+```
 

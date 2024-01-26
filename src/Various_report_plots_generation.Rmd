@@ -54,7 +54,7 @@ cols = cols[c(2,3,1)]
 ```{r}
 # pdf("../FIGURES presentation-report/na_time_series.pdf",height = 6,width=10)
 library(fields)
-par(mar=c(2,1,2,3))
+par(mar=c(2,1,1,1))
 brks = seq(-1,1,length.out=2+1)
 image(nas,
 		   # main=paste0("PM10 data, missing values (in white) by stations and years"),
