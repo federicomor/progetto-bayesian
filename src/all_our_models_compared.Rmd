@@ -72,18 +72,27 @@ trendYearStation_week <- function(file_name){
 												 group=IDStations, 
 												 color = as.factor(IDStations))) +
 		geom_line(show.legend = FALSE) +
-		labs(x = "Stations", y = chosen_variable_name, title = "Year: 2018 all stations") +
+		labs(x = "Stations", y = chosen_variable_name, title = "Year 2018, all stations") +
 		ylim(range(na.omit(chosen_variable))) +
 		scale_color_manual(values = cols) +
 		theme_bw()+
 		theme(panel.grid = element_blank()) +
 		guides(color = guide_legend())+
-		labs(x="week")
+		labs(x="Weeks")
 
 	len_time = (len_time%/%5)
 	return(trend_animator(file_name,station_trend, data_from_to$week,len_time))
 }
 trendYearStation_week("None")
+```
+
+
+```{r}
+ptrend = trendYearStation_week("None")
+# ggsave(file="../FIGURES presentation-report/pm10_trend_2018.png",
+ggsave(file="../FIGURES presentation-report/pm10_trend_2018.pdf", device=cairo_pdf,
+	   plot=ptrend,
+	   units="px",width=2500, height=1600, dpi=300) # maybe 1200 is better
 ```
 
 
@@ -2010,6 +2019,7 @@ ggsave(paste0("./figures/",base_folder,"/Time Series/plt_modemap.png"),
 # Gaussian PPmx DONE! - ref
 ```{r}
 FIT = readRDS("Gaussian_ppmX.RData")
+gppmx_fit = readRDS("Gaussian_ppmX.RData")
 base_folder = "Gaussian PPMx"
 ```
 
@@ -2782,7 +2792,7 @@ ord = order(medie,decreasing = T)
 ```{r,warning=F}
 cols = colora(12,"div",0)[-2]
 
-cols = colora(non_null_clregions_indexes,111,1)
+cols = colora(non_null_clregions_indexes+7,111,1) # evita il giallo
 cols_new = cols
 for (i in 1:non_null_clregions_indexes){
 	cols_new[ord[i]] = cols[i]
@@ -3071,43 +3081,255 @@ compare_ARI = function(mod1,mod2){
 	plot(1:53,ARIvec,type="l",main=paste0("ARI values - ",mod1," vs ",mod2),ylim=c(-0.5,1))
 	abline(h=0,col="gray80",lty=3)
 	
-	image.plot(ARIvec,
-			   main=paste0("ARI values - ",mod1," vs ",mod2),axes=FALSE,col=cols_ARI,
-			   breaks=brks)
-	mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
+	# image.plot(ARIvec,
+	# 		   main=paste0("ARI values - ",mod1," vs ",mod2),axes=FALSE,col=cols_ARI,
+	# 		   breaks=brks)
+	# mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
 
 }
 
-mods = c("DRPM","sPPM","Gaussian PPMx")
+mods = c("DRPM","sPPM","Gaussian PPMx","Curve PPMx")
 compare_ARI(mods[1],mods[2])
 compare_ARI(mods[1],mods[3])
+compare_ARI(mods[1],mods[4])
+
 compare_ARI(mods[2],mods[3])
+compare_ARI(mods[2],mods[4])
+
+compare_ARI(mods[3],mods[4])
 
 # dev.off()
 ```
 
 
+```{r}
+ARIvec = list()
+titoli = c()
+col_idx = 1
+# cols = colora(6,"rand",1)
+cols = colora(6,81,0)
+
+for(i in 1:3){
+	for(j in (i+1):4){
+		# cat(mods[i],mods[j],"\n")
+		titolo = paste0(mods[i]," - ",mods[j])
+		titoli = c(titoli,titolo)
+		
+		ARIvec[[titolo]] = matrix(NA, nrow=1, ncol=LEN)
+		for(k in 1:53){
+			ARIvec[[titolo]][k] <- adjustedRandIndex(
+				salso_out_lists[[mods[i]]][[k]][1:105],
+				salso_out_lists[[mods[j]]][[k]][1:105])
+		}	
+		if (i==1 && j==2){
+			plot(1:53,ARIvec[[titolo]],type="l",col=cols[col_idx],
+				 ylim=c(-0.2,0.8),xlim=c(1,80))
+		} else {
+			lines(1:53,ARIvec[[titolo]],type="l",col=cols[col_idx])
+		}
+		col_idx = col_idx +1
+	}
+}
+abline(h=0,lty=2,col="gray")
+legend("topright",titoli,fill=cols,bty="n")
+```
+
+
+```{r}
+dati = data.frame(x=1:53,
+				  y1=ARIvec[[titoli[1]]][1,],
+				  y2=ARIvec[[titoli[2]]][1,],
+				  y3=ARIvec[[titoli[3]]][1,],
+				  y4=ARIvec[[titoli[4]]][1,],
+				  y5=ARIvec[[titoli[5]]][1,],
+				  y6=ARIvec[[titoli[6]]][1,]
+				  )
+
+cols = colora(6,81,0)
+# cols = colora(6,114,0)
+
+colors <- c(
+"DRPM - sPPM"                = cols[1],
+"DRPM - Gaussian PPMx"       = cols[2],
+"DRPM - Curve PPMx"          = cols[3],
+"sPPM - Gaussian PPMx"       = cols[4],
+"sPPM - Curve PPMx"          = cols[5],
+"Gaussian PPMx - Curve PPMx" = cols[6])
+
+
+pari = ggplot(dati,aes(x=x))+
+	geom_line(aes(y=y1,color= "DRPM - sPPM"               ))+
+	geom_line(aes(y=y2,color= "DRPM - Gaussian PPMx"      ))+
+	geom_line(aes(y=y3,color= "DRPM - Curve PPMx"         ))+
+	geom_line(aes(y=y4,color= "sPPM - Gaussian PPMx"      ))+
+	geom_line(aes(y=y5,color= "sPPM - Curve PPMx"         ))+
+	geom_line(aes(y=y6,color= "Gaussian PPMx - Curve PPMx"))+
+        # ylim(-0.2, 0.8) +
+        # xlim(1, 80) +
+	theme_bw()+ 
+	geom_hline(yintercept = 0, linetype = "dashed", color = "gray") +
+	# scale_color_identity()+
+	theme(panel.grid = element_blank(),legend.position = "top")+
+	labs(y="ARI(ρ1,ρ2) values",x="",color="")+
+	scale_color_manual(values = colors)+
+	guides(color = guide_legend(override.aes = list(linewidth = 3)))
+		# theme(legend.position = "none")
+
+
+	# ggsave(file="../FIGURES presentation-report/ARI_models_comparison.png",
+	ggsave(file="../FIGURES presentation-report/ARI_models_comparison.pdf", device=cairo_pdf,
+		   plot=pari,
+		   units="px",width=2500, height=1600, dpi=300) # maybe 1200 is better
+		   # units="px",width=2500, height=1400, dpi=300)
+	dev.off()
+```
+
 # Trace plots
 ```{r}
-sampled_station = floor(runif(1,1,106))
-cat("sampled_station =",sampled_station,"- that is station called",unique(df_weekly$IDStations)[sampled_station])
+gimme_a_station = function(){
+	# sampled_station = 42
+	sampled_station = floor(runif(1,1,106))
+	cat("sampled_station =",sampled_station,
+		"- that is station called",unique(df_wsc$IDStations)[sampled_station])	
+	return(sampled_station)
+}
+sampled_station = gimme_a_station()
 ```
 
 ```{r}
-for(t in 1:20){
-plot(FIT[[t]]$sig2[,sampled_station],type="l",
-		 main=bquote("Trace plot of " * mu * " at time (=week) " * .(t) * 
-		 				" - station " * .(sampled_station)),
-		 xlab = "MCMC iterations",ylab="values")
-}
+# example
+drpm_tr = drpm1$sig2[time,sampled_station,]
+sppm_tr = sppm_C4_list[[time]]$sig2[,sampled_station]
+gppmx_tr = gppmx_fit[[time]]$sig2[,sampled_station]
+cppmx_tr = all_fits[[time]]$sig2[,sampled_station]
 ```
 
+
+# condensed weeks
+### drpm
 ```{r}
-for(t in 1:18){
-plot(FIT[[t]]$theta[sampled_station,t,],type="l",
-		 main=bquote("Trace plot of " * theta * " at time (=week) " * .(t) * 
-		 				" - station " * .(sampled_station)),
-		 xlab = "MCMC iterations",ylab="values")
+sampled_station = gimme_a_station()
+sampled_station = 97
+
+pdf("../FIGURES presentation-report/DRPM/traceplot-skipped-sig2.pdf", width = 16,height = 23)
+par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,2)){
+	VALUES = drpm1$sig2[time,sampled_station,]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("DRPM - Trace plot of "*sigma^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
 }
+dev.off()
+
+pdf("../FIGURES presentation-report/DRPM/traceplot-skipped-mu.pdf", width = 16,height = 23)
+par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+for(time in seq(1,53,2)){
+	VALUES = drpm1$mu[time,sampled_station,]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("DRPM - Trace plot of "*mu*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+}
+dev.off()
 ```
 
+### sppm
+```{r}
+sampled_station = gimme_a_station()
+# sampled_station = 26,69,2
+# sampled_station = 18
+
+pdf("../FIGURES presentation-report/sPPM/traceplot-skipped-sig2.pdf", width = 16,height = 23)
+par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,2)){
+	VALUES = sppm_C4_list[[time]]$sig2[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("sPPM - Trace plot of "*sigma^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+}
+dev.off()
+
+pdf("../FIGURES presentation-report/sPPM/traceplot-skipped-mu.pdf", width = 16,height = 23)
+par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+for(time in seq(1,53,2)){
+	VALUES = sppm_C4_list[[time]]$mu[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("sPPM - Trace plot of "*mu*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+}
+dev.off()
+```
+
+### gaussian ppmx
+```{r}
+sampled_station = gimme_a_station()
+# sampled_station = 68,82,50,8,35
+sampled_station = 82
+
+pdf("../FIGURES presentation-report/Gaussian PPMx/traceplot-skipped-sig2.pdf", width = 16,height = 23)
+par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,2)){
+	VALUES = gppmx_fit[[time]]$sig2[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("Gaussian PPMx - Trace plot of "*sigma^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+}
+dev.off()
+
+pdf("../FIGURES presentation-report/Gaussian PPMx/traceplot-skipped-mu.pdf", width = 16,height = 23)
+par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+for(time in seq(1,53,2)){
+	VALUES = gppmx_fit[[time]]$mu[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("Gaussian PPMx - Trace plot of "*mu*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+}
+dev.off()
+```
+
+
+### curve ppmx
+```{r}
+sampled_station = gimme_a_station()
+# sampled_station = 42,35
+sampled_station = 35
+
+pdf("../FIGURES presentation-report/Curve PPMx/traceplot-skipped-sig2.pdf", width = 16,height = 23)
+par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,2)){
+	VALUES = all_fits[[time]]$sig2[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("Curve PPMx - Trace plot of "*sigma^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+}
+dev.off()
+
+pdf("../FIGURES presentation-report/Curve PPMx/traceplot-skipped-beta0.pdf", width = 16,height = 23)
+par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+for(time in seq(1,53,2)){
+	VALUES = all_fits[[time]]$beta0[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("Curve PPMx - Trace plot of "*beta[0]*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+}
+dev.off()
+```

@@ -13,9 +13,7 @@ source("include.R")
 load("../data/df_agri.Rdata")
 df_agri_full = df_agri
 rm(df_agri)
-```
 
-```{r}
 size(df_agri_full)[1] == 2192 *141 # days * stations
 ```
 
@@ -39,21 +37,31 @@ colnames(nas) = stations
 
 
 ```{r}
-# pdf("na_time_series.pdf",width=10,height=9)
-# png("na_time_series.png",width=800,height=800)
-colora(3,"rand",1)
-cols = colora(3,111)
-cols = colora(3,86)
 
 cols = colora(3,69)
+cols = cols[c(2,3,1)]
+
+cols = colora(3,65)
+cols = cols[c(2,3,1)]
+
+cols = colora(3,64)
 cols = cols[c(2,3,1)]
 
 ```
 
 
 ```{r}
+cols = colora(3,"rand",1)
+cols = cols[c(2,3,1)]
+```
+
+
+```{r}
 # pdf("../FIGURES presentation-report/na_time_series.pdf",height = 6,width=10)
 library(fields)
+
+# cols = colora(3,"rand",1)[c(2,3,1)]
+
 par(mar=c(2,1,1,1))
 brks = seq(-1,1,length.out=2+1)
 image(nas,
