@@ -68,18 +68,38 @@ Report here at https://it.overleaf.com/6577451481wwsqvrgxswjy#c9ce5d
 	- 6.3. prior dall'anno precedente
 7. Appendix
 	- plot librairies, animations, html... (Ettore)
-	-
-link (Federico)
+	- link (Federico)
 
 
-interpratation of the clusters
-cluster spitting for drpm 
+## Comments on the models
+Write them here so are easily available to everyone, and to be able to build a general frame of the information we can extract.
+Write them below each mode model plot.  
+Use the visualize html page to see peculiar features of your model, as we are ok interested in common comments, on which all models agree, but also some patterns that a certain model may spot and others models not. So especially use the "Covariates visualization" section in the html page.
 
-curveppmx adding covariates
+![](./src/figures/DRPM/Time%20Series/plt_modemap.png)
 
-confirm on the workflow
-how deep the results interpratation needs to be
+1. Comments:
+	- ecc
+	- ecc
+
+![](./src/figures/sPPM/Time%20Series/plt_modemap.png)
+
+1. Comments:
+	- ecc
+	- ecc
 
 
-urban vs rural data
-ARI between different models
+![](./src/figures/Gaussian%20PPMx/Time%20Series/plt_modemap.png)
+
+1. Comments:
+	- ecc
+	- ecc
+
+
+![](./src/figures/Curve%20PPMx/Time%20Series/plt_modemap.png)
+
+1. Comments:
+	- ecc
+	- ecc
+
+

@@ -1248,7 +1248,7 @@ df_cluster_cut = data.frame(
 	Time = 1
 )
 cols_gr = cols[1:length(unique(tssites$cl))]
-plt_modemap = get_graph_plot(df_cluster_cut,titolo = "Mode clusters",cols=cols_gr,
+plt_modemap = get_graph_plot(df_cluster_cut,titolo = "DRPM - Mode clusters",cols=cols_gr,
 							 verbose=0,legenda=0)
 print(plt_modemap)
 
@@ -1720,13 +1720,20 @@ tssites$cl[92] = 5
 tssites$cl[101] = 5
 
 cl_regions[[6]] = numeric()
-cl_regions[[3]] = c(cl_regions[[3]],68)
+cl_regions[[3]] = c(setdiff(cl_regions[[3]],c(6,16,42)),c(68,100,86))
 tssites$cl[68] = 3
+tssites$cl[100] = 3
+tssites$cl[86] = 3
 
 cl_regions[[7]] = numeric()
 cl_regions[[6]] = c(70,77)
 tssites$cl[70] = 6
 tssites$cl[77] = 6
+
+cl_regions[[2]] = c(cl_regions[[2]],c(6,16,42))
+tssites$cl[6] = 2
+tssites$cl[16] = 2
+tssites$cl[42] = 2
 
 cl_regions
 ```
@@ -1785,7 +1792,7 @@ df_cluster_cut = data.frame(
 	Time = 1
 )
 cols_gr = cols[1:length(unique(tssites$cl))]
-plt_modemap = get_graph_plot(df_cluster_cut,titolo = "Mode clusters",cols=cols_gr,
+plt_modemap = get_graph_plot(df_cluster_cut,titolo = "sPPM - Mode clusters",cols=cols_gr,
 							 verbose=0,legenda=0)
 print(plt_modemap)
 
@@ -2242,14 +2249,10 @@ cl_regions
 
 ```{r}
 ## manual changes if we want to separately study some suspitious stations
-# cl_regions[[4]] = setdiff(cl_regions[[4]],80)
-# cl_regions[[5]] = 80
-# tssites$cl[80] = 5
-# cl_regions[[1]] = setdiff(cl_regions[[1]],c(80,20))
-# cl_regions[[6]] = 80
-# tssites$cl[80] = 6
-# cl_regions[[7]] = 20
-# tssites$cl[20] = 7
+cl_regions[[3]] = setdiff(cl_regions[[3]],77)
+cl_regions[[2]] = c(cl_regions[[2]],77)
+tssites$cl[77] = 2
+
 
 cl_regions
 ```
@@ -2308,7 +2311,7 @@ df_cluster_cut = data.frame(
 	Time = 1
 )
 cols_gr = cols[1:length(unique(tssites$cl))]
-plt_modemap = get_graph_plot(df_cluster_cut,titolo = "Mode clusters",cols=cols_gr,
+plt_modemap = get_graph_plot(df_cluster_cut,titolo = "Gaussian PPMx - Mode clusters",cols=cols_gr,
 							 verbose=0,legenda=0)
 print(plt_modemap)
 
@@ -2544,7 +2547,7 @@ ggsave(paste0("./figures/",base_folder,"/Time Series/plt_modemap.png"),
 # Curve PPmx DONE!
 ```{r}
 # load("../data/all_fits_curveppmx.Rdata")
-load("../curveppmx_fed_update.Rdata")
+load("./curveppmx_fed_update.Rdata")
 FIT = all_fits
 base_folder = "Curve PPMx"
 ```
@@ -2748,7 +2751,8 @@ tssites = sites_plt
 tssites$cl = rep(0,105)
 
 for (st in 1:105){
-	mo = Mode(salso_out_matrix[,st])
+	# cat("#######",st,"\n")
+	mo = Mode(salso_out_matrix[,st],verbose = 0)
 	# mo = cppmx[st]
 	# cat("Station",st,"has mode cluster label equal to",mo,"\n")
 	cl_regions[[mo]] = c(cl_regions[[mo]],st)
@@ -2767,9 +2771,14 @@ cppmx = c(1,1,1,2,1,2,2,3,2,2,1,3,2,2,4,1,1,2,1,5,1,4,2,2,2,1,2,2,1,1,1,1,1,1,1,
 ```{r}
 ## manual changes if we want to separately study some suspitious stations
 # for example:
-# cl_regions[[4]] = setdiff(cl_regions[[4]],80) # remove station 8 from group 4
-# cl_regions[[5]] = 80 # add station 80 to group 5
-# tssites$cl[80] = 5 # assign label 5 to station 5
+cl_regions[[1]] = setdiff(cl_regions[[1]],c(70,69)) # remove station 8 from group 4
+cl_regions[[2]] = c(cl_regions[[2]],70) # add station 80 to group 5
+tssites$cl[70] = 2 # assign label 5 to station 5
+
+cl_regions[[4]] = setdiff(cl_regions[[4]],20)
+cl_regions[[6]] = c(69,20)
+tssites$cl[69] = 6 
+tssites$cl[20] = 6
 
 cl_regions
 ```
@@ -2792,7 +2801,12 @@ ord = order(medie,decreasing = T)
 ```{r,warning=F}
 cols = colora(12,"div",0)[-2]
 
-cols = colora(non_null_clregions_indexes+7,111,1) # evita il giallo
+cols = colora(non_null_clregions_indexes,111,1) # evita il giallo
+# cols[3] = "#FBD678"
+	
+# cols = colora(10,111,1) # evita il giallo
+# cols = cols[c(1,3,5,8,10)]
+
 cols_new = cols
 for (i in 1:non_null_clregions_indexes){
 	cols_new[ord[i]] = cols[i]
@@ -2828,7 +2842,7 @@ df_cluster_cut = data.frame(
 	Time = 1
 )
 cols_gr = cols[1:length(unique(tssites$cl))]
-plt_modemap = get_graph_plot(df_cluster_cut,titolo = "Mode clusters",cols=cols_gr,
+plt_modemap = get_graph_plot(df_cluster_cut,titolo = "Curve PPMx - Mode clusters",cols=cols_gr,
 							 verbose=0,legenda=0)
 print(plt_modemap)
 
@@ -3215,24 +3229,31 @@ pdf("../FIGURES presentation-report/DRPM/traceplot-skipped-sig2.pdf", width = 16
 par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
 
 for(time in seq(1,53,2)){
+# for(time in seq(1,53,4)){
 	VALUES = drpm1$sig2[time,sampled_station,]
 	plot(VALUES,type="l",main=paste("week",time))
 	if(time==1) {
 		mtext(bquote("DRPM - Trace plot of "*sigma^2*" at station "* .(sampled_station)),
 			  side=3,line=1.5,cex=1.5,adj=0)
 	}
+	# par(mar=c(2,2,3,2))
+	# acf(VALUES,main=paste("week",time))
 }
 dev.off()
 
 pdf("../FIGURES presentation-report/DRPM/traceplot-skipped-mu.pdf", width = 16,height = 23)
 par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
 for(time in seq(1,53,2)){
+# for(time in seq(1,53,4)){
 	VALUES = drpm1$mu[time,sampled_station,]
 	plot(VALUES,type="l",main=paste("week",time))
 	if(time==1) {
 		mtext(bquote("DRPM - Trace plot of "*mu*" at station "* .(sampled_station)),
 			  side=3,line=1.5,cex=1.5,adj=0)
 	}
+	# par(mar=c(2,2,3,2))
+	# acf(VALUES,main=paste("week",time))
 }
 dev.off()
 ```
