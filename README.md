@@ -76,11 +76,18 @@ Write them here so are easily available to everyone, and to be able to build a g
 Write them below each mode model plot.  
 Use the visualize html page to see peculiar features of your model, as we are ok interested in common comments, on which all models agree, but also some patterns that a certain model may spot and others models not. So especially use the "Covariates visualization" section in the html page.
 
+1. General comments
+	- read page 49 of report/allegato pria ecc for understading the causes of pollution "l'influenza delle condizioni meteorologiche sulle concentrazioni degli inquinanti".
+
 ![](./src/figures/DRPM/Time%20Series/plt_modemap.png)
 
 1. Comments:
-	- ecc
-	- ecc
+	- DRPM shows as the other models a clear division in mountain (alpi), pre-mountain (prealpi), milan area, the south-east area (the area of mantova) and the one on the south part (around pavia), but also defines another area between milan and the prealpi, passing through monza and brescia (which maybe is ok as they are both highly industrial areas? brescia for sure).
+	- the most differentiating covariates are
+		- altitude (as all the models)
+		- EM_nh3_agr_soils (like in all models, but with different patterns) toghether with the other antropogenic (nox sum, nh3, ecc)
+	- the EM_nox_traffic shows a strange pattern, where the yellow and and red curves swap for intensities, as also Gaussian PPMx model will show. This is because "Nel luglio 2018, la Regione Lombardia ha adottato il Piano Aria Integrato Regionale (PAIR) 2018-2020, che contiene le misure per ridurre le emissioni inquinanti da diverse fonti, tra cui il traffico veicolare, i generatori di calore a biomassa legnosa, il settore industriale e agricolo". Go in report folder and check the file named "Allegato pria ecc"
+	- the selection of a single cluster of two units in the south zone (the light blue ones) is done also by all the other models but Gaussian PPMx
 
 ![](./src/figures/sPPM/Time%20Series/plt_modemap.png)
 
