@@ -116,13 +116,14 @@ p_stations_codes =
 	theme(legend.position = "none")+
 	geom_text_repel(data = sites_plt, aes(x = Longitude, y = Latitude, col="col",
 										  label = rownames(sites_plt)),
-					size = 3,
+					size = 3.2,
 					max.overlaps = 100,
 					min.segment.length = 0
 					# force_pull =2,
 					# force = 10,
 					)+
 	scale_colour_manual(name="",values = c("col"="#aa0010"))+
+	# scale_colour_manual(name="",values = c("col"="#1000aa"))+
 	# scale_colour_manual(name="",values = c("col"="#1022a1"))+
 	labs(title = "Stations codes")
 p_stations_codes
@@ -132,8 +133,9 @@ p_stations_codes
 ```{r}
 # print(p_stations_codes)
 # ggsave(file="figures/stations_names_visualized.pdf",height=6, width=6)
+ggsave(file="figures/stations_names_visualized_smaller.pdf",p_stations_codes,height=5, width=5)
 # ggsave(file="figures/stations_names_visualized.png",units="px",height=1500, width=1500)
-# dev.off()
+dev.off()
 ```
 
 #=======
@@ -3193,7 +3195,7 @@ pari = ggplot(dati,aes(x=x))+
 	# ggsave(file="../FIGURES presentation-report/ARI_models_comparison.png",
 	ggsave(file="../FIGURES presentation-report/ARI_models_comparison.pdf", device=cairo_pdf,
 		   plot=pari,
-		   units="px",width=2500, height=1600, dpi=300) # maybe 1200 is better
+		   units="px",width=2500, height=1400, dpi=300) # maybe 1200 is better
 		   # units="px",width=2500, height=1400, dpi=300)
 	dev.off()
 ```
@@ -3354,3 +3356,172 @@ for(time in seq(1,53,2)){
 }
 dev.off()
 ```
+
+#======
+# with acf
+### drpm
+```{r}
+sampled_station = gimme_a_station()
+sampled_station = 97
+
+pdf("../FIGURES presentation-report/DRPM/traceplot-acf-sig2.pdf", width = 16,height = 12)
+par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,7)){
+	VALUES = drpm1$sig2[time,sampled_station,]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("DRPM - Trace plot of "*sigma^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+	par(mar=c(2,2,3,2))
+	acf(VALUES,main=paste("week",time))
+}
+dev.off()
+
+pdf("../FIGURES presentation-report/DRPM/traceplot-acf-mu.pdf", width = 16,height = 12)
+par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,7)){
+	VALUES = drpm1$mu[time,sampled_station,]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("DRPM - Trace plot of "*mu*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+	par(mar=c(2,2,3,2))
+	acf(VALUES,main=paste("week",time))
+}
+dev.off()
+```
+
+### sppm
+```{r}
+sampled_station = gimme_a_station()
+# sampled_station = 26,69,2,18
+sampled_station = 35
+
+pdf("../FIGURES presentation-report/sPPM/traceplot-acf-sig2.pdf", width = 16,height = 12)
+par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,7)){
+	VALUES = sppm_C4_list[[time]]$sig2[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("sPPM - Trace plot of "*sigma^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+		par(mar=c(2,2,3,2))
+	acf(VALUES,main=paste("week",time))
+}
+dev.off()
+
+pdf("../FIGURES presentation-report/sPPM/traceplot-acf-mu.pdf", width = 16,height = 12)
+par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+for(time in seq(1,53,7)){
+	VALUES = sppm_C4_list[[time]]$mu[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("sPPM - Trace plot of "*mu*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+		par(mar=c(2,2,3,2))
+	acf(VALUES,main=paste("week",time))
+}
+dev.off()
+```
+
+### gaussian ppmx
+```{r}
+sampled_station = gimme_a_station()
+# sampled_station = 68,82,50,8,35
+# sampled_station = 82
+sampled_station = 73
+
+pdf("../FIGURES presentation-report/Gaussian PPMx/traceplot-acf-sig2.pdf", width = 16,height = 12)
+par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,7)){
+	VALUES = gppmx_fit[[time]]$sig2[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("Gaussian PPMx - Trace plot of "*sigma^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+		par(mar=c(2,2,3,2))
+	acf(VALUES,main=paste("week",time))
+}
+dev.off()
+
+pdf("../FIGURES presentation-report/Gaussian PPMx/traceplot-acf-mu.pdf", width = 16,height = 12)
+par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+for(time in seq(1,53,7)){
+	VALUES = gppmx_fit[[time]]$mu[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("Gaussian PPMx - Trace plot of "*mu*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+		par(mar=c(2,2,3,2))
+	acf(VALUES,main=paste("week",time))
+}
+dev.off()
+```
+
+
+### curve ppmx
+```{r}
+sampled_station = gimme_a_station()
+# sampled_station = 42,35,23,55
+sampled_station = 55
+
+pdf("../FIGURES presentation-report/Curve PPMx/traceplot-acf-sig2.pdf", width = 16,height = 12)
+par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,7)){
+	VALUES = all_fits[[time]]$sig2[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("Curve PPMx - Trace plot of "*sigma^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+		par(mar=c(2,2,3,2))
+	acf(VALUES,main=paste("week",time))
+}
+dev.off()
+
+pdf("../FIGURES presentation-report/Curve PPMx/traceplot-acf-tau2.pdf", width = 16,height = 12)
+par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+for(time in seq(1,53,7)){
+	VALUES = all_fits[[time]]$tau2[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		# mtext(bquote("Curve PPMx - Trace plot of "*beta[0]*" at station "* .(sampled_station)),
+		mtext(bquote("Curve PPMx - Trace plot of "*tau^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+	par(mar=c(2,2,3,2))
+	acf(VALUES,main=paste("week",time))
+}
+dev.off()
+```
+#=====
+# drpm stuff
+```{r}
+alpha_avg = c()
+for (time in 1:53){
+	VALUES = drpm1$alpha[,time]
+	# plot(VALUES,type="l",ylim=c(0,1),
+	# 	 main=bquote("Week "* .(time) * " - "*alpha*" mean = " * .(mean(VALUES)))
+	# )
+	# abline(h=mean(VALUES),col="red",lty=2)
+	alpha_avg = c(alpha_avg,mean(VALUES))
+}
+```
+
+
+```{r}
+plot(alpha_avg,type="b",ylim=c(0,1))
+```
+
+
