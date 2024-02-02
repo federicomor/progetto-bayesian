@@ -116,13 +116,14 @@ p_stations_codes =
 	theme(legend.position = "none")+
 	geom_text_repel(data = sites_plt, aes(x = Longitude, y = Latitude, col="col",
 										  label = rownames(sites_plt)),
-					size = 3,
+					size = 3.2,
 					max.overlaps = 100,
 					min.segment.length = 0
 					# force_pull =2,
 					# force = 10,
 					)+
 	scale_colour_manual(name="",values = c("col"="#aa0010"))+
+	# scale_colour_manual(name="",values = c("col"="#1000aa"))+
 	# scale_colour_manual(name="",values = c("col"="#1022a1"))+
 	labs(title = "Stations codes")
 p_stations_codes
@@ -132,8 +133,9 @@ p_stations_codes
 ```{r}
 # print(p_stations_codes)
 # ggsave(file="figures/stations_names_visualized.pdf",height=6, width=6)
+ggsave(file="figures/stations_names_visualized_smaller.pdf",p_stations_codes,height=5, width=5)
 # ggsave(file="figures/stations_names_visualized.png",units="px",height=1500, width=1500)
-# dev.off()
+dev.off()
 ```
 
 #=======
@@ -3193,7 +3195,7 @@ pari = ggplot(dati,aes(x=x))+
 	# ggsave(file="../FIGURES presentation-report/ARI_models_comparison.png",
 	ggsave(file="../FIGURES presentation-report/ARI_models_comparison.pdf", device=cairo_pdf,
 		   plot=pari,
-		   units="px",width=2500, height=1600, dpi=300) # maybe 1200 is better
+		   units="px",width=2500, height=1400, dpi=300) # maybe 1200 is better
 		   # units="px",width=2500, height=1400, dpi=300)
 	dev.off()
 ```
