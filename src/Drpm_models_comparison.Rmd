@@ -355,9 +355,13 @@ for(j in 1:length(models.out)){
 }
 res <- data.frame(names=names(models.out), lpml=lpml, waic=waic)
 res[order(res[,2],decreasing = T),]
+res = res[order(res[,2],decreasing = T),]
+```
 
-# library(xtable) # for latex table generation
-# xtable(res[order(res[,2],decreasing = T),],digits=2) 
+
+```{r}
+library(xtable) # for latex table generation
+xtable(res[order(res[,2],decreasing = T),],digits=2)
 ```
 Sembrano essere migliori i modelli senza eta, cioè senza la parte autoregressive nelle Yt.
 Anche se un po' di correlazione sembra esserci.

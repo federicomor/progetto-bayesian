@@ -11,6 +11,7 @@ Implement your model in this file when it is your final decision about it.
 ```{r,warning = FALSE}
 library(drpm)
 library(salso)
+library(ppmSuite)
 
 # preparation
 source("include.R") # for having df_agri
@@ -71,18 +72,27 @@ trendYearStation_week <- function(file_name){
 												 group=IDStations, 
 												 color = as.factor(IDStations))) +
 		geom_line(show.legend = FALSE) +
-		labs(x = "Stations", y = chosen_variable_name, title = "Year: 2018 all stations") +
+		labs(x = "Stations", y = chosen_variable_name, title = "Year 2018, all stations") +
 		ylim(range(na.omit(chosen_variable))) +
 		scale_color_manual(values = cols) +
 		theme_bw()+
 		theme(panel.grid = element_blank()) +
 		guides(color = guide_legend())+
-		labs(x="week")
+		labs(x="Weeks")
 
 	len_time = (len_time%/%5)
 	return(trend_animator(file_name,station_trend, data_from_to$week,len_time))
 }
 trendYearStation_week("None")
+```
+
+
+```{r}
+ptrend = trendYearStation_week("None")
+# ggsave(file="../FIGURES presentation-report/pm10_trend_2018.png",
+ggsave(file="../FIGURES presentation-report/pm10_trend_2018.pdf", device=cairo_pdf,
+	   plot=ptrend,
+	   units="px",width=2500, height=1600, dpi=300) # maybe 1200 is better
 ```
 
 
@@ -106,13 +116,14 @@ p_stations_codes =
 	theme(legend.position = "none")+
 	geom_text_repel(data = sites_plt, aes(x = Longitude, y = Latitude, col="col",
 										  label = rownames(sites_plt)),
-					size = 3,
+					size = 3.2,
 					max.overlaps = 100,
 					min.segment.length = 0
 					# force_pull =2,
 					# force = 10,
 					)+
 	scale_colour_manual(name="",values = c("col"="#aa0010"))+
+	# scale_colour_manual(name="",values = c("col"="#1000aa"))+
 	# scale_colour_manual(name="",values = c("col"="#1022a1"))+
 	labs(title = "Stations codes")
 p_stations_codes
@@ -122,12 +133,13 @@ p_stations_codes
 ```{r}
 # print(p_stations_codes)
 # ggsave(file="figures/stations_names_visualized.pdf",height=6, width=6)
+ggsave(file="figures/stations_names_visualized_smaller.pdf",p_stations_codes,height=5, width=5)
 # ggsave(file="figures/stations_names_visualized.png",units="px",height=1500, width=1500)
-# dev.off()
+dev.off()
 ```
 
 #=======
-# DRPM + experimentation
+# Experimentation
 
 ```r
 > log(40)
@@ -161,20 +173,22 @@ cat(crayon::red("\nLPML =",drpm_model$lpml, "\nWAIC =",drpm_model$waic))
 
 After some tuning this salso configuration should be the best.
 Ie the one with binder loss with a=1.2, while the default a=1 was not so good. 
-Increasing a (max is a=2) means that we penalize more the case where units get wrongly divided in separate clusters if instead should have been together (like a strict false negative, or something similar, contrasint).
+Increasing a (max is a=2) means that we penalize more the case where units get wrongly divided in separate clusters if instead should have been together.
+
+Maybe no, is better to leave the fit as it its, and then in case add some comments about possible outliers, etc.
 
 ```{r}
 abinder = rep(1.2,53)
-abinder[19] = 1.3
-abinder[21] = 1.3
-abinder[22] = 1.3
-abinder[40] = 1.1
-abinder[43] = 1.3
-abinder[44] = 1.5
-abinder[45] = 1.3
-abinder[50] = 1.5
-abinder[52] = 1.4
-abinder[53] = 1.4
+# abinder[19] = 1.3
+# abinder[21] = 1.3
+# abinder[22] = 1.3
+# abinder[40] = 1.1
+# abinder[43] = 1.3
+# abinder[44] = 1.5
+# abinder[45] = 1.3
+# abinder[50] = 1.5
+# abinder[52] = 1.4
+# abinder[53] = 1.4
 # plot(abinder,type="l")
 
 exclude=list()
@@ -182,63 +196,64 @@ for (i in 1:53){
 	exclude[[i]]=list()
 }
 
-exclude[[1]][[1]] = c(80,52)
-exclude[[2]][[1]] = c(80)
-exclude[[3]][[1]] = c(80)
-exclude[[4]][[1]] = c(80,52)
-exclude[[5]][[1]] = c(80)
-exclude[[6]][[1]] = c(80)
-
-exclude[[7]][[2]] = c(92,101)
-exclude[[8]][[2]] = c(92,101)
-exclude[[9]][[2]] = c(92,101)
-exclude[[10]][[2]] = c(92,101)
-exclude[[11]][[2]] = c(92,101)
-exclude[[12]][[2]] = c(92,101)
-exclude[[13]][[2]] = c(92,101)
-exclude[[14]][[1]] = c(92,101)
-exclude[[15]][[1]] = c(92,101)
-exclude[[16]][[1]] = c(92,101)
-
-exclude[[7]][[1]] = c(80)
-exclude[[8]][[1]] = c(80)
-exclude[[9]][[1]] = c(80)
-exclude[[10]][[1]] = c(80)
-exclude[[11]][[1]] = c(80)
-exclude[[12]][[1]] = c(80)
-exclude[[13]][[1]] = c(80)
-
-exclude[[44]][[1]] = c(101,92)
-
-exclude[[46]][[1]] = c(92,101)
-
-exclude[[47]][[1]] = c(92,101)
-exclude[[47]][[2]] = c(80)
-
-exclude[[48]][[1]] = c(92,101)
-
-exclude[[51]][[1]] = c(92,101)
-exclude[[51]][[2]] = c(80,52)
-
-exclude[[52]][[1]] = c(92,101)
-exclude[[52]][[2]] = c(80,52)
-
-exclude[[53]][[1]] = c(92,101)
-exclude[[53]][[2]] = c(80,20,69)
+# exclude[[1]][[1]] = c(80,52)
+# exclude[[2]][[1]] = c(80)
+# exclude[[3]][[1]] = c(80)
+# exclude[[4]][[1]] = c(80,52)
+# exclude[[5]][[1]] = c(80)
+# exclude[[6]][[1]] = c(80)
+# 
+# exclude[[7]][[2]] = c(92,101)
+# exclude[[8]][[2]] = c(92,101)
+# exclude[[9]][[2]] = c(92,101)
+# exclude[[10]][[2]] = c(92,101)
+# exclude[[11]][[2]] = c(92,101)
+# exclude[[12]][[2]] = c(92,101)
+# exclude[[13]][[2]] = c(92,101)
+# exclude[[14]][[1]] = c(92,101)
+# exclude[[15]][[1]] = c(92,101)
+# exclude[[16]][[1]] = c(92,101)
+# 
+# exclude[[7]][[1]] = c(80)
+# exclude[[8]][[1]] = c(80)
+# exclude[[9]][[1]] = c(80)
+# exclude[[10]][[1]] = c(80)
+# exclude[[11]][[1]] = c(80)
+# exclude[[12]][[1]] = c(80)
+# exclude[[13]][[1]] = c(80)
+# 
+# exclude[[44]][[1]] = c(101,92)
+# 
+# exclude[[46]][[1]] = c(92,101)
+# 
+# exclude[[47]][[1]] = c(92,101)
+# exclude[[47]][[2]] = c(80)
+# 
+# exclude[[48]][[1]] = c(92,101)
+# 
+# exclude[[51]][[1]] = c(92,101)
+# exclude[[51]][[2]] = c(80,52)
+# 
+# exclude[[52]][[1]] = c(92,101)
+# exclude[[52]][[2]] = c(80,52)
+# 
+# exclude[[53]][[1]] = c(92,101)
+# exclude[[53]][[2]] = c(80,20,69)
 ```
 
 ## cls see
 ```{r}
 df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
-for(time in time_span[1]){
+for(time in time_span[53]){
 
 	salso_out = rep(0,105)
 	if(length(exclude[[time]])==0 ){
 		cat("no touch\n")
 		salso_out <- salso(t(drpm_model$Si[time,,]),
-					   loss=binder(),
+					   # loss=binder(),
+					   loss=binder(a=1.3),
 					   # loss=binder(a=abinder[time]), # chosen one, better
-					   maxNClusters = 8
+					   maxNClusters = 6
 					   )
 	} else {
 		cat("correction\n")
@@ -278,7 +293,7 @@ for(time in time_span[1]){
 	# }
 	
 	df_cluster_cut = df_temp
-	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=15)
+	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=13)
 	p = plot_graph_and_hist(df_cluster_cut,cols,jittera = T)
 
 	# plot_intensities(df_cluster_cut,verbose=T)
@@ -304,8 +319,9 @@ for(time in time_span){
 	if(length(exclude[[time]])==0 ){
 		cat("no touch\n")
 		salso_out <- salso(t(drpm_model$Si[time,,]),
+					   loss=binder(a=1.3),
 					   # loss=binder(),
-					   loss=binder(a=abinder[time]), # chosen one, better
+					   # loss=binder(a=abinder[time]), # chosen one, better
 					   maxNClusters = 6
 					   )
 	} else {
@@ -326,7 +342,6 @@ for(time in time_span){
 	}
 	salso_out_list[[time]] = salso_out
 	salso_out_matrix[time,] = salso_out
-	
 
 	################################################
 	df_temp = data.frame(
@@ -360,6 +375,16 @@ salso_out_lists[["DRPM"]] = salso_out_list
 
 ## time series
 ```{r}
+medie = matrix(NA,nrow=105,ncol=1)
+stations=unique(df_wsc$IDStations)
+for (st in 1:105){
+	medie[st,1] = mean(df_wsc$AQ_pm10[which(df_wsc$IDStations==stations[st])])	
+}
+# medie
+order(medie[,1])
+```
+
+```{r}
 cl_regions = list()
 for (i in 1:10){
 	cl_regions[[i]] = numeric()
@@ -374,14 +399,372 @@ for (st in 1:105){
 	cl_regions[[mo]] = c(cl_regions[[mo]],st)
 	tssites$cl[st] = mo
 }
+cl_regions
+```
 
+```{r}
 ## manual changes if we want to separately study some suspitious stations
 cl_regions[[1]] = setdiff(cl_regions[[1]],80)
-cl_regions[[5]] = 80
-tssites$cl[80] = 5
+cl_regions[[6]] = 80
+tssites$cl[80] = 6
+# cl_regions[[1]] = setdiff(cl_regions[[1]],c(80,20))
+# cl_regions[[6]] = 80
+# tssites$cl[80] = 6
+# cl_regions[[7]] = 20
+# tssites$cl[20] = 7
 
 cl_regions
 ```
+medie dei valori di pm10 in questi gruppi
+magari per cambiare cols in colori informativi
+```{r}
+non_null_clregions_indexes = 0
+medie = rep(100,10)
+for (i in 1:10){
+	if(lenght(cl_regions[[i]])>0){
+		non_null_clregions_indexes = non_null_clregions_indexes + 1
+		medie[i] = mean(apply(y[cl_regions[[i]],2:54],2,mean))
+	}
+}
+non_null_clregions_indexes
+medie = medie[1:non_null_clregions_indexes]
+ord = order(medie,decreasing = T)
+```
+
+
+```{r,warning=F}
+cols = colora(12,"div",0)[-2]
+
+cols = colora(non_null_clregions_indexes,111,1)
+cols_new = cols
+for (i in 1:non_null_clregions_indexes){
+	cols_new[ord[i]] = cols[i]
+}
+cols = cols_new
+
+df_cluster_cut = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	clusters = tssites$cl,
+	Time = 1
+)
+cols_gr = cols[1:length(unique(tssites$cl))]
+PP1 = get_graph_plot(df_cluster_cut,titolo = "Mode clusters",cols=cols_gr,verbose=0,legenda=0)
+PP1
+```
+
+### now on covariates
+
+work in progress
+```{r,warning=F}
+alfa = 70
+lsize = 0.9
+# cols = colora(12,"div",0)[-2]
+cols_trasp = cols
+for (i in 1:12){
+	cols_trasp[i] = rgb(as.vector(col2rgb(cols[i]))[1],as.vector(col2rgb(cols[i]))[2],
+				  as.vector(col2rgb(cols[i]))[3],alfa,maxColorValue = 255)
+}
+
+### mode map ################################################################
+df_cluster_cut = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	clusters = tssites$cl,
+	Time = 1
+)
+cols_gr = cols[1:length(unique(tssites$cl))]
+plt_modemap = get_graph_plot(df_cluster_cut,titolo = "Mode clusters",cols=cols_gr,
+							 verbose=0,legenda=0)
+print(plt_modemap)
+
+### covariates and pm10 ################################################################
+var_selected_to_plot = c(
+"Altitude",
+"AQ_pm10",
+"WE_temp_2m",
+"WE_wind_speed_10m_mean",
+"WE_wind_speed_10m_max",
+"WE_tot_precipitation",
+# "WE_precipitation_t",
+# "WE_surface_pressure",
+# "WE_solar_radiation",
+# "WE_rh_min",
+# "WE_rh_mean",
+# "WE_rh_max",
+# "WE_wind_speed_100m_mean",
+# "WE_wind_speed_100m_max",
+# "WE_blh_layer_max",
+# "WE_blh_layer_min",
+# "EM_nh3_livestock_mm",
+# "EM_nh3_agr_soils",
+# "EM_nh3_agr_waste_burn",
+# "EM_nh3_sum",
+# "EM_nox_traffic",
+# "EM_nox_sum",
+# "EM_so2_sum",
+# "LI_pigs",
+# "LI_bovine",
+# "LI_pigs_v2",
+# "LI_bovine_v2",
+# "LA_hvi",
+"LA_lvi",
+"LA_land_use"
+)
+
+pts = list()
+for (cova_name in var_selected_to_plot){
+	cat(cova_name,"\n")
+    
+ys = matrix(NA,nrow=length(cl_regions),53)
+stdevys = matrix(NA,nrow=length(cl_regions),53)
+move_up = matrix(NA,nrow=length(cl_regions),53)
+move_dn = matrix(NA,nrow=length(cl_regions),53)
+
+cova=data.frame()
+for(st in stations){
+  # cova=rbind(cova,cbind(as.data.frame(st),t(df_wsc[which(df_wsc$IDStations==st),cova_name])))
+  cova=rbind(cova,cbind(as.data.frame(st),t(df_weekly[which(df_weekly$IDStations==st),cova_name])))
+}
+rownames(cova) = NULL; colnames(cova)<- c("id",paste0("w", 1:53))
+
+for (i in 1:length(cl_regions)){
+	# ys[i,] = apply(cova[cl_regions[[i]],2:54],2,mean)
+	ys[i,] = apply(cova[cl_regions[[i]],2:54],2,median)
+	# stdevys[i,] = sqrt(apply(cova[cl_regions[[i]],2:54],2,var))
+	# stdevys[i,] = apply(cova[cl_regions[[i]],2:54],2,IQR)
+	move_up[i,] = apply(cova[cl_regions[[i]],2:54],2,quantile,0.75)
+	move_dn[i,] = apply(cova[cl_regions[[i]],2:54],2,quantile,0.25)
+}
+
+
+if(cova_name=="Altitude" || cova_name=="LA_land_use"){
+# unfortunately automatically it does not work :/
+dts1 = data.frame(xx=c(1:2,2:1), yy=rep(c(move_up[1 ,1],move_dn[1 ,1]),each=2))
+dts2 = data.frame(xx=c(2:3,3:2), yy=rep(c(move_up[2 ,1],move_dn[2 ,1]),each=2))
+dts3 = data.frame(xx=c(3:4,4:3), yy=rep(c(move_up[3 ,1],move_dn[3 ,1]),each=2))
+dts4 = data.frame(xx=c(4:5,5:4), yy=rep(c(move_up[4 ,1],move_dn[4 ,1]),each=2))
+dts5 = data.frame(xx=c(5:6,6:5), yy=rep(c(move_up[5 ,1],move_dn[5 ,1]),each=2))
+dts6 = data.frame(xx=c(6:7,7:6), yy=rep(c(move_up[6 ,1],move_dn[6 ,1]),each=2))
+dts7 = data.frame(xx=c(7:8,8:7), yy=rep(c(move_up[7 ,1],move_dn[7 ,1]),each=2))
+dts8 = data.frame(xx=c(8:9,9:8), yy=rep(c(move_up[8 ,1],move_dn[8 ,1]),each=2))
+dts9 = data.frame(xx=c(9:10,10:9), yy=rep(c(move_up[9 ,1],move_dn[9 ,1]),each=2))
+dts10 = data.frame(xx=c(10:11,11:10), yy=c(move_up[10 ,1],move_dn[10 ,1]))
+
+pts[[cova_name]] = local({
+	cova_name = cova_name
+	dts1 = dts1
+	dts2 = dts2
+	dts3 = dts3
+	dts4 = dts4
+	dts5 = dts5
+	dts6 = dts6
+	dts7 = dts7
+	dts8 = dts8
+	dts9 = dts9
+	dts10 = dts10
+	ys = ys
+	move_up = move_up
+	move_dn = move_dn
+
+	ggplot() +
+	# geom_vline(xintercept = 10,col="#990011")+
+	# geom_vline(xintercept = 10,col="gray50")+
+geom_polygon(data=dts1, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[1])))+
+geom_polygon(data=dts2, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[2])))+
+geom_polygon(data=dts3, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[3])))+
+geom_polygon(data=dts4, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[4])))+
+geom_polygon(data=dts5, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[5])))+
+geom_polygon(data=dts6, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[6])))+
+geom_polygon(data=dts7, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[7])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts10, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[10])))+
+geom_line(aes(x=1:2,y=ys[1,1:2],col=paste0(cols[1])),size=lsize)+
+geom_line(aes(x=2:3,y=ys[2,1:2],col=paste0(cols[2])),size=lsize)+
+geom_line(aes(x=3:4,y=ys[3,1:2],col=paste0(cols[3])),size=lsize)+
+geom_line(aes(x=4:5,y=ys[4,1:2],col=paste0(cols[4])),size=lsize)+
+geom_line(aes(x=5:6,y=ys[5,1:2],col=paste0(cols[5])),size=lsize)+
+geom_line(aes(x=6:7,y=ys[6,1:2],col=paste0(cols[6])),size=lsize)+
+geom_line(aes(x=7:8,y=ys[7,1:2],col=paste0(cols[7])),size=lsize)+
+geom_line(aes(x=8:9,y=ys[8,1:2],col=paste0(cols[8])),size=lsize)+
+geom_line(aes(x=9:10,y=ys[9,1:2],col=paste0(cols[9])),size=lsize)+
+geom_line(aes(x=10:11,y=ys[10,1:2],col=paste0(cols[10])),size=lsize)+
+	theme_bw()+ 
+	scale_fill_identity()+scale_color_identity()+
+	theme(panel.grid = element_blank(),axis.ticks.x=element_blank(),axis.text.x=element_blank())+
+	ylab(cova_name)+xlab("")+theme(legend.position = "none")+
+		xlim(c(1,non_null_clregions_indexes+1))
+
+})
+
+} else {
+# unfortunately automatically it does not work :/
+dts1 = data.frame(xx=c(1:53,53:1), yy=c(move_up[1 ,],rev(move_dn[1 ,])))
+dts2 = data.frame(xx=c(1:53,53:1), yy=c(move_up[2 ,],rev(move_dn[2 ,])))
+dts3 = data.frame(xx=c(1:53,53:1), yy=c(move_up[3 ,],rev(move_dn[3 ,])))
+dts4 = data.frame(xx=c(1:53,53:1), yy=c(move_up[4 ,],rev(move_dn[4 ,])))
+dts5 = data.frame(xx=c(1:53,53:1), yy=c(move_up[5 ,],rev(move_dn[5 ,])))
+dts6 = data.frame(xx=c(1:53,53:1), yy=c(move_up[6 ,],rev(move_dn[6 ,])))
+dts7 = data.frame(xx=c(1:53,53:1), yy=c(move_up[7 ,],rev(move_dn[7 ,])))
+dts8 = data.frame(xx=c(1:53,53:1), yy=c(move_up[8 ,],rev(move_dn[8 ,])))
+dts9 = data.frame(xx=c(1:53,53:1), yy=c(move_up[9 ,],rev(move_dn[9 ,])))
+dts10 = data.frame(xx=c(1:53,53:1), yy=c(move_up[10 ,],rev(move_dn[10 ,])))
+
+# dts1 = data.frame(xx=c(1:53,53:1), yy=c(ys[1 ,]-1/2*stdevys[1 ,],rev(ys[1 ,]+1/2*stdevys[1 ,])))
+# dts2 = data.frame(xx=c(1:53,53:1), yy=c(ys[2 ,]-1/2*stdevys[2 ,],rev(ys[2 ,]+1/2*stdevys[2 ,])))
+# dts3 = data.frame(xx=c(1:53,53:1), yy=c(ys[3 ,]-1/2*stdevys[3 ,],rev(ys[3 ,]+1/2*stdevys[3 ,])))
+# dts4 = data.frame(xx=c(1:53,53:1), yy=c(ys[4 ,]-1/2*stdevys[4 ,],rev(ys[4 ,]+1/2*stdevys[4 ,])))
+# dts5 = data.frame(xx=c(1:53,53:1), yy=c(ys[5 ,]-1/2*stdevys[5 ,],rev(ys[5 ,]+1/2*stdevys[5 ,])))
+# dts6 = data.frame(xx=c(1:53,53:1), yy=c(ys[6 ,]-1/2*stdevys[6 ,],rev(ys[6 ,]+1/2*stdevys[6 ,])))
+# dts7 = data.frame(xx=c(1:53,53:1), yy=c(ys[7 ,]-1/2*stdevys[7 ,],rev(ys[7 ,]+1/2*stdevys[7 ,])))
+# dts8 = data.frame(xx=c(1:53,53:1), yy=c(ys[8 ,]-1/2*stdevys[8 ,],rev(ys[8 ,]+1/2*stdevys[8 ,])))
+# dts9 = data.frame(xx=c(1:53,53:1), yy=c(ys[9 ,]-1/2*stdevys[9 ,],rev(ys[9 ,]+1/2*stdevys[9 ,])))
+# dts10= data.frame(xx=c(1:53,53:1), yy=c(ys[10,]-1/2*stdevys[10,],rev(ys[10,]+1/2*stdevys[10,])))
+
+pts[[cova_name]] = local({
+	cova_name = cova_name
+	dts1 = dts1
+	dts2 = dts2
+	dts3 = dts3
+	dts4 = dts4
+	dts5 = dts5
+	dts6 = dts6
+	dts7 = dts7
+	dts8 = dts8
+	dts9 = dts9
+	dts10 = dts10
+	ys = ys
+	move_up = move_up
+	move_dn = move_dn
+
+	ggplot() +
+	# geom_vline(xintercept = 10,col="#990011")+
+	# geom_vline(xintercept = 10,col="gray50")+
+geom_polygon(data=dts1, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[1])))+
+geom_polygon(data=dts2, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[2])))+
+geom_polygon(data=dts3, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[3])))+
+geom_polygon(data=dts4, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[4])))+
+geom_polygon(data=dts5, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[5])))+
+geom_polygon(data=dts6, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[6])))+
+geom_polygon(data=dts7, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[7])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts10, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[10])))+
+geom_line(aes(x=1:53,y=ys[1,],col=paste0(cols[1])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[2,],col=paste0(cols[2])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[3,],col=paste0(cols[3])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[4,],col=paste0(cols[4])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[5,],col=paste0(cols[5])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[6,],col=paste0(cols[6])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[7,],col=paste0(cols[7])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[8,],col=paste0(cols[8])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[9,],col=paste0(cols[9])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[10,],col=paste0(cols[10])),size=lsize)+
+	theme_bw()+ 
+	scale_fill_identity()+scale_color_identity()+
+	theme(panel.grid = element_blank())+
+	ylab(cova_name)+
+		# xlab("Weeks")+
+	theme(legend.position = "none")+
+	# scale_x_continuous(name="Weeks",
+	# scale_x_continuous(name="Months (weeks)",
+	scale_x_continuous(name="Weeks (months)",
+					   breaks = sapply(unique(month(unique(df_wsc$Time))),
+					   				function(x) match(x, month(unique(df_wsc$Time)))[1]),
+					   # labels = c("Jan (1)", "Feb (6)","Mar (10)",
+					   # 		   "Apr (14)","May (19)","Jun (23)",
+					   # 		   "Jul (27)","Aug (32)","Sep (36)",
+					   # 		   "Oct (40)","Nov (45)","Dec (49)"),
+					   # guide=guide_axis(angle=0)
+					   # labels = c("Jan\n(1)", "Feb\n(6)","Mar\n(10)",
+					   # 		   "Apr\n(14)","May\n(19)","Jun\n(23)",
+					   # 		   "Jul\n(27)","Aug\n(32)","Sep\n(36)",
+					   # 		   "Oct\n(40)","Nov\n(45)","Dec\n(49)")
+					   labels = c("1(J)", "6(F)","10(M)",
+					   		   "14(A)","19(M)","23(J)",
+					   		   "27(J)","32(A)","36(S)",
+					   		   "40(O)","45(N)","49(D)")
+					   )
+
+
+})
+}
+
+print(pts[[cova_name]])
+
+}
+
+for (cova_name in var_selected_to_plot){
+	ggsave(paste0("./figures/DRPM/Time Series/",cova_name,".png"),
+	   plot = pts[[cova_name]],units="px",width=2200,height = 1400)
+}
+ggsave(paste0("./figures/Federico/time_series_tests/plt_modemap.png"),
+	   # plot = plt_modemap,units="px",width=2200,height = 1400)
+	   plot = plt_modemap,units="px",width=1200,height = 1200)
+
+```
+
+```{r,warning=F}
+# pts[["EM_nox_sum"]]
+# pts[["EM_nox_sum"]]+geom_vline(xintercept = 10,col="gray80")
+```
+
+
+```{r,warning=F}
+# "Altitude",
+# "AQ_pm10",
+# "WE_temp_2m",
+# "WE_wind_speed_10m_mean",
+# "WE_wind_speed_10m_max",
+# "WE_tot_precipitation",
+# "WE_precipitation_t",
+# "WE_surface_pressure",
+# "WE_solar_radiation",
+# "WE_rh_min",
+# "WE_rh_mean",
+# "WE_rh_max",
+# "WE_wind_speed_100m_mean",
+# "WE_wind_speed_100m_max",
+# "WE_blh_layer_max",
+# "WE_blh_layer_min",
+# "EM_nh3_livestock_mm",
+# "EM_nh3_agr_soils",
+# "EM_nh3_agr_waste_burn",
+# "EM_nh3_sum",
+# "EM_nox_traffic",
+# "EM_nox_sum",
+# "EM_so2_sum",
+# "LI_pigs",
+# "LI_bovine",
+# "LI_pigs_v2",
+# "LI_bovine_v2",
+# "LA_hvi",
+# "LA_lvi",
+# "LA_land_use"
+### layout ################################################################
+p = grid.arrange(plt_modemap,
+				 pts[["AQ_pm10"]],
+				 pts[["LA_lvi"]],
+				 pts[["WE_wind_speed_10m_mean"]],
+				 pts[["EM_nox_traffic"]],
+				 # ncol=7,
+				 layout_matrix = rbind(c(1,1,1,1,2,2,2),
+				 					   c(1,1,1,1,2,2,2),
+				 					   c(1,1,1,1,3,3,3),
+				 					   c(1,1,1,1,3,3,3),
+				 					   c(4,4,4,5,5,5,5),
+				 					   c(4,4,4,5,5,5,5))
+)
+print(p)
+ggsave(paste0("./figures/Federico/time_series_tests/grid.pdf"),
+	   plot = p,units="px",
+	   width=3000,height = 2000)
+
+```
+
+
+
 
 ```{r}
 for(a in 1:3){
@@ -392,60 +775,9 @@ pdf(file=paste0("figures/",base_folder,"/Time series/Time series.pdf"),width = 1
 } else {
 svg(file=paste0("figures/",base_folder,"/Time series/Time series.svg"),width = 14, height = 6)
 }
-
-layout(matrix(c(1,1,1,1,1,1,2,2,2,2,2,2), nrow = 1, byrow = T))
-# layout(matrix(c(1,2),nrow = 1, byrow = T),widths=c(6,5))
-cols = colora(12,"div",0)[-2]
-
-ys = matrix(NA,nrow=length(cl_regions),53)
-stdevys = matrix(NA,nrow=length(cl_regions),53)
-for (i in 1:length(cl_regions)){
-	ys[i,] = apply(y[cl_regions[[i]],2:54],2,mean)
-	stdevys[i,] = sqrt(apply(y[cl_regions[[i]],2:54],2,var))
-}
-alfa = 100
-
-plot(ys[1,],type="l",ylim=extrema(na.omit(ys))+c(-0.3,+0.1),col=cols[1],lwd=2,xlab="",ylab="")
-title(xlab="Weeks",ylab="PM10 values", mgp=c(2.5,2.5,0),cex.lab=1.2)
-
-polygon(c(1:53,53:1), c(ys[1,]-1/2*stdevys[1,],rev(ys[1,]+1/2*stdevys[1,])),
-		col = rgb(as.vector(col2rgb(cols[1]))[1],as.vector(col2rgb(cols[1]))[2],
-				  as.vector(col2rgb(cols[1]))[3],alfa,maxColorValue = 255),
-	border = NA)
-lines(ys[1,],type="l",ylim=extrema(na.omit(ys)),col=cols[1],lwd=2)
-
-for (i in 2:length(cl_regions)){
-	points(ys[i,],type="l",col=cols[i],lwd=2)
-	polygon(c(1:53,53:1), c(ys[i,]-1/2*stdevys[i,],rev(ys[i,]+1/2*stdevys[i,])),
-		col = rgb(as.vector(col2rgb(cols[i]))[1],as.vector(col2rgb(cols[i]))[2],
-				  as.vector(col2rgb(cols[i]))[3],alfa,maxColorValue = 255),
-	border = NA)
-}
-
-frame()
-# PP1 = DefaultPlot()+
-# geom_point(data = tssites, aes(x = Longitude, y = Latitude, color = cols[tssites$cl]), size = 4)+
-# theme(legend.position = "none")+
-# labs(title = "Stations partitioned")+
-# 	scale_colour_identity(guide="legend",labels=paste0("cl",length(unique(tssites$cl))),
-# 						  breaks=cols[length(unique(tssites$cl))])
-df_cluster_cut = data.frame(
-	Longitude = sites$longitude,
-	Latitude = sites$latitude,
-	clusters = tssites$cl,
-	Time = 1
-)
-cols_gr = cols[1:length(unique(tssites$cl))]
-PP1 = get_graph_plot(df_cluster_cut,titolo = "Cluster partition map",cols=cols_gr,verbose=0)
-
-vps <- baseViewports()
-pushViewport(vps$inner, vps$figure, vps$plot)
-# Table grob
-grob <-  ggplotGrob(PP1)
-grid.draw(grob)
-popViewport(3)
-
-dev.off()
+	
+# old code, now removed
+	
 }
 ```
 
@@ -627,20 +959,15 @@ for(time in time_span){
 
 
 #=======
-# sPPM
-```{r}
-load("../data/sppm_c4_list.RData")
-# see sppm_C4_list[[time]]$Si
-```
+# DRPM final DONE!
 
 ```{r}
-lpml_tot_sppm = waic_tot_sppm = 0
-for (time in 1:53){
-	lpml_tot_sppm = lpml_tot_sppm + sppm_C4_list[[time]]$lpml
-	waic_tot_sppm = waic_tot_sppm + sppm_C4_list[[time]]$WAIC
-}
-cat(crayon::red("\nLPML =",lpml_tot_sppm, "\nWAIC =",waic_tot_sppm))
-# niente ancora lontani da drpm
+base_folder = "DRPM"
+
+load("../data/Federico/drpm_eta0_phi1_spcoes5.Rdata")
+FIT = drpm1 # was called drpm1 inside the rdata
+
+cat(crayon::red("\nLPML =",FIT$lpml, "\nWAIC =",FIT$waic))
 ```
 
 
@@ -654,8 +981,8 @@ df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=
 for(time in time_span){
 	
 	# tune here your cluster generation
-	salso_out <- salso(sppm_C4_list[[time]]$Si,
-				   loss=binder(a=1.2),
+	salso_out <- salso(t(FIT$Si[time,,]),
+				   loss=binder(a=1.2), # example of a tuning
 				   maxNClusters = 8
 				   )
 
@@ -668,7 +995,7 @@ for(time in time_span){
 		clusters = salso_out[1:105]
 	)
 	# increment nint until there is no error
-	cols = color_correct_clusters(df_temp,idea=2,verbose=0,nint=15)
+	cols = color_correct_clusters(df_temp,idea=2,verbose=0,nint=14)
 	
 	################################################
 	
@@ -706,13 +1033,25 @@ for(time in time_span){
 	# q = get_graph_plot(df_cluster_cut,cols)
 	# print(q)
 	# p = plot_graph_and_hist(df_cluster_cut,cols)
+	
+	################################################
+	# test for covariates plots
+	
+	# png("test.png",units="px",height = 2400,width = 2000)
+	# p = Federica_covariates_plot(df_cluster_cut,cols,
+	# 				 titolo = paste("Cluster map, time",time,"- Gaussian PPMx"),var_selected_idxs)
+	# ggsave(p,file="test.png",units="px",width=3500, height=3000, dpi=400)
+	# ggsave(p,file="test.pdf",width=15, height=10)
+	# dev.off()
+
 }
 ```
 
 
+
+
 ## plots save
 ```{r}
-base_folder = "sPPM"
 salso_out_lists[[base_folder]] = salso_out_list
 ```
 
@@ -738,11 +1077,13 @@ cols_ARI = colora(ncols_ari,79,0)
 # cols_ARI = rev(cols_ARI)
 brks = seq(-1,1,length.out=ncols_ari+1)
 
-for(a in 1:2){
+for(a in 1:3){
 if(a==1)
 png(paste0("./figures/",base_folder,"/ARI/ari.png"), width=700,height=600)
-else {
+else if (a==2){
 svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=7, width=8)
+} else {
+pdf(paste0("./figures/",base_folder,"/ARI/ari.pdf"), height=7, width=8)
 }
 
 	library(fields)
@@ -751,103 +1092,6 @@ image.plot(ARImats,
 		   breaks=brks)
 mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.7)
 mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.7)
-dev.off()
-}
-```
-
-### time series
-```{r}
-cl_regions = list()
-for (i in 1:10){
-	cl_regions[[i]] = numeric()
-}
-
-tssites = sites_plt
-tssites$cl = rep(0,105)
-
-for (st in 1:105){
-	mo = Mode(salso_out_matrix[,st],verbose=1)
-	cat(crayon::red("Station",st,"has mode cluster label equal to",mo,"\n"))
-	cl_regions[[mo]] = c(cl_regions[[mo]],st)
-	tssites$cl[st] = mo
-}
-```
-
-
-```{r}
-## manual changes if we want to separately study some suspitious stations
-
-cl_regions
-```
-
-```{r}
-### Time series ###############################################################
-library(grid)
-library(gridBase)
-library(gridExtra)
-
-for(a in 1:3){
-if(a==1)
-png(file=paste0("figures/",base_folder,"/Time series/Time series.png"),units="px",width = 1200, height = 600)
-else if (a==2){
-pdf(file=paste0("figures/",base_folder,"/Time series/Time series.pdf"),width = 14, height = 6)
-} else {
-svg(file=paste0("figures/",base_folder,"/Time series/Time series.svg"),width = 14, height = 6)
-}
-
-	
-layout(matrix(c(1,1,1,1,1,1,2,2,2,2,2,2), nrow = 1, byrow = T))
-# layout(matrix(c(1,2),nrow = 1, byrow = T),widths=c(6,5))
-cols = colora(12,"div",0)[-2]
-
-ys = matrix(NA,nrow=length(cl_regions),53)
-stdevys = matrix(NA,nrow=length(cl_regions),53)
-for (i in 1:length(cl_regions)){
-	ys[i,] = apply(y[cl_regions[[i]],2:54],2,mean)
-	stdevys[i,] = sqrt(apply(y[cl_regions[[i]],2:54],2,var))
-}
-alfa = 100
-
-plot(ys[1,],type="l",ylim=extrema(na.omit(ys))+c(-0.3,+0.1),col=cols[1],lwd=2,xlab="",ylab="")
-title(xlab="Weeks",ylab="PM10 values", mgp=c(2.5,2.5,0),cex.lab=1.2)
-
-polygon(c(1:53,53:1), c(ys[1,]-1/2*stdevys[1,],rev(ys[1,]+1/2*stdevys[1,])),
-		col = rgb(as.vector(col2rgb(cols[1]))[1],as.vector(col2rgb(cols[1]))[2],
-				  as.vector(col2rgb(cols[1]))[3],alfa,maxColorValue = 255),
-	border = NA)
-lines(ys[1,],type="l",ylim=extrema(na.omit(ys)),col=cols[1],lwd=2)
-
-for (i in 2:length(cl_regions)){
-	points(ys[i,],type="l",col=cols[i],lwd=2)
-	polygon(c(1:53,53:1), c(ys[i,]-1/2*stdevys[i,],rev(ys[i,]+1/2*stdevys[i,])),
-		col = rgb(as.vector(col2rgb(cols[i]))[1],as.vector(col2rgb(cols[i]))[2],
-				  as.vector(col2rgb(cols[i]))[3],alfa,maxColorValue = 255),
-	border = NA)
-}
-
-frame()
-# PP1 = DefaultPlot()+
-# geom_point(data = tssites, aes(x = Longitude, y = Latitude, color = cols[tssites$cl]), size = 4)+
-# theme(legend.position = "none")+
-# labs(title = "Stations partitioned")+
-# 	scale_colour_identity(guide="legend",labels=paste0("cl",length(unique(tssites$cl))),
-# 						  breaks=cols[length(unique(tssites$cl))])
-df_cluster_cut = data.frame(
-	Longitude = sites$longitude,
-	Latitude = sites$latitude,
-	clusters = tssites$cl,
-	Time = 1
-)
-cols_gr = cols
-PP1 = get_graph_plot(df_cluster_cut,titolo = "Clusters partition map",cols=cols_gr,verbose=0)
-
-vps <- baseViewports()
-pushViewport(vps$inner, vps$figure, vps$plot)
-# Table grob
-grob <-  ggplotGrob(PP1)
-grid.draw(grob)
-popViewport(3)
-
 dev.off()
 }
 ```
@@ -899,30 +1143,900 @@ for(time in time_span){
 		   # units="px",width=2500, height=1400, dpi=300)
 	dev.off()
 	
-	### Covariates
-	p = Federica_covariates_plot(df_cluster_cut,cols,
-					 titolo = paste("Cluster map, time",time,"-",base_folder),var_selected_idxs)
-	ggsave(p,file=paste0("./figures/",base_folder,"/With Covariates/With Covariates-",cur_num,".png"),units="px",width=4500, height=3000, dpi=400)
-	dev.off()
+}
+```
+
+
+### time series/trend
+vedere le stazioni basse di valori in media
+```{r}
+medie = matrix(NA,nrow=105,ncol=1)
+stations=unique(df_wsc$IDStations)
+for (st in 1:105){
+	medie[st,1] = mean(df_wsc$AQ_pm10[which(df_wsc$IDStations==stations[st])])	
+}
+# medie
+order(medie[,1])
+```
+
+```{r}
+cl_regions = list()
+for (i in 1:10){
+	cl_regions[[i]] = numeric()
+}
+
+tssites = sites_plt
+tssites$cl = rep(0,105)
+
+for (st in 1:105){
+	mo = Mode(salso_out_matrix[,st])
+	# cat("Station",st,"has mode cluster label equal to",mo,"\n")
+	cl_regions[[mo]] = c(cl_regions[[mo]],st)
+	tssites$cl[st] = mo
+}
+cl_regions
+```
+
+```{r}
+## manual changes if we want to separately study some suspitious stations
+cl_regions[[1]] = setdiff(cl_regions[[1]],80)
+cl_regions[[5]] = 80
+tssites$cl[80] = 5
+
+cl_regions[[1]] = setdiff(cl_regions[[1]],c(92,101))
+cl_regions[[6]] = c(92,101)
+tssites$cl[92] = 6
+tssites$cl[101] = 6
+
+
+cl_regions
+```
+
+```{r}
+non_null_clregions_indexes = 0
+medie = rep(100,10)
+for (i in 1:10){
+	if(lenght(cl_regions[[i]])>0){
+		non_null_clregions_indexes = non_null_clregions_indexes + 1
+		medie[i] = mean(apply(y[cl_regions[[i]],2:54],2,mean))
+	}
+}
+non_null_clregions_indexes
+medie = medie[1:non_null_clregions_indexes]
+ord = order(medie,decreasing = T)
+
+medie
+ord
+
+```
+
+
+```{r,warning=F}
+cols = colora(12,"div",0)[-2]
+
+cols = colora(non_null_clregions_indexes,111,1)
+cols_new = cols
+for (i in 1:non_null_clregions_indexes){
+	cols_new[ord[i]] = cols[i]
+}
+cols = cols_new
+
+df_cluster_cut = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	clusters = tssites$cl,
+	Time = 1
+)
+cols_gr = cols[1:length(unique(tssites$cl))]
+PP1 = get_graph_plot(df_cluster_cut,titolo = "Mode clusters",cols=cols_gr,verbose=0,legenda=0)
+PP1
+```
+
+```{r,warning=F}
+alfa = 70
+lsize = 0.9
+# cols = colora(12,"div",0)[-2]
+cols_trasp = cols
+for (i in 1:12){
+	cols_trasp[i] = rgb(as.vector(col2rgb(cols[i]))[1],as.vector(col2rgb(cols[i]))[2],
+				  as.vector(col2rgb(cols[i]))[3],alfa,maxColorValue = 255)
+}
+
+### mode map ################################################################
+df_cluster_cut = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	clusters = tssites$cl,
+	Time = 1
+)
+cols_gr = cols[1:length(unique(tssites$cl))]
+plt_modemap = get_graph_plot(df_cluster_cut,titolo = "DRPM - Mode clusters",cols=cols_gr,
+							 verbose=0,legenda=0)
+print(plt_modemap)
+
+### covariates and pm10 ################################################################
+var_selected_to_plot = c(
+"Altitude",
+"AQ_pm10",
+"WE_temp_2m",
+"WE_wind_speed_10m_mean",
+"WE_wind_speed_10m_max",
+"WE_tot_precipitation",
+"WE_precipitation_t",
+"WE_surface_pressure",
+"WE_solar_radiation",
+"WE_rh_min",
+"WE_rh_mean",
+"WE_rh_max",
+"WE_wind_speed_100m_mean",
+"WE_wind_speed_100m_max",
+"WE_blh_layer_max",
+"WE_blh_layer_min",
+"EM_nh3_livestock_mm",
+"EM_nh3_agr_soils",
+"EM_nh3_agr_waste_burn",
+"EM_nh3_sum",
+"EM_nox_traffic",
+"EM_nox_sum",
+"EM_so2_sum",
+"LI_pigs",
+"LI_bovine",
+"LI_pigs_v2",
+"LI_bovine_v2",
+"LA_hvi",
+"LA_lvi",
+"LA_land_use"
+)
+
+pts = list()
+for (cova_name in var_selected_to_plot){
+	cat(cova_name,"\n")
+    
+ys = matrix(NA,nrow=length(cl_regions),53)
+stdevys = matrix(NA,nrow=length(cl_regions),53)
+move_up = matrix(NA,nrow=length(cl_regions),53)
+move_dn = matrix(NA,nrow=length(cl_regions),53)
+
+cova=data.frame()
+for(st in stations){
+  # cova=rbind(cova,cbind(as.data.frame(st),t(df_wsc[which(df_wsc$IDStations==st),cova_name])))
+  cova=rbind(cova,cbind(as.data.frame(st),t(df_weekly[which(df_weekly$IDStations==st),cova_name])))
+}
+rownames(cova) = NULL; colnames(cova)<- c("id",paste0("w", 1:53))
+
+for (i in 1:length(cl_regions)){
+	# ys[i,] = apply(cova[cl_regions[[i]],2:54],2,mean)
+	ys[i,] = apply(cova[cl_regions[[i]],2:54],2,median)
+	# stdevys[i,] = sqrt(apply(cova[cl_regions[[i]],2:54],2,var))
+	# stdevys[i,] = apply(cova[cl_regions[[i]],2:54],2,IQR)
+	move_up[i,] = apply(cova[cl_regions[[i]],2:54],2,quantile,0.75)
+	move_dn[i,] = apply(cova[cl_regions[[i]],2:54],2,quantile,0.25)
+}
+
+
+if(cova_name=="Altitude" || cova_name=="LA_land_use"){
+# unfortunately automatically it does not work :/
+dts1 = data.frame(xx=c(1:2,2:1), yy=rep(c(move_up[1 ,1],move_dn[1 ,1]),each=2))
+dts2 = data.frame(xx=c(2:3,3:2), yy=rep(c(move_up[2 ,1],move_dn[2 ,1]),each=2))
+dts3 = data.frame(xx=c(3:4,4:3), yy=rep(c(move_up[3 ,1],move_dn[3 ,1]),each=2))
+dts4 = data.frame(xx=c(4:5,5:4), yy=rep(c(move_up[4 ,1],move_dn[4 ,1]),each=2))
+dts5 = data.frame(xx=c(5:6,6:5), yy=rep(c(move_up[5 ,1],move_dn[5 ,1]),each=2))
+dts6 = data.frame(xx=c(6:7,7:6), yy=rep(c(move_up[6 ,1],move_dn[6 ,1]),each=2))
+dts7 = data.frame(xx=c(7:8,8:7), yy=rep(c(move_up[7 ,1],move_dn[7 ,1]),each=2))
+dts8 = data.frame(xx=c(8:9,9:8), yy=rep(c(move_up[8 ,1],move_dn[8 ,1]),each=2))
+dts9 = data.frame(xx=c(9:10,10:9), yy=rep(c(move_up[9 ,1],move_dn[9 ,1]),each=2))
+dts10 = data.frame(xx=c(10:11,11:10), yy=c(move_up[10 ,1],move_dn[10 ,1]))
+
+pts[[cova_name]] = local({
+	cova_name = cova_name
+	dts1 = dts1
+	dts2 = dts2
+	dts3 = dts3
+	dts4 = dts4
+	dts5 = dts5
+	dts6 = dts6
+	dts7 = dts7
+	dts8 = dts8
+	dts9 = dts9
+	dts10 = dts10
+	ys = ys
+	move_up = move_up
+	move_dn = move_dn
+
+	ggplot() +
+	# geom_vline(xintercept = 10,col="#990011")+
+	# geom_vline(xintercept = 10,col="gray50")+
+geom_polygon(data=dts1, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[1])))+
+geom_polygon(data=dts2, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[2])))+
+geom_polygon(data=dts3, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[3])))+
+geom_polygon(data=dts4, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[4])))+
+geom_polygon(data=dts5, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[5])))+
+geom_polygon(data=dts6, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[6])))+
+geom_polygon(data=dts7, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[7])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts10, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[10])))+
+geom_line(aes(x=1:2,y=ys[1,1:2],col=paste0(cols[1])),size=lsize)+
+geom_line(aes(x=2:3,y=ys[2,1:2],col=paste0(cols[2])),size=lsize)+
+geom_line(aes(x=3:4,y=ys[3,1:2],col=paste0(cols[3])),size=lsize)+
+geom_line(aes(x=4:5,y=ys[4,1:2],col=paste0(cols[4])),size=lsize)+
+geom_line(aes(x=5:6,y=ys[5,1:2],col=paste0(cols[5])),size=lsize)+
+geom_line(aes(x=6:7,y=ys[6,1:2],col=paste0(cols[6])),size=lsize)+
+geom_line(aes(x=7:8,y=ys[7,1:2],col=paste0(cols[7])),size=lsize)+
+geom_line(aes(x=8:9,y=ys[8,1:2],col=paste0(cols[8])),size=lsize)+
+geom_line(aes(x=9:10,y=ys[9,1:2],col=paste0(cols[9])),size=lsize)+
+geom_line(aes(x=10:11,y=ys[10,1:2],col=paste0(cols[10])),size=lsize)+
+	theme_bw()+ 
+	scale_fill_identity()+scale_color_identity()+
+	theme(panel.grid = element_blank(),axis.ticks.x=element_blank(),axis.text.x=element_blank())+
+	ylab(cova_name)+xlab("")+theme(legend.position = "none")+
+		xlim(c(1,non_null_clregions_indexes+1))
+
+})
+
+} else {
+# unfortunately automatically it does not work :/
+dts1 = data.frame(xx=c(1:53,53:1), yy=c(move_up[1 ,],rev(move_dn[1 ,])))
+dts2 = data.frame(xx=c(1:53,53:1), yy=c(move_up[2 ,],rev(move_dn[2 ,])))
+dts3 = data.frame(xx=c(1:53,53:1), yy=c(move_up[3 ,],rev(move_dn[3 ,])))
+dts4 = data.frame(xx=c(1:53,53:1), yy=c(move_up[4 ,],rev(move_dn[4 ,])))
+dts5 = data.frame(xx=c(1:53,53:1), yy=c(move_up[5 ,],rev(move_dn[5 ,])))
+dts6 = data.frame(xx=c(1:53,53:1), yy=c(move_up[6 ,],rev(move_dn[6 ,])))
+dts7 = data.frame(xx=c(1:53,53:1), yy=c(move_up[7 ,],rev(move_dn[7 ,])))
+dts8 = data.frame(xx=c(1:53,53:1), yy=c(move_up[8 ,],rev(move_dn[8 ,])))
+dts9 = data.frame(xx=c(1:53,53:1), yy=c(move_up[9 ,],rev(move_dn[9 ,])))
+dts10 = data.frame(xx=c(1:53,53:1), yy=c(move_up[10 ,],rev(move_dn[10 ,])))
+
+# dts1 = data.frame(xx=c(1:53,53:1), yy=c(ys[1 ,]-1/2*stdevys[1 ,],rev(ys[1 ,]+1/2*stdevys[1 ,])))
+# dts2 = data.frame(xx=c(1:53,53:1), yy=c(ys[2 ,]-1/2*stdevys[2 ,],rev(ys[2 ,]+1/2*stdevys[2 ,])))
+# dts3 = data.frame(xx=c(1:53,53:1), yy=c(ys[3 ,]-1/2*stdevys[3 ,],rev(ys[3 ,]+1/2*stdevys[3 ,])))
+# dts4 = data.frame(xx=c(1:53,53:1), yy=c(ys[4 ,]-1/2*stdevys[4 ,],rev(ys[4 ,]+1/2*stdevys[4 ,])))
+# dts5 = data.frame(xx=c(1:53,53:1), yy=c(ys[5 ,]-1/2*stdevys[5 ,],rev(ys[5 ,]+1/2*stdevys[5 ,])))
+# dts6 = data.frame(xx=c(1:53,53:1), yy=c(ys[6 ,]-1/2*stdevys[6 ,],rev(ys[6 ,]+1/2*stdevys[6 ,])))
+# dts7 = data.frame(xx=c(1:53,53:1), yy=c(ys[7 ,]-1/2*stdevys[7 ,],rev(ys[7 ,]+1/2*stdevys[7 ,])))
+# dts8 = data.frame(xx=c(1:53,53:1), yy=c(ys[8 ,]-1/2*stdevys[8 ,],rev(ys[8 ,]+1/2*stdevys[8 ,])))
+# dts9 = data.frame(xx=c(1:53,53:1), yy=c(ys[9 ,]-1/2*stdevys[9 ,],rev(ys[9 ,]+1/2*stdevys[9 ,])))
+# dts10= data.frame(xx=c(1:53,53:1), yy=c(ys[10,]-1/2*stdevys[10,],rev(ys[10,]+1/2*stdevys[10,])))
+
+pts[[cova_name]] = local({
+	cova_name = cova_name
+	dts1 = dts1
+	dts2 = dts2
+	dts3 = dts3
+	dts4 = dts4
+	dts5 = dts5
+	dts6 = dts6
+	dts7 = dts7
+	dts8 = dts8
+	dts9 = dts9
+	dts10 = dts10
+	ys = ys
+	move_up = move_up
+	move_dn = move_dn
+
+	ggplot() +
+	# geom_vline(xintercept = 10,col="#990011")+
+	# geom_vline(xintercept = 10,col="gray50")+
+geom_polygon(data=dts1, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[1])))+
+geom_polygon(data=dts2, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[2])))+
+geom_polygon(data=dts3, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[3])))+
+geom_polygon(data=dts4, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[4])))+
+geom_polygon(data=dts5, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[5])))+
+geom_polygon(data=dts6, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[6])))+
+geom_polygon(data=dts7, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[7])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts10, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[10])))+
+geom_line(aes(x=1:53,y=ys[1,],col=paste0(cols[1])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[2,],col=paste0(cols[2])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[3,],col=paste0(cols[3])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[4,],col=paste0(cols[4])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[5,],col=paste0(cols[5])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[6,],col=paste0(cols[6])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[7,],col=paste0(cols[7])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[8,],col=paste0(cols[8])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[9,],col=paste0(cols[9])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[10,],col=paste0(cols[10])),size=lsize)+
+	theme_bw()+ 
+	scale_fill_identity()+scale_color_identity()+
+	theme(panel.grid = element_blank())+
+	ylab(cova_name)+
+		# xlab("Weeks")+
+	theme(legend.position = "none")+
+	# scale_x_continuous(name="Weeks",
+	# scale_x_continuous(name="Months (weeks)",
+	scale_x_continuous(name="Weeks (months)",
+					   breaks = sapply(unique(month(unique(df_wsc$Time))),
+					   				function(x) match(x, month(unique(df_wsc$Time)))[1]),
+					   # labels = c("Jan (1)", "Feb (6)","Mar (10)",
+					   # 		   "Apr (14)","May (19)","Jun (23)",
+					   # 		   "Jul (27)","Aug (32)","Sep (36)",
+					   # 		   "Oct (40)","Nov (45)","Dec (49)"),
+					   # guide=guide_axis(angle=0)
+					   # labels = c("Jan\n(1)", "Feb\n(6)","Mar\n(10)",
+					   # 		   "Apr\n(14)","May\n(19)","Jun\n(23)",
+					   # 		   "Jul\n(27)","Aug\n(32)","Sep\n(36)",
+					   # 		   "Oct\n(40)","Nov\n(45)","Dec\n(49)")
+					   labels = c("1(J)", "6(F)","10(M)",
+					   		   "14(A)","19(M)","23(J)",
+					   		   "27(J)","32(A)","36(S)",
+					   		   "40(O)","45(N)","49(D)")
+					   )
+
+
+})
+}
+
+print(pts[[cova_name]])
+
+ggsave(paste0("./figures/",base_folder,"/Time Series/",cova_name,".png"),
+	   plot = pts[[cova_name]],units="px",width=2200,height = 1400)
+}
+ggsave(paste0("./figures/",base_folder,"/Time Series/plt_modemap.png"),
+	   # plot = plt_modemap,units="px",width=2200,height = 1400)
+	   plot = plt_modemap,units="px",width=1200,height = 1200)
+```
+
+
+
+
+#=======
+# sPPM DONE!
+```{r}
+load("../data/sppm_c4_list.RData")
+```
+
+```{r}
+FIT = sppm_C4_list
+base_folder = "sPPM"
+```
+
+
+```{r}
+lpml_tot_sppm = waic_tot_sppm = 0
+for (time in 1:53){
+	lpml_tot_sppm = lpml_tot_sppm + FIT[[time]]$lpml
+	waic_tot_sppm = waic_tot_sppm + FIT[[time]]$WAIC
+}
+cat(crayon::red("\nLPML =",lpml_tot_sppm, "\nWAIC =",waic_tot_sppm))
+# niente ancora lontani da drpm
+```
+
+
+
+## cls def/see
+Here you should tune the salso(ecc) to maybe improve the cluster generation
+```{r}
+salso_out_list = list()
+salso_out_matrix = matrix(NA,nrow=53,ncol=105)
+
+df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
+for(time in time_span){
+	
+	# tune here your cluster generation
+	salso_out <- salso(FIT[[time]]$Si,
+				   loss=binder(a=1.2), # example of a tuning
+				   maxNClusters = 8
+				   )
+
+	salso_out_list[[time]] = salso_out
+	salso_out_matrix[time,] = salso_out
+
+	df_temp = data.frame(
+		Longitude = sites$longitude,
+		Latitude = sites$latitude,
+		clusters = salso_out[1:105]
+	)
+	# increment nint until there is no error
+	cols = color_correct_clusters(df_temp,idea=2,verbose=0,nint=15)
+	
+	################################################
+	
+	df_temp$Time = rep(time,dim(df_temp)[1])
+	df_cluster = rbind(df_cluster,df_temp)
+	
+	# clusters log
+	clusters_now = df_temp$clusters
+	# n_clusters = max(clusters_now)
+	n_clusters = unique(clusters_now)
+	ycurrent = y[,paste0("w",time)]
+	cat(crayon::red("Time",time,"- #clusters =",length(unique(clusters_now)),"\n"))
+	# for (cl in n_clusters){
+		# cat("Cluster",cl,"- size",length(ycurrent[which(clusters_now==cl)]),
+			# "- mean",mean(ycurrent[which(clusters_now==cl)]),"\n")
+	# }
+
+	
+	################################################
+	
+	df_cluster_cut = df_temp 
+	# if you want to see results directly here, use these lines
+	
+	# df_cluster_cut = df_cluster[df_cluster$Time==time,] # same def
+	# cols = ... defined above
+
+	# salso_out = salso_out_list[[time]]
+	# ssout = summary(salso_out)
+	# plot(ssout,type="heatmap")
+	# plot(ssout,type="mds")
+	# plot(ssout,type="pairs",data=std_sites)
+	# text(0.2,0.98,paste0("Time ",time))
+	# plot(ssout,type="dendrogram")
+
+	# q = get_graph_plot(df_cluster_cut,cols)
+	# print(q)
+	# p = plot_graph_and_hist(df_cluster_cut,cols)
+	
+	################################################
+	# test for covariates plots
+	
+	# png("test.png",units="px",height = 2400,width = 2000)
+	# p = Federica_covariates_plot(df_cluster_cut,cols,
+	# 				 titolo = paste("Cluster map, time",time,"- Gaussian PPMx"),var_selected_idxs)
+	# ggsave(p,file="test.png",units="px",width=3500, height=3000, dpi=400)
+	# ggsave(p,file="test.pdf",width=15, height=10)
+	# dev.off()
+
 }
 ```
 
 
 
-#=======
-# Gaussian PPmx
+
+## plots save
 ```{r}
+salso_out_lists[[base_folder]] = salso_out_list
+```
+
+### ari
+```{r}
+### ARI #######################################################################
+library(mclust) # if Adjusted RI
+
+LEN = max(time_span)
+# build the ARI matrix
+ARImats <- matrix(NA, nrow=LEN, ncol=LEN)
+rho_ARI <- list()
+for(time in 1:LEN){
+	rho_ARI[[time]] = salso_out_list[[time]]
+}
+for(k in 1: LEN){
+	for(kk in 1: LEN){
+		ARImats[k,kk] <- adjustedRandIndex(rho_ARI[[k]], rho_ARI[[kk]])
+	}
+}
+ncols_ari = 100
+cols_ARI = colora(ncols_ari,79,0)
+# cols_ARI = rev(cols_ARI)
+brks = seq(-1,1,length.out=ncols_ari+1)
+
+for(a in 1:3){
+if(a==1)
+png(paste0("./figures/",base_folder,"/ARI/ari.png"), width=700,height=600)
+else if (a==2){
+svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=7, width=8)
+} else {
+pdf(paste0("./figures/",base_folder,"/ARI/ari.pdf"), height=7, width=8)
+}
+
+	library(fields)
+image.plot(ARImats,
+		   main=paste0("Lagged ARI values - ",base_folder),axes=FALSE,col=cols_ARI,
+		   breaks=brks)
+mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.7)
+mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.7)
+dev.off()
+}
+```
+
+### the rest
+```{r}
+for(time in time_span){
+	cat(crayon::red("Time",time,"\n"))
+
+	df_cluster_cut = df_cluster[df_cluster$Time==time,]
+	# clusters_now = df_cluster_cut$clusters
+	####### no mode correct if heat plot
+	# clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
+	# se fai heat plot non serve fare la mode correct
+	# perché la heat plot la usi per vedere anche i valori di pm10, non la coerenza temporale
+	# nei gruppi, che con la heat coloration si perde come visibilità (non so se è chiaro)
+	# df_cluster_cut$clusters = clusters_now
+
+	cur_num = sprintf("%02d", time)
+	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=15)
+
+	
+	### Salso
+	salso_out = salso_out_list[[time]]
+	ssout = summary(salso_out)
+	png(filename=paste0("./figures/",base_folder,"/Salso/Salso-",sprintf("%02d",time),".png"),
+		width=600,height=500)
+	# plot(ssout,type="heatmap")
+	# plot(ssout,type="mds")
+	plot(ssout,type="pairs",data=std_sites)
+	text(0.3,0.98,paste0("Time ",time," - ",base_folder))
+	# plot(ssout,type="dendrogram")
+	dev.off()
+	
+	
+	### Graph
+	q = get_graph_plot(df_cluster_cut,cols,paste("Cluster map, time",time,"-",base_folder))
+	print(q)
+	ggsave(file=paste0("./figures/",base_folder,"/Graph/Graph-",cur_num,".png"),
+	units="px",width=2000, height=1400, dpi=300)
+	dev.off()
+	
+	
+	### Graph and Boxplot
+	p = plot_graph_and_hist(df_cluster_cut,cols,titolo=paste("Time",time,"-",base_folder))
+	ggsave(file=paste0("./figures/",base_folder,"/Graph and Boxplot/Graph and Boxplot-",cur_num,".png"),
+		   plot=p,
+		   units="px",width=2500, height=1200, dpi=300) # maybe 1200 is better
+		   # units="px",width=2500, height=1400, dpi=300)
+	dev.off()
+	
+}
+```
+
+
+### time series/trend
+vedere le stazioni basse di valori in media
+```{r}
+medie = matrix(NA,nrow=105,ncol=1)
+stations=unique(df_wsc$IDStations)
+for (st in 1:105){
+	medie[st,1] = mean(df_wsc$AQ_pm10[which(df_wsc$IDStations==stations[st])])	
+}
+# medie
+order(medie[,1])
+```
+
+```{r}
+cl_regions = list()
+for (i in 1:10){
+	cl_regions[[i]] = numeric()
+}
+
+tssites = sites_plt
+tssites$cl = rep(0,105)
+
+for (st in 1:105){
+	mo = Mode(salso_out_matrix[,st])
+	# cat("Station",st,"has mode cluster label equal to",mo,"\n")
+	cl_regions[[mo]] = c(cl_regions[[mo]],st)
+	tssites$cl[st] = mo
+}
+cl_regions
+```
+
+```{r}
+## manual changes if we want to separately study some suspitious stations
+# cl_regions[[4]] = setdiff(cl_regions[[4]],80)
+# cl_regions[[5]] = 80
+# tssites$cl[80] = 5
+
+cl_regions[[8]] = numeric()
+cl_regions[[5]] = c(92,101)
+tssites$cl[92] = 5
+tssites$cl[101] = 5
+
+cl_regions[[6]] = numeric()
+cl_regions[[3]] = c(setdiff(cl_regions[[3]],c(6,16,42)),c(68,100,86))
+tssites$cl[68] = 3
+tssites$cl[100] = 3
+tssites$cl[86] = 3
+
+cl_regions[[7]] = numeric()
+cl_regions[[6]] = c(70,77)
+tssites$cl[70] = 6
+tssites$cl[77] = 6
+
+cl_regions[[2]] = c(cl_regions[[2]],c(6,16,42))
+tssites$cl[6] = 2
+tssites$cl[16] = 2
+tssites$cl[42] = 2
+
+cl_regions
+```
+
+```{r}
+non_null_clregions_indexes = 0
+medie = rep(100,10)
+for (i in 1:10){
+	if(lenght(cl_regions[[i]])>0){
+		non_null_clregions_indexes = non_null_clregions_indexes + 1
+		medie[i] = mean(apply(y[cl_regions[[i]],2:54],2,mean))
+	}
+}
+non_null_clregions_indexes
+medie = medie[1:non_null_clregions_indexes]
+ord = order(medie,decreasing = T)
+```
+
+
+```{r,warning=F}
+cols = colora(12,"div",0)[-2]
+
+cols = colora(non_null_clregions_indexes,111,1)
+cols_new = cols
+for (i in 1:non_null_clregions_indexes){
+	cols_new[ord[i]] = cols[i]
+}
+cols = cols_new
+
+df_cluster_cut = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	clusters = tssites$cl,
+	Time = 1
+)
+cols_gr = cols[1:length(unique(tssites$cl))]
+PP1 = get_graph_plot(df_cluster_cut,titolo = "Mode clusters",cols=cols_gr,verbose=0,legenda=0)
+PP1
+```
+
+```{r,warning=F}
+alfa = 70
+lsize = 0.9
+# cols = colora(12,"div",0)[-2]
+cols_trasp = cols
+for (i in 1:12){
+	cols_trasp[i] = rgb(as.vector(col2rgb(cols[i]))[1],as.vector(col2rgb(cols[i]))[2],
+				  as.vector(col2rgb(cols[i]))[3],alfa,maxColorValue = 255)
+}
+
+### mode map ################################################################
+df_cluster_cut = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	clusters = tssites$cl,
+	Time = 1
+)
+cols_gr = cols[1:length(unique(tssites$cl))]
+plt_modemap = get_graph_plot(df_cluster_cut,titolo = "sPPM - Mode clusters",cols=cols_gr,
+							 verbose=0,legenda=0)
+print(plt_modemap)
+
+### covariates and pm10 ################################################################
+var_selected_to_plot = c(
+"Altitude",
+"AQ_pm10",
+"WE_temp_2m",
+"WE_wind_speed_10m_mean",
+"WE_wind_speed_10m_max",
+"WE_tot_precipitation",
+"WE_precipitation_t",
+"WE_surface_pressure",
+"WE_solar_radiation",
+"WE_rh_min",
+"WE_rh_mean",
+"WE_rh_max",
+"WE_wind_speed_100m_mean",
+"WE_wind_speed_100m_max",
+"WE_blh_layer_max",
+"WE_blh_layer_min",
+"EM_nh3_livestock_mm",
+"EM_nh3_agr_soils",
+"EM_nh3_agr_waste_burn",
+"EM_nh3_sum",
+"EM_nox_traffic",
+"EM_nox_sum",
+"EM_so2_sum",
+"LI_pigs",
+"LI_bovine",
+"LI_pigs_v2",
+"LI_bovine_v2",
+"LA_hvi",
+"LA_lvi",
+"LA_land_use"
+)
+
+pts = list()
+for (cova_name in var_selected_to_plot){
+	cat(cova_name,"\n")
+    
+ys = matrix(NA,nrow=length(cl_regions),53)
+stdevys = matrix(NA,nrow=length(cl_regions),53)
+move_up = matrix(NA,nrow=length(cl_regions),53)
+move_dn = matrix(NA,nrow=length(cl_regions),53)
+
+cova=data.frame()
+for(st in stations){
+  # cova=rbind(cova,cbind(as.data.frame(st),t(df_wsc[which(df_wsc$IDStations==st),cova_name])))
+  cova=rbind(cova,cbind(as.data.frame(st),t(df_weekly[which(df_weekly$IDStations==st),cova_name])))
+}
+rownames(cova) = NULL; colnames(cova)<- c("id",paste0("w", 1:53))
+
+for (i in 1:length(cl_regions)){
+	# ys[i,] = apply(cova[cl_regions[[i]],2:54],2,mean)
+	ys[i,] = apply(cova[cl_regions[[i]],2:54],2,median)
+	# stdevys[i,] = sqrt(apply(cova[cl_regions[[i]],2:54],2,var))
+	# stdevys[i,] = apply(cova[cl_regions[[i]],2:54],2,IQR)
+	move_up[i,] = apply(cova[cl_regions[[i]],2:54],2,quantile,0.75)
+	move_dn[i,] = apply(cova[cl_regions[[i]],2:54],2,quantile,0.25)
+}
+
+
+if(cova_name=="Altitude" || cova_name=="LA_land_use"){
+# unfortunately automatically it does not work :/
+dts1 = data.frame(xx=c(1:2,2:1), yy=rep(c(move_up[1 ,1],move_dn[1 ,1]),each=2))
+dts2 = data.frame(xx=c(2:3,3:2), yy=rep(c(move_up[2 ,1],move_dn[2 ,1]),each=2))
+dts3 = data.frame(xx=c(3:4,4:3), yy=rep(c(move_up[3 ,1],move_dn[3 ,1]),each=2))
+dts4 = data.frame(xx=c(4:5,5:4), yy=rep(c(move_up[4 ,1],move_dn[4 ,1]),each=2))
+dts5 = data.frame(xx=c(5:6,6:5), yy=rep(c(move_up[5 ,1],move_dn[5 ,1]),each=2))
+dts6 = data.frame(xx=c(6:7,7:6), yy=rep(c(move_up[6 ,1],move_dn[6 ,1]),each=2))
+dts7 = data.frame(xx=c(7:8,8:7), yy=rep(c(move_up[7 ,1],move_dn[7 ,1]),each=2))
+dts8 = data.frame(xx=c(8:9,9:8), yy=rep(c(move_up[8 ,1],move_dn[8 ,1]),each=2))
+dts9 = data.frame(xx=c(9:10,10:9), yy=rep(c(move_up[9 ,1],move_dn[9 ,1]),each=2))
+dts10 = data.frame(xx=c(10:11,11:10), yy=c(move_up[10 ,1],move_dn[10 ,1]))
+
+pts[[cova_name]] = local({
+	cova_name = cova_name
+	dts1 = dts1
+	dts2 = dts2
+	dts3 = dts3
+	dts4 = dts4
+	dts5 = dts5
+	dts6 = dts6
+	dts7 = dts7
+	dts8 = dts8
+	dts9 = dts9
+	dts10 = dts10
+	ys = ys
+	move_up = move_up
+	move_dn = move_dn
+
+	ggplot() +
+	# geom_vline(xintercept = 10,col="#990011")+
+	# geom_vline(xintercept = 10,col="gray50")+
+geom_polygon(data=dts1, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[1])))+
+geom_polygon(data=dts2, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[2])))+
+geom_polygon(data=dts3, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[3])))+
+geom_polygon(data=dts4, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[4])))+
+geom_polygon(data=dts5, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[5])))+
+geom_polygon(data=dts6, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[6])))+
+geom_polygon(data=dts7, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[7])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts10, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[10])))+
+geom_line(aes(x=1:2,y=ys[1,1:2],col=paste0(cols[1])),size=lsize)+
+geom_line(aes(x=2:3,y=ys[2,1:2],col=paste0(cols[2])),size=lsize)+
+geom_line(aes(x=3:4,y=ys[3,1:2],col=paste0(cols[3])),size=lsize)+
+geom_line(aes(x=4:5,y=ys[4,1:2],col=paste0(cols[4])),size=lsize)+
+geom_line(aes(x=5:6,y=ys[5,1:2],col=paste0(cols[5])),size=lsize)+
+geom_line(aes(x=6:7,y=ys[6,1:2],col=paste0(cols[6])),size=lsize)+
+geom_line(aes(x=7:8,y=ys[7,1:2],col=paste0(cols[7])),size=lsize)+
+geom_line(aes(x=8:9,y=ys[8,1:2],col=paste0(cols[8])),size=lsize)+
+geom_line(aes(x=9:10,y=ys[9,1:2],col=paste0(cols[9])),size=lsize)+
+geom_line(aes(x=10:11,y=ys[10,1:2],col=paste0(cols[10])),size=lsize)+
+	theme_bw()+ 
+	scale_fill_identity()+scale_color_identity()+
+	theme(panel.grid = element_blank(),axis.ticks.x=element_blank(),axis.text.x=element_blank())+
+	ylab(cova_name)+xlab("")+theme(legend.position = "none")+
+		xlim(c(1,non_null_clregions_indexes+1))
+
+})
+
+} else {
+# unfortunately automatically it does not work :/
+dts1 = data.frame(xx=c(1:53,53:1), yy=c(move_up[1 ,],rev(move_dn[1 ,])))
+dts2 = data.frame(xx=c(1:53,53:1), yy=c(move_up[2 ,],rev(move_dn[2 ,])))
+dts3 = data.frame(xx=c(1:53,53:1), yy=c(move_up[3 ,],rev(move_dn[3 ,])))
+dts4 = data.frame(xx=c(1:53,53:1), yy=c(move_up[4 ,],rev(move_dn[4 ,])))
+dts5 = data.frame(xx=c(1:53,53:1), yy=c(move_up[5 ,],rev(move_dn[5 ,])))
+dts6 = data.frame(xx=c(1:53,53:1), yy=c(move_up[6 ,],rev(move_dn[6 ,])))
+dts7 = data.frame(xx=c(1:53,53:1), yy=c(move_up[7 ,],rev(move_dn[7 ,])))
+dts8 = data.frame(xx=c(1:53,53:1), yy=c(move_up[8 ,],rev(move_dn[8 ,])))
+dts9 = data.frame(xx=c(1:53,53:1), yy=c(move_up[9 ,],rev(move_dn[9 ,])))
+dts10 = data.frame(xx=c(1:53,53:1), yy=c(move_up[10 ,],rev(move_dn[10 ,])))
+
+# dts1 = data.frame(xx=c(1:53,53:1), yy=c(ys[1 ,]-1/2*stdevys[1 ,],rev(ys[1 ,]+1/2*stdevys[1 ,])))
+# dts2 = data.frame(xx=c(1:53,53:1), yy=c(ys[2 ,]-1/2*stdevys[2 ,],rev(ys[2 ,]+1/2*stdevys[2 ,])))
+# dts3 = data.frame(xx=c(1:53,53:1), yy=c(ys[3 ,]-1/2*stdevys[3 ,],rev(ys[3 ,]+1/2*stdevys[3 ,])))
+# dts4 = data.frame(xx=c(1:53,53:1), yy=c(ys[4 ,]-1/2*stdevys[4 ,],rev(ys[4 ,]+1/2*stdevys[4 ,])))
+# dts5 = data.frame(xx=c(1:53,53:1), yy=c(ys[5 ,]-1/2*stdevys[5 ,],rev(ys[5 ,]+1/2*stdevys[5 ,])))
+# dts6 = data.frame(xx=c(1:53,53:1), yy=c(ys[6 ,]-1/2*stdevys[6 ,],rev(ys[6 ,]+1/2*stdevys[6 ,])))
+# dts7 = data.frame(xx=c(1:53,53:1), yy=c(ys[7 ,]-1/2*stdevys[7 ,],rev(ys[7 ,]+1/2*stdevys[7 ,])))
+# dts8 = data.frame(xx=c(1:53,53:1), yy=c(ys[8 ,]-1/2*stdevys[8 ,],rev(ys[8 ,]+1/2*stdevys[8 ,])))
+# dts9 = data.frame(xx=c(1:53,53:1), yy=c(ys[9 ,]-1/2*stdevys[9 ,],rev(ys[9 ,]+1/2*stdevys[9 ,])))
+# dts10= data.frame(xx=c(1:53,53:1), yy=c(ys[10,]-1/2*stdevys[10,],rev(ys[10,]+1/2*stdevys[10,])))
+
+pts[[cova_name]] = local({
+	cova_name = cova_name
+	dts1 = dts1
+	dts2 = dts2
+	dts3 = dts3
+	dts4 = dts4
+	dts5 = dts5
+	dts6 = dts6
+	dts7 = dts7
+	dts8 = dts8
+	dts9 = dts9
+	dts10 = dts10
+	ys = ys
+	move_up = move_up
+	move_dn = move_dn
+
+	ggplot() +
+	# geom_vline(xintercept = 10,col="#990011")+
+	# geom_vline(xintercept = 10,col="gray50")+
+geom_polygon(data=dts1, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[1])))+
+geom_polygon(data=dts2, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[2])))+
+geom_polygon(data=dts3, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[3])))+
+geom_polygon(data=dts4, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[4])))+
+geom_polygon(data=dts5, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[5])))+
+geom_polygon(data=dts6, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[6])))+
+geom_polygon(data=dts7, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[7])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts10, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[10])))+
+geom_line(aes(x=1:53,y=ys[1,],col=paste0(cols[1])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[2,],col=paste0(cols[2])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[3,],col=paste0(cols[3])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[4,],col=paste0(cols[4])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[5,],col=paste0(cols[5])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[6,],col=paste0(cols[6])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[7,],col=paste0(cols[7])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[8,],col=paste0(cols[8])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[9,],col=paste0(cols[9])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[10,],col=paste0(cols[10])),size=lsize)+
+	theme_bw()+ 
+	scale_fill_identity()+scale_color_identity()+
+	theme(panel.grid = element_blank())+
+	ylab(cova_name)+
+		# xlab("Weeks")+
+	theme(legend.position = "none")+
+	# scale_x_continuous(name="Weeks",
+	# scale_x_continuous(name="Months (weeks)",
+	scale_x_continuous(name="Weeks (months)",
+					   breaks = sapply(unique(month(unique(df_wsc$Time))),
+					   				function(x) match(x, month(unique(df_wsc$Time)))[1]),
+					   # labels = c("Jan (1)", "Feb (6)","Mar (10)",
+					   # 		   "Apr (14)","May (19)","Jun (23)",
+					   # 		   "Jul (27)","Aug (32)","Sep (36)",
+					   # 		   "Oct (40)","Nov (45)","Dec (49)"),
+					   # guide=guide_axis(angle=0)
+					   # labels = c("Jan\n(1)", "Feb\n(6)","Mar\n(10)",
+					   # 		   "Apr\n(14)","May\n(19)","Jun\n(23)",
+					   # 		   "Jul\n(27)","Aug\n(32)","Sep\n(36)",
+					   # 		   "Oct\n(40)","Nov\n(45)","Dec\n(49)")
+					   labels = c("1(J)", "6(F)","10(M)",
+					   		   "14(A)","19(M)","23(J)",
+					   		   "27(J)","32(A)","36(S)",
+					   		   "40(O)","45(N)","49(D)")
+					   )
+
+
+})
+}
+
+print(pts[[cova_name]])
+
+ggsave(paste0("./figures/",base_folder,"/Time Series/",cova_name,".png"),
+	   plot = pts[[cova_name]],units="px",width=2200,height = 1400)
+}
+ggsave(paste0("./figures/",base_folder,"/Time Series/plt_modemap.png"),
+	   # plot = plt_modemap,units="px",width=2200,height = 1400)
+	   plot = plt_modemap,units="px",width=1200,height = 1200)
+```
+
+
+
+
+#=======
+# Gaussian PPmx DONE! - ref
+```{r}
+FIT = readRDS("Gaussian_ppmX.RData")
 gppmx_fit = readRDS("Gaussian_ppmX.RData")
-# read rho through gppmx_fit[[time]]$Si
-var_selected <- c("Altitude","EM_nox_sum","WE_mode_wind_direction_100m",
-				  "WE_wind_speed_100m_max", "LA_lvi")
+base_folder = "Gaussian PPMx"
 ```
 
 ```{r}
 lpml_tot_gppmx = waic_tot_gppmx = 0
 for (time in 1:53){
-	lpml_tot_gppmx = lpml_tot_gppmx + gppmx_fit[[time]]$lpml
-	waic_tot_gppmx = waic_tot_gppmx + gppmx_fit[[time]]$WAIC
+	lpml_tot_gppmx = lpml_tot_gppmx + FIT[[time]]$lpml
+	waic_tot_gppmx = waic_tot_gppmx + FIT[[time]]$WAIC
 }
 cat(crayon::red("\nLPML =",lpml_tot_gppmx, "\nWAIC =",waic_tot_gppmx))
 # niente ancora lontani da drpm
@@ -939,7 +2053,7 @@ df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=
 for(time in time_span){
 	
 	# tune here your cluster generation
-	salso_out <- salso(gppmx_fit[[time]]$Si,
+	salso_out <- salso(FIT[[time]]$Si,
 				   loss=binder(a=1.2), # example of a tuning
 				   maxNClusters = 8
 				   )
@@ -1010,7 +2124,6 @@ for(time in time_span){
 
 ## plots save
 ```{r}
-base_folder = "Gaussian PPMx"
 salso_out_lists[[base_folder]] = salso_out_list
 ```
 
@@ -1036,11 +2149,13 @@ cols_ARI = colora(ncols_ari,79,0)
 # cols_ARI = rev(cols_ARI)
 brks = seq(-1,1,length.out=ncols_ari+1)
 
-for(a in 1:2){
+for(a in 1:3){
 if(a==1)
 png(paste0("./figures/",base_folder,"/ARI/ari.png"), width=700,height=600)
-else {
+else if (a==2){
 svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=7, width=8)
+} else {
+pdf(paste0("./figures/",base_folder,"/ARI/ari.pdf"), height=7, width=8)
 }
 
 	library(fields)
@@ -1049,103 +2164,6 @@ image.plot(ARImats,
 		   breaks=brks)
 mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.7)
 mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.7)
-dev.off()
-}
-```
-
-### time series
-```{r}
-cl_regions = list()
-for (i in 1:10){
-	cl_regions[[i]] = numeric()
-}
-
-tssites = sites_plt
-tssites$cl = rep(0,105)
-
-for (st in 1:105){
-	mo = Mode(salso_out_matrix[,st],verbose=1)
-	cat(crayon::red("Station",st,"has mode cluster label equal to",mo,"\n"))
-	cl_regions[[mo]] = c(cl_regions[[mo]],st)
-	tssites$cl[st] = mo
-}
-```
-
-
-```{r}
-## manual changes if we want to separately study some suspitious stations
-
-cl_regions
-```
-
-```{r}
-### Time series ###############################################################
-library(grid)
-library(gridBase)
-library(gridExtra)
-
-for(a in 1:3){
-if(a==1)
-png(file=paste0("figures/",base_folder,"/Time series/Time series.png"),units="px",width = 1200, height = 600)
-else if (a==2){
-pdf(file=paste0("figures/",base_folder,"/Time series/Time series.pdf"),width = 14, height = 6)
-} else {
-svg(file=paste0("figures/",base_folder,"/Time series/Time series.svg"),width = 14, height = 6)
-}
-
-	
-layout(matrix(c(1,1,1,1,1,1,2,2,2,2,2,2), nrow = 1, byrow = T))
-# layout(matrix(c(1,2),nrow = 1, byrow = T),widths=c(6,5))
-cols = colora(12,"div",0)[-2]
-
-ys = matrix(NA,nrow=length(cl_regions),53)
-stdevys = matrix(NA,nrow=length(cl_regions),53)
-for (i in 1:length(cl_regions)){
-	ys[i,] = apply(y[cl_regions[[i]],2:54],2,mean)
-	stdevys[i,] = sqrt(apply(y[cl_regions[[i]],2:54],2,var))
-}
-alfa = 100
-
-plot(ys[1,],type="l",ylim=extrema(na.omit(ys))+c(-0.3,+0.1),col=cols[1],lwd=2,xlab="",ylab="")
-title(xlab="Weeks",ylab="PM10 values", mgp=c(2.5,2.5,0),cex.lab=1.2)
-
-polygon(c(1:53,53:1), c(ys[1,]-1/2*stdevys[1,],rev(ys[1,]+1/2*stdevys[1,])),
-		col = rgb(as.vector(col2rgb(cols[1]))[1],as.vector(col2rgb(cols[1]))[2],
-				  as.vector(col2rgb(cols[1]))[3],alfa,maxColorValue = 255),
-	border = NA)
-lines(ys[1,],type="l",ylim=extrema(na.omit(ys)),col=cols[1],lwd=2)
-
-for (i in 2:length(cl_regions)){
-	points(ys[i,],type="l",col=cols[i],lwd=2)
-	polygon(c(1:53,53:1), c(ys[i,]-1/2*stdevys[i,],rev(ys[i,]+1/2*stdevys[i,])),
-		col = rgb(as.vector(col2rgb(cols[i]))[1],as.vector(col2rgb(cols[i]))[2],
-				  as.vector(col2rgb(cols[i]))[3],alfa,maxColorValue = 255),
-	border = NA)
-}
-
-frame()
-# PP1 = DefaultPlot()+
-# geom_point(data = tssites, aes(x = Longitude, y = Latitude, color = cols[tssites$cl]), size = 4)+
-# theme(legend.position = "none")+
-# labs(title = "Stations partitioned")+
-# 	scale_colour_identity(guide="legend",labels=paste0("cl",length(unique(tssites$cl))),
-# 						  breaks=cols[length(unique(tssites$cl))])
-df_cluster_cut = data.frame(
-	Longitude = sites$longitude,
-	Latitude = sites$latitude,
-	clusters = tssites$cl,
-	Time = 1
-)
-cols_gr = cols
-PP1 = get_graph_plot(df_cluster_cut,titolo = "Clusters partition map",cols=cols_gr,verbose=0)
-
-vps <- baseViewports()
-pushViewport(vps$inner, vps$figure, vps$plot)
-# Table grob
-grob <-  ggplotGrob(PP1)
-grid.draw(grob)
-popViewport(3)
-
 dev.off()
 }
 ```
@@ -1197,12 +2215,329 @@ for(time in time_span){
 		   # units="px",width=2500, height=1400, dpi=300)
 	dev.off()
 	
-	### Covariates
-	p = Federica_covariates_plot(df_cluster_cut,cols,
-					 titolo = paste("Cluster map, time",time,"-",base_folder),var_selected_idxs)
-	ggsave(p,file=paste0("./figures/",base_folder,"/With Covariates/With Covariates-",cur_num,".png"),units="px",width=4500, height=3000, dpi=400)
-	dev.off()
 }
+```
+
+
+### time series/trend
+vedere le stazioni basse di valori in media
+```{r}
+medie = matrix(NA,nrow=105,ncol=1)
+stations=unique(df_wsc$IDStations)
+for (st in 1:105){
+	medie[st,1] = mean(df_wsc$AQ_pm10[which(df_wsc$IDStations==stations[st])])	
+}
+# medie
+order(medie[,1])
+```
+
+```{r}
+cl_regions = list()
+for (i in 1:10){
+	cl_regions[[i]] = numeric()
+}
+
+tssites = sites_plt
+tssites$cl = rep(0,105)
+
+for (st in 1:105){
+	mo = Mode(salso_out_matrix[,st])
+	# cat("Station",st,"has mode cluster label equal to",mo,"\n")
+	cl_regions[[mo]] = c(cl_regions[[mo]],st)
+	tssites$cl[st] = mo
+}
+cl_regions
+```
+
+```{r}
+## manual changes if we want to separately study some suspitious stations
+cl_regions[[3]] = setdiff(cl_regions[[3]],77)
+cl_regions[[2]] = c(cl_regions[[2]],77)
+tssites$cl[77] = 2
+
+
+cl_regions
+```
+
+```{r}
+non_null_clregions_indexes = 0
+medie = rep(100,10)
+for (i in 1:10){
+	if(lenght(cl_regions[[i]])>0){
+		non_null_clregions_indexes = non_null_clregions_indexes + 1
+		medie[i] = mean(apply(y[cl_regions[[i]],2:54],2,mean))
+	}
+}
+non_null_clregions_indexes
+medie = medie[1:non_null_clregions_indexes]
+ord = order(medie,decreasing = T)
+```
+
+
+```{r,warning=F}
+cols = colora(12,"div",0)[-2]
+
+cols = colora(non_null_clregions_indexes,111,1)
+cols_new = cols
+for (i in 1:non_null_clregions_indexes){
+	cols_new[ord[i]] = cols[i]
+}
+cols = cols_new
+
+df_cluster_cut = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	clusters = tssites$cl,
+	Time = 1
+)
+cols_gr = cols[1:length(unique(tssites$cl))]
+PP1 = get_graph_plot(df_cluster_cut,titolo = "Mode clusters",cols=cols_gr,verbose=0,legenda=0)
+PP1
+```
+
+```{r,warning=F}
+alfa = 70
+lsize = 0.9
+# cols = colora(12,"div",0)[-2]
+cols_trasp = cols
+for (i in 1:12){
+	cols_trasp[i] = rgb(as.vector(col2rgb(cols[i]))[1],as.vector(col2rgb(cols[i]))[2],
+				  as.vector(col2rgb(cols[i]))[3],alfa,maxColorValue = 255)
+}
+
+### mode map ################################################################
+df_cluster_cut = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	clusters = tssites$cl,
+	Time = 1
+)
+cols_gr = cols[1:length(unique(tssites$cl))]
+plt_modemap = get_graph_plot(df_cluster_cut,titolo = "Gaussian PPMx - Mode clusters",cols=cols_gr,
+							 verbose=0,legenda=0)
+print(plt_modemap)
+
+### covariates and pm10 ################################################################
+var_selected_to_plot = c(
+"Altitude",
+"AQ_pm10",
+"WE_temp_2m",
+"WE_wind_speed_10m_mean",
+"WE_wind_speed_10m_max",
+"WE_tot_precipitation",
+"WE_precipitation_t",
+"WE_surface_pressure",
+"WE_solar_radiation",
+"WE_rh_min",
+"WE_rh_mean",
+"WE_rh_max",
+"WE_wind_speed_100m_mean",
+"WE_wind_speed_100m_max",
+"WE_blh_layer_max",
+"WE_blh_layer_min",
+"EM_nh3_livestock_mm",
+"EM_nh3_agr_soils",
+"EM_nh3_agr_waste_burn",
+"EM_nh3_sum",
+"EM_nox_traffic",
+"EM_nox_sum",
+"EM_so2_sum",
+"LI_pigs",
+"LI_bovine",
+"LI_pigs_v2",
+"LI_bovine_v2",
+"LA_hvi",
+"LA_lvi",
+"LA_land_use"
+)
+
+pts = list()
+for (cova_name in var_selected_to_plot){
+	cat(cova_name,"\n")
+    
+ys = matrix(NA,nrow=length(cl_regions),53)
+stdevys = matrix(NA,nrow=length(cl_regions),53)
+move_up = matrix(NA,nrow=length(cl_regions),53)
+move_dn = matrix(NA,nrow=length(cl_regions),53)
+
+cova=data.frame()
+for(st in stations){
+  # cova=rbind(cova,cbind(as.data.frame(st),t(df_wsc[which(df_wsc$IDStations==st),cova_name])))
+  cova=rbind(cova,cbind(as.data.frame(st),t(df_weekly[which(df_weekly$IDStations==st),cova_name])))
+}
+rownames(cova) = NULL; colnames(cova)<- c("id",paste0("w", 1:53))
+
+for (i in 1:length(cl_regions)){
+	# ys[i,] = apply(cova[cl_regions[[i]],2:54],2,mean)
+	ys[i,] = apply(cova[cl_regions[[i]],2:54],2,median)
+	# stdevys[i,] = sqrt(apply(cova[cl_regions[[i]],2:54],2,var))
+	# stdevys[i,] = apply(cova[cl_regions[[i]],2:54],2,IQR)
+	move_up[i,] = apply(cova[cl_regions[[i]],2:54],2,quantile,0.75)
+	move_dn[i,] = apply(cova[cl_regions[[i]],2:54],2,quantile,0.25)
+}
+
+
+if(cova_name=="Altitude" || cova_name=="LA_land_use"){
+# unfortunately automatically it does not work :/
+dts1 = data.frame(xx=c(1:2,2:1), yy=rep(c(move_up[1 ,1],move_dn[1 ,1]),each=2))
+dts2 = data.frame(xx=c(2:3,3:2), yy=rep(c(move_up[2 ,1],move_dn[2 ,1]),each=2))
+dts3 = data.frame(xx=c(3:4,4:3), yy=rep(c(move_up[3 ,1],move_dn[3 ,1]),each=2))
+dts4 = data.frame(xx=c(4:5,5:4), yy=rep(c(move_up[4 ,1],move_dn[4 ,1]),each=2))
+dts5 = data.frame(xx=c(5:6,6:5), yy=rep(c(move_up[5 ,1],move_dn[5 ,1]),each=2))
+dts6 = data.frame(xx=c(6:7,7:6), yy=rep(c(move_up[6 ,1],move_dn[6 ,1]),each=2))
+dts7 = data.frame(xx=c(7:8,8:7), yy=rep(c(move_up[7 ,1],move_dn[7 ,1]),each=2))
+dts8 = data.frame(xx=c(8:9,9:8), yy=rep(c(move_up[8 ,1],move_dn[8 ,1]),each=2))
+dts9 = data.frame(xx=c(9:10,10:9), yy=rep(c(move_up[9 ,1],move_dn[9 ,1]),each=2))
+dts10 = data.frame(xx=c(10:11,11:10), yy=c(move_up[10 ,1],move_dn[10 ,1]))
+
+pts[[cova_name]] = local({
+	cova_name = cova_name
+	dts1 = dts1
+	dts2 = dts2
+	dts3 = dts3
+	dts4 = dts4
+	dts5 = dts5
+	dts6 = dts6
+	dts7 = dts7
+	dts8 = dts8
+	dts9 = dts9
+	dts10 = dts10
+	ys = ys
+	move_up = move_up
+	move_dn = move_dn
+
+	ggplot() +
+	# geom_vline(xintercept = 10,col="#990011")+
+	# geom_vline(xintercept = 10,col="gray50")+
+geom_polygon(data=dts1, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[1])))+
+geom_polygon(data=dts2, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[2])))+
+geom_polygon(data=dts3, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[3])))+
+geom_polygon(data=dts4, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[4])))+
+geom_polygon(data=dts5, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[5])))+
+geom_polygon(data=dts6, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[6])))+
+geom_polygon(data=dts7, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[7])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts10, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[10])))+
+geom_line(aes(x=1:2,y=ys[1,1:2],col=paste0(cols[1])),size=lsize)+
+geom_line(aes(x=2:3,y=ys[2,1:2],col=paste0(cols[2])),size=lsize)+
+geom_line(aes(x=3:4,y=ys[3,1:2],col=paste0(cols[3])),size=lsize)+
+geom_line(aes(x=4:5,y=ys[4,1:2],col=paste0(cols[4])),size=lsize)+
+geom_line(aes(x=5:6,y=ys[5,1:2],col=paste0(cols[5])),size=lsize)+
+geom_line(aes(x=6:7,y=ys[6,1:2],col=paste0(cols[6])),size=lsize)+
+geom_line(aes(x=7:8,y=ys[7,1:2],col=paste0(cols[7])),size=lsize)+
+geom_line(aes(x=8:9,y=ys[8,1:2],col=paste0(cols[8])),size=lsize)+
+geom_line(aes(x=9:10,y=ys[9,1:2],col=paste0(cols[9])),size=lsize)+
+geom_line(aes(x=10:11,y=ys[10,1:2],col=paste0(cols[10])),size=lsize)+
+	theme_bw()+ 
+	scale_fill_identity()+scale_color_identity()+
+	theme(panel.grid = element_blank(),axis.ticks.x=element_blank(),axis.text.x=element_blank())+
+	ylab(cova_name)+xlab("")+theme(legend.position = "none")+
+		xlim(c(1,non_null_clregions_indexes+1))
+
+})
+
+} else {
+# unfortunately automatically it does not work :/
+dts1 = data.frame(xx=c(1:53,53:1), yy=c(move_up[1 ,],rev(move_dn[1 ,])))
+dts2 = data.frame(xx=c(1:53,53:1), yy=c(move_up[2 ,],rev(move_dn[2 ,])))
+dts3 = data.frame(xx=c(1:53,53:1), yy=c(move_up[3 ,],rev(move_dn[3 ,])))
+dts4 = data.frame(xx=c(1:53,53:1), yy=c(move_up[4 ,],rev(move_dn[4 ,])))
+dts5 = data.frame(xx=c(1:53,53:1), yy=c(move_up[5 ,],rev(move_dn[5 ,])))
+dts6 = data.frame(xx=c(1:53,53:1), yy=c(move_up[6 ,],rev(move_dn[6 ,])))
+dts7 = data.frame(xx=c(1:53,53:1), yy=c(move_up[7 ,],rev(move_dn[7 ,])))
+dts8 = data.frame(xx=c(1:53,53:1), yy=c(move_up[8 ,],rev(move_dn[8 ,])))
+dts9 = data.frame(xx=c(1:53,53:1), yy=c(move_up[9 ,],rev(move_dn[9 ,])))
+dts10 = data.frame(xx=c(1:53,53:1), yy=c(move_up[10 ,],rev(move_dn[10 ,])))
+
+# dts1 = data.frame(xx=c(1:53,53:1), yy=c(ys[1 ,]-1/2*stdevys[1 ,],rev(ys[1 ,]+1/2*stdevys[1 ,])))
+# dts2 = data.frame(xx=c(1:53,53:1), yy=c(ys[2 ,]-1/2*stdevys[2 ,],rev(ys[2 ,]+1/2*stdevys[2 ,])))
+# dts3 = data.frame(xx=c(1:53,53:1), yy=c(ys[3 ,]-1/2*stdevys[3 ,],rev(ys[3 ,]+1/2*stdevys[3 ,])))
+# dts4 = data.frame(xx=c(1:53,53:1), yy=c(ys[4 ,]-1/2*stdevys[4 ,],rev(ys[4 ,]+1/2*stdevys[4 ,])))
+# dts5 = data.frame(xx=c(1:53,53:1), yy=c(ys[5 ,]-1/2*stdevys[5 ,],rev(ys[5 ,]+1/2*stdevys[5 ,])))
+# dts6 = data.frame(xx=c(1:53,53:1), yy=c(ys[6 ,]-1/2*stdevys[6 ,],rev(ys[6 ,]+1/2*stdevys[6 ,])))
+# dts7 = data.frame(xx=c(1:53,53:1), yy=c(ys[7 ,]-1/2*stdevys[7 ,],rev(ys[7 ,]+1/2*stdevys[7 ,])))
+# dts8 = data.frame(xx=c(1:53,53:1), yy=c(ys[8 ,]-1/2*stdevys[8 ,],rev(ys[8 ,]+1/2*stdevys[8 ,])))
+# dts9 = data.frame(xx=c(1:53,53:1), yy=c(ys[9 ,]-1/2*stdevys[9 ,],rev(ys[9 ,]+1/2*stdevys[9 ,])))
+# dts10= data.frame(xx=c(1:53,53:1), yy=c(ys[10,]-1/2*stdevys[10,],rev(ys[10,]+1/2*stdevys[10,])))
+
+pts[[cova_name]] = local({
+	cova_name = cova_name
+	dts1 = dts1
+	dts2 = dts2
+	dts3 = dts3
+	dts4 = dts4
+	dts5 = dts5
+	dts6 = dts6
+	dts7 = dts7
+	dts8 = dts8
+	dts9 = dts9
+	dts10 = dts10
+	ys = ys
+	move_up = move_up
+	move_dn = move_dn
+
+	ggplot() +
+	# geom_vline(xintercept = 10,col="#990011")+
+	# geom_vline(xintercept = 10,col="gray50")+
+geom_polygon(data=dts1, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[1])))+
+geom_polygon(data=dts2, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[2])))+
+geom_polygon(data=dts3, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[3])))+
+geom_polygon(data=dts4, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[4])))+
+geom_polygon(data=dts5, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[5])))+
+geom_polygon(data=dts6, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[6])))+
+geom_polygon(data=dts7, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[7])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts10, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[10])))+
+geom_line(aes(x=1:53,y=ys[1,],col=paste0(cols[1])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[2,],col=paste0(cols[2])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[3,],col=paste0(cols[3])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[4,],col=paste0(cols[4])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[5,],col=paste0(cols[5])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[6,],col=paste0(cols[6])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[7,],col=paste0(cols[7])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[8,],col=paste0(cols[8])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[9,],col=paste0(cols[9])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[10,],col=paste0(cols[10])),size=lsize)+
+	theme_bw()+ 
+	scale_fill_identity()+scale_color_identity()+
+	theme(panel.grid = element_blank())+
+	ylab(cova_name)+
+		# xlab("Weeks")+
+	theme(legend.position = "none")+
+	# scale_x_continuous(name="Weeks",
+	# scale_x_continuous(name="Months (weeks)",
+	scale_x_continuous(name="Weeks (months)",
+					   breaks = sapply(unique(month(unique(df_wsc$Time))),
+					   				function(x) match(x, month(unique(df_wsc$Time)))[1]),
+					   # labels = c("Jan (1)", "Feb (6)","Mar (10)",
+					   # 		   "Apr (14)","May (19)","Jun (23)",
+					   # 		   "Jul (27)","Aug (32)","Sep (36)",
+					   # 		   "Oct (40)","Nov (45)","Dec (49)"),
+					   # guide=guide_axis(angle=0)
+					   # labels = c("Jan\n(1)", "Feb\n(6)","Mar\n(10)",
+					   # 		   "Apr\n(14)","May\n(19)","Jun\n(23)",
+					   # 		   "Jul\n(27)","Aug\n(32)","Sep\n(36)",
+					   # 		   "Oct\n(40)","Nov\n(45)","Dec\n(49)")
+					   labels = c("1(J)", "6(F)","10(M)",
+					   		   "14(A)","19(M)","23(J)",
+					   		   "27(J)","32(A)","36(S)",
+					   		   "40(O)","45(N)","49(D)")
+					   )
+
+
+})
+}
+
+print(pts[[cova_name]])
+
+ggsave(paste0("./figures/",base_folder,"/Time Series/",cova_name,".png"),
+	   plot = pts[[cova_name]],units="px",width=2200,height = 1400)
+}
+ggsave(paste0("./figures/",base_folder,"/Time Series/plt_modemap.png"),
+	   # plot = plt_modemap,units="px",width=2200,height = 1400)
+	   plot = plt_modemap,units="px",width=1200,height = 1200)
 ```
 
 
@@ -1210,15 +2545,536 @@ for(time in time_span){
 
 
 
-
-
 #=======
-# ecc
-your models when done
+# Curve PPmx DONE!
+```{r}
+# load("../data/all_fits_curveppmx.Rdata")
+load("./curveppmx_fed_update.Rdata")
+FIT = all_fits
+base_folder = "Curve PPMx"
+```
+
+```{r}
+lpml_tot_gppmx = waic_tot_gppmx = 0
+for (time in 1:53){
+	lpml_tot_gppmx = lpml_tot_gppmx + FIT[[time]]$lpml
+	waic_tot_gppmx = waic_tot_gppmx + FIT[[time]]$WAIC
+}
+cat(crayon::red("\nLPML =",lpml_tot_gppmx, "\nWAIC =",waic_tot_gppmx))
+# niente ancora lontani da drpm
+```
+
+
+## cls def/see
+Here you should tune the salso(ecc) to maybe improve the cluster generation
+```{r}
+salso_out_list = list()
+salso_out_matrix = matrix(NA,nrow=53,ncol=105)
+
+df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
+for(time in time_span){
+	
+	# tune here your cluster generation
+	salso_out <- salso(FIT[[time]]$Si,
+				   loss=binder(a=1.2), # example of a tuning
+				   maxNClusters = 8
+				   )
+
+	salso_out_list[[time]] = salso_out
+	salso_out_matrix[time,] = salso_out
+
+	df_temp = data.frame(
+		Longitude = sites$longitude,
+		Latitude = sites$latitude,
+		clusters = salso_out[1:105]
+	)
+	# increment nint_FIT until there is no error
+	nint_FIT = 12
+	cols = color_correct_clusters(df_temp,idea=2,verbose=0,nint=nint_FIT)
+	
+	################################################
+	
+	df_temp$Time = rep(time,dim(df_temp)[1])
+	df_cluster = rbind(df_cluster,df_temp)
+	
+	# clusters log
+	clusters_now = df_temp$clusters
+	# n_clusters = max(clusters_now)
+	n_clusters = unique(clusters_now)
+	ycurrent = y[,paste0("w",time)]
+	cat(crayon::red("Time",time,"- #clusters =",length(unique(clusters_now)),"\n"))
+	# for (cl in n_clusters){
+		# cat("Cluster",cl,"- size",length(ycurrent[which(clusters_now==cl)]),
+			# "- mean",mean(ycurrent[which(clusters_now==cl)]),"\n")
+	# }
+
+	
+	################################################
+	
+	df_cluster_cut = df_temp 
+	# if you want to see results directly here, use these lines
+	
+	# df_cluster_cut = df_cluster[df_cluster$Time==time,] # same def
+	# cols = ... defined above
+
+	# salso_out = salso_out_list[[time]]
+	# ssout = summary(salso_out)
+	# plot(ssout,type="heatmap")
+	# plot(ssout,type="mds")
+	# plot(ssout,type="pairs",data=std_sites)
+	# text(0.2,0.98,paste0("Time ",time))
+	# plot(ssout,type="dendrogram")
+
+	# q = get_graph_plot(df_cluster_cut,cols)
+	# print(q)
+	# p = plot_graph_and_hist(df_cluster_cut,cols)
+	
+	################################################
+	# test for covariates plots
+	
+	# png("test.png",units="px",height = 2400,width = 2000)
+	# p = Federica_covariates_plot(df_cluster_cut,cols,
+	# 				 titolo = paste("Cluster map, time",time,"- Gaussian PPMx"),var_selected_idxs)
+	# ggsave(p,file="test.png",units="px",width=3500, height=3000, dpi=400)
+	# ggsave(p,file="test.pdf",width=15, height=10)
+	# dev.off()
+
+}
+```
+
+
+
+
+## plots save
+```{r}
+salso_out_lists[[base_folder]] = salso_out_list
+```
+
+### ari
+```{r}
+### ARI #######################################################################
+library(mclust) # if Adjusted RI
+
+LEN = max(time_span)
+# build the ARI matrix
+ARImats <- matrix(NA, nrow=LEN, ncol=LEN)
+rho_ARI <- list()
+for(time in 1:LEN){
+	rho_ARI[[time]] = salso_out_list[[time]]
+}
+for(k in 1: LEN){
+	for(kk in 1: LEN){
+		ARImats[k,kk] <- adjustedRandIndex(rho_ARI[[k]], rho_ARI[[kk]])
+	}
+}
+ncols_ari = 100
+cols_ARI = colora(ncols_ari,79,0)
+# cols_ARI = rev(cols_ARI)
+brks = seq(-1,1,length.out=ncols_ari+1)
+
+for(a in 1:3){
+if(a==1)
+png(paste0("./figures/",base_folder,"/ARI/ari.png"), width=700,height=600)
+else if (a==2){
+svg(paste0("./figures/",base_folder,"/ARI/ari.svg"), height=7, width=8)
+} else {
+pdf(paste0("./figures/",base_folder,"/ARI/ari.pdf"), height=7, width=8)
+}
+
+	library(fields)
+image.plot(ARImats,
+		   main=paste0("Lagged ARI values - ",base_folder),axes=FALSE,col=cols_ARI,
+		   breaks=brks)
+mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.7)
+mtext(text=c(paste("",1:LEN)), side=1, line=0.3,at=seq(0,1,length=LEN), las=2, cex=0.7)
+dev.off()
+}
+```
+
+### the rest
+```{r}
+for(time in time_span){
+	cat(crayon::red("Time",time,"\n"))
+
+	df_cluster_cut = df_cluster[df_cluster$Time==time,]
+	# clusters_now = df_cluster_cut$clusters
+	####### no mode correct if heat plot
+	# clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
+	# se fai heat plot non serve fare la mode correct
+	# perché la heat plot la usi per vedere anche i valori di pm10, non la coerenza temporale
+	# nei gruppi, che con la heat coloration si perde come visibilità (non so se è chiaro)
+	# df_cluster_cut$clusters = clusters_now
+
+	cur_num = sprintf("%02d", time)
+	cols = color_correct_clusters(df_cluster_cut,idea=2,verbose=0,nint=nint_FIT)
+
+	
+	### Salso
+	salso_out = salso_out_list[[time]]
+	ssout = summary(salso_out)
+	png(filename=paste0("./figures/",base_folder,"/Salso/Salso-",sprintf("%02d",time),".png"),
+		width=600,height=500)
+	# plot(ssout,type="heatmap")
+	# plot(ssout,type="mds")
+	plot(ssout,type="pairs",data=std_sites)
+	text(0.3,0.98,paste0("Time ",time," - ",base_folder))
+	# plot(ssout,type="dendrogram")
+	dev.off()
+	
+	
+	### Graph
+	q = get_graph_plot(df_cluster_cut,cols,paste("Cluster map, time",time,"-",base_folder))
+	print(q)
+	ggsave(file=paste0("./figures/",base_folder,"/Graph/Graph-",cur_num,".png"),
+	units="px",width=2000, height=1400, dpi=300)
+	dev.off()
+	
+	
+	### Graph and Boxplot
+	p = plot_graph_and_hist(df_cluster_cut,cols,titolo=paste("Time",time,"-",base_folder))
+	ggsave(file=paste0("./figures/",base_folder,"/Graph and Boxplot/Graph and Boxplot-",cur_num,".png"),
+		   plot=p,
+		   units="px",width=2500, height=1200, dpi=300) # maybe 1200 is better
+		   # units="px",width=2500, height=1400, dpi=300)
+	dev.off()
+	
+}
+```
+
+
+### time series/trend
+```{r}
+cl_regions = list()
+for (i in 1:10){
+	cl_regions[[i]] = numeric()
+}
+
+tssites = sites_plt
+tssites$cl = rep(0,105)
+
+for (st in 1:105){
+	# cat("#######",st,"\n")
+	mo = Mode(salso_out_matrix[,st],verbose = 0)
+	# mo = cppmx[st]
+	# cat("Station",st,"has mode cluster label equal to",mo,"\n")
+	cl_regions[[mo]] = c(cl_regions[[mo]],st)
+	tssites$cl[st] = mo
+}
+cl_regions
+```
+
+
+```{r}
+cppmx = c(1,1,1,2,1,2,2,3,2,2,1,3,2,2,4,1,1,2,1,5,1,4,2,2,2,1,2,2,1,1,1,1,1,1,1,1,1,1,2,2,1,4,
+1,1,1,2,1,1,2,1,1,6,1,2,2,2,1,1,1,1,3,4,1,1,4,4,4,2,5,1,4,1,1,4,1,1,1,1,1,6,2,1,4,4,
+1,1,1,1,1,1,1,7,1,1,1,2,1,1,1,1,7,4,4,1,1)
+```
+
+```{r}
+## manual changes if we want to separately study some suspitious stations
+# for example:
+cl_regions[[1]] = setdiff(cl_regions[[1]],c(70,69)) # remove station 8 from group 4
+cl_regions[[2]] = c(cl_regions[[2]],70) # add station 80 to group 5
+tssites$cl[70] = 2 # assign label 5 to station 5
+
+cl_regions[[4]] = setdiff(cl_regions[[4]],20)
+cl_regions[[6]] = c(69,20)
+tssites$cl[69] = 6 
+tssites$cl[20] = 6
+
+cl_regions
+```
+
+```{r}
+non_null_clregions_indexes = 0
+medie = rep(100,10)
+for (i in 1:10){
+	if(lenght(cl_regions[[i]])>0){
+		non_null_clregions_indexes = non_null_clregions_indexes + 1
+		medie[i] = mean(apply(y[cl_regions[[i]],2:54],2,mean))
+	}
+}
+non_null_clregions_indexes
+medie = medie[1:non_null_clregions_indexes]
+ord = order(medie,decreasing = T)
+```
+
+
+```{r,warning=F}
+cols = colora(12,"div",0)[-2]
+
+cols = colora(non_null_clregions_indexes,111,1) # evita il giallo
+# cols[3] = "#FBD678"
+	
+# cols = colora(10,111,1) # evita il giallo
+# cols = cols[c(1,3,5,8,10)]
+
+cols_new = cols
+for (i in 1:non_null_clregions_indexes){
+	cols_new[ord[i]] = cols[i]
+}
+cols = cols_new
+
+df_cluster_cut = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	clusters = tssites$cl,
+	Time = 1
+)
+cols_gr = cols[1:length(unique(tssites$cl))]
+PP1 = get_graph_plot(df_cluster_cut,titolo = "Mode clusters",cols=cols_gr,verbose=0,legenda=0)
+PP1
+```
+
+```{r,warning=F}
+alfa = 70
+lsize = 0.9
+# cols = colora(12,"div",0)[-2]
+cols_trasp = cols
+for (i in 1:12){
+	cols_trasp[i] = rgb(as.vector(col2rgb(cols[i]))[1],as.vector(col2rgb(cols[i]))[2],
+				  as.vector(col2rgb(cols[i]))[3],alfa,maxColorValue = 255)
+}
+
+### mode map ################################################################
+df_cluster_cut = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	clusters = tssites$cl,
+	Time = 1
+)
+cols_gr = cols[1:length(unique(tssites$cl))]
+plt_modemap = get_graph_plot(df_cluster_cut,titolo = "Curve PPMx - Mode clusters",cols=cols_gr,
+							 verbose=0,legenda=0)
+print(plt_modemap)
+
+### covariates and pm10 ################################################################
+var_selected_to_plot = c(
+"Altitude",
+"AQ_pm10",
+"WE_temp_2m",
+"WE_wind_speed_10m_mean",
+"WE_wind_speed_10m_max",
+"WE_tot_precipitation",
+"WE_precipitation_t",
+"WE_surface_pressure",
+"WE_solar_radiation",
+"WE_rh_min",
+"WE_rh_mean",
+"WE_rh_max",
+"WE_wind_speed_100m_mean",
+"WE_wind_speed_100m_max",
+"WE_blh_layer_max",
+"WE_blh_layer_min",
+"EM_nh3_livestock_mm",
+"EM_nh3_agr_soils",
+"EM_nh3_agr_waste_burn",
+"EM_nh3_sum",
+"EM_nox_traffic",
+"EM_nox_sum",
+"EM_so2_sum",
+"LI_pigs",
+"LI_bovine",
+"LI_pigs_v2",
+"LI_bovine_v2",
+"LA_hvi",
+"LA_lvi",
+"LA_land_use"
+)
+
+pts = list()
+for (cova_name in var_selected_to_plot){
+	cat(cova_name,"\n")
+    
+ys = matrix(NA,nrow=length(cl_regions),53)
+stdevys = matrix(NA,nrow=length(cl_regions),53)
+move_up = matrix(NA,nrow=length(cl_regions),53)
+move_dn = matrix(NA,nrow=length(cl_regions),53)
+
+cova=data.frame()
+for(st in stations){
+  # cova=rbind(cova,cbind(as.data.frame(st),t(df_wsc[which(df_wsc$IDStations==st),cova_name])))
+  cova=rbind(cova,cbind(as.data.frame(st),t(df_weekly[which(df_weekly$IDStations==st),cova_name])))
+}
+rownames(cova) = NULL; colnames(cova)<- c("id",paste0("w", 1:53))
+
+for (i in 1:length(cl_regions)){
+	# ys[i,] = apply(cova[cl_regions[[i]],2:54],2,mean)
+	ys[i,] = apply(cova[cl_regions[[i]],2:54],2,median)
+	# stdevys[i,] = sqrt(apply(cova[cl_regions[[i]],2:54],2,var))
+	# stdevys[i,] = apply(cova[cl_regions[[i]],2:54],2,IQR)
+	move_up[i,] = apply(cova[cl_regions[[i]],2:54],2,quantile,0.80)
+	move_dn[i,] = apply(cova[cl_regions[[i]],2:54],2,quantile,0.20)
+}
+
+
+if(cova_name=="Altitude" || cova_name=="LA_land_use"){
+# unfortunately automatically it does not work :/
+dts1 = data.frame(xx=c(1:2,2:1), yy=rep(c(move_up[1 ,1],move_dn[1 ,1]),each=2))
+dts2 = data.frame(xx=c(2:3,3:2), yy=rep(c(move_up[2 ,1],move_dn[2 ,1]),each=2))
+dts3 = data.frame(xx=c(3:4,4:3), yy=rep(c(move_up[3 ,1],move_dn[3 ,1]),each=2))
+dts4 = data.frame(xx=c(4:5,5:4), yy=rep(c(move_up[4 ,1],move_dn[4 ,1]),each=2))
+dts5 = data.frame(xx=c(5:6,6:5), yy=rep(c(move_up[5 ,1],move_dn[5 ,1]),each=2))
+dts6 = data.frame(xx=c(6:7,7:6), yy=rep(c(move_up[6 ,1],move_dn[6 ,1]),each=2))
+dts7 = data.frame(xx=c(7:8,8:7), yy=rep(c(move_up[7 ,1],move_dn[7 ,1]),each=2))
+dts8 = data.frame(xx=c(8:9,9:8), yy=rep(c(move_up[8 ,1],move_dn[8 ,1]),each=2))
+dts9 = data.frame(xx=c(9:10,10:9), yy=rep(c(move_up[9 ,1],move_dn[9 ,1]),each=2))
+dts10 = data.frame(xx=c(10:11,11:10), yy=c(move_up[10 ,1],move_dn[10 ,1]))
+
+pts[[cova_name]] = local({
+	cova_name = cova_name
+	dts1 = dts1
+	dts2 = dts2
+	dts3 = dts3
+	dts4 = dts4
+	dts5 = dts5
+	dts6 = dts6
+	dts7 = dts7
+	dts8 = dts8
+	dts9 = dts9
+	dts10 = dts10
+	ys = ys
+	move_up = move_up
+	move_dn = move_dn
+
+	ggplot() +
+	# geom_vline(xintercept = 10,col="#990011")+
+	# geom_vline(xintercept = 10,col="gray50")+
+geom_polygon(data=dts1, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[1])))+
+geom_polygon(data=dts2, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[2])))+
+geom_polygon(data=dts3, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[3])))+
+geom_polygon(data=dts4, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[4])))+
+geom_polygon(data=dts5, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[5])))+
+geom_polygon(data=dts6, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[6])))+
+geom_polygon(data=dts7, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[7])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts10, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[10])))+
+geom_line(aes(x=1:2,y=ys[1,1:2],col=paste0(cols[1])),size=lsize)+
+geom_line(aes(x=2:3,y=ys[2,1:2],col=paste0(cols[2])),size=lsize)+
+geom_line(aes(x=3:4,y=ys[3,1:2],col=paste0(cols[3])),size=lsize)+
+geom_line(aes(x=4:5,y=ys[4,1:2],col=paste0(cols[4])),size=lsize)+
+geom_line(aes(x=5:6,y=ys[5,1:2],col=paste0(cols[5])),size=lsize)+
+geom_line(aes(x=6:7,y=ys[6,1:2],col=paste0(cols[6])),size=lsize)+
+geom_line(aes(x=7:8,y=ys[7,1:2],col=paste0(cols[7])),size=lsize)+
+geom_line(aes(x=8:9,y=ys[8,1:2],col=paste0(cols[8])),size=lsize)+
+geom_line(aes(x=9:10,y=ys[9,1:2],col=paste0(cols[9])),size=lsize)+
+geom_line(aes(x=10:11,y=ys[10,1:2],col=paste0(cols[10])),size=lsize)+
+	theme_bw()+ 
+	scale_fill_identity()+scale_color_identity()+
+	theme(panel.grid = element_blank(),axis.ticks.x=element_blank(),axis.text.x=element_blank())+
+	ylab(cova_name)+xlab("")+theme(legend.position = "none")+
+		xlim(c(1,non_null_clregions_indexes+1))
+
+})
+
+} else {
+# unfortunately automatically it does not work :/
+dts1 = data.frame(xx=c(1:53,53:1), yy=c(move_up[1 ,],rev(move_dn[1 ,])))
+dts2 = data.frame(xx=c(1:53,53:1), yy=c(move_up[2 ,],rev(move_dn[2 ,])))
+dts3 = data.frame(xx=c(1:53,53:1), yy=c(move_up[3 ,],rev(move_dn[3 ,])))
+dts4 = data.frame(xx=c(1:53,53:1), yy=c(move_up[4 ,],rev(move_dn[4 ,])))
+dts5 = data.frame(xx=c(1:53,53:1), yy=c(move_up[5 ,],rev(move_dn[5 ,])))
+dts6 = data.frame(xx=c(1:53,53:1), yy=c(move_up[6 ,],rev(move_dn[6 ,])))
+dts7 = data.frame(xx=c(1:53,53:1), yy=c(move_up[7 ,],rev(move_dn[7 ,])))
+dts8 = data.frame(xx=c(1:53,53:1), yy=c(move_up[8 ,],rev(move_dn[8 ,])))
+dts9 = data.frame(xx=c(1:53,53:1), yy=c(move_up[9 ,],rev(move_dn[9 ,])))
+dts10 = data.frame(xx=c(1:53,53:1), yy=c(move_up[10 ,],rev(move_dn[10 ,])))
+
+# dts1 = data.frame(xx=c(1:53,53:1), yy=c(ys[1 ,]-1/2*stdevys[1 ,],rev(ys[1 ,]+1/2*stdevys[1 ,])))
+# dts2 = data.frame(xx=c(1:53,53:1), yy=c(ys[2 ,]-1/2*stdevys[2 ,],rev(ys[2 ,]+1/2*stdevys[2 ,])))
+# dts3 = data.frame(xx=c(1:53,53:1), yy=c(ys[3 ,]-1/2*stdevys[3 ,],rev(ys[3 ,]+1/2*stdevys[3 ,])))
+# dts4 = data.frame(xx=c(1:53,53:1), yy=c(ys[4 ,]-1/2*stdevys[4 ,],rev(ys[4 ,]+1/2*stdevys[4 ,])))
+# dts5 = data.frame(xx=c(1:53,53:1), yy=c(ys[5 ,]-1/2*stdevys[5 ,],rev(ys[5 ,]+1/2*stdevys[5 ,])))
+# dts6 = data.frame(xx=c(1:53,53:1), yy=c(ys[6 ,]-1/2*stdevys[6 ,],rev(ys[6 ,]+1/2*stdevys[6 ,])))
+# dts7 = data.frame(xx=c(1:53,53:1), yy=c(ys[7 ,]-1/2*stdevys[7 ,],rev(ys[7 ,]+1/2*stdevys[7 ,])))
+# dts8 = data.frame(xx=c(1:53,53:1), yy=c(ys[8 ,]-1/2*stdevys[8 ,],rev(ys[8 ,]+1/2*stdevys[8 ,])))
+# dts9 = data.frame(xx=c(1:53,53:1), yy=c(ys[9 ,]-1/2*stdevys[9 ,],rev(ys[9 ,]+1/2*stdevys[9 ,])))
+# dts10= data.frame(xx=c(1:53,53:1), yy=c(ys[10,]-1/2*stdevys[10,],rev(ys[10,]+1/2*stdevys[10,])))
+
+pts[[cova_name]] = local({
+	cova_name = cova_name
+	dts1 = dts1
+	dts2 = dts2
+	dts3 = dts3
+	dts4 = dts4
+	dts5 = dts5
+	dts6 = dts6
+	dts7 = dts7
+	dts8 = dts8
+	dts9 = dts9
+	dts10 = dts10
+	ys = ys
+	move_up = move_up
+	move_dn = move_dn
+
+	ggplot() +
+	# geom_vline(xintercept = 10,col="#990011")+
+	# geom_vline(xintercept = 10,col="gray50")+
+geom_polygon(data=dts1, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[1])))+
+geom_polygon(data=dts2, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[2])))+
+geom_polygon(data=dts3, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[3])))+
+geom_polygon(data=dts4, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[4])))+
+geom_polygon(data=dts5, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[5])))+
+geom_polygon(data=dts6, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[6])))+
+geom_polygon(data=dts7, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[7])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts8, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[8])))+
+geom_polygon(data=dts10, mapping=aes(x=xx, y=yy,fill=paste0(cols_trasp[10])))+
+geom_line(aes(x=1:53,y=ys[1,],col=paste0(cols[1])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[2,],col=paste0(cols[2])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[3,],col=paste0(cols[3])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[4,],col=paste0(cols[4])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[5,],col=paste0(cols[5])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[6,],col=paste0(cols[6])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[7,],col=paste0(cols[7])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[8,],col=paste0(cols[8])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[9,],col=paste0(cols[9])),size=lsize)+
+geom_line(aes(x=1:53,y=ys[10,],col=paste0(cols[10])),size=lsize)+
+	theme_bw()+ 
+	scale_fill_identity()+scale_color_identity()+
+	theme(panel.grid = element_blank())+
+	ylab(cova_name)+
+		# xlab("Weeks")+
+	theme(legend.position = "none")+
+	# scale_x_continuous(name="Weeks",
+	# scale_x_continuous(name="Months (weeks)",
+	scale_x_continuous(name="Weeks (months)",
+					   breaks = sapply(unique(month(unique(df_wsc$Time))),
+					   				function(x) match(x, month(unique(df_wsc$Time)))[1]),
+					   # labels = c("Jan (1)", "Feb (6)","Mar (10)",
+					   # 		   "Apr (14)","May (19)","Jun (23)",
+					   # 		   "Jul (27)","Aug (32)","Sep (36)",
+					   # 		   "Oct (40)","Nov (45)","Dec (49)"),
+					   # guide=guide_axis(angle=0)
+					   # labels = c("Jan\n(1)", "Feb\n(6)","Mar\n(10)",
+					   # 		   "Apr\n(14)","May\n(19)","Jun\n(23)",
+					   # 		   "Jul\n(27)","Aug\n(32)","Sep\n(36)",
+					   # 		   "Oct\n(40)","Nov\n(45)","Dec\n(49)")
+					   labels = c("1(J)", "6(F)","10(M)",
+					   		   "14(A)","19(M)","23(J)",
+					   		   "27(J)","32(A)","36(S)",
+					   		   "40(O)","45(N)","49(D)")
+					   )
+
+
+})
+}
+
+print(pts[[cova_name]])
+
+ggsave(paste0("./figures/",base_folder,"/Time Series/",cova_name,".png"),
+	   plot = pts[[cova_name]],units="px",width=2200,height = 1400)
+}
+ggsave(paste0("./figures/",base_folder,"/Time Series/plt_modemap.png"),
+	   # plot = plt_modemap,units="px",width=2200,height = 1400)
+	   plot = plt_modemap,units="px",width=1200,height = 1200)
+
+```
 
 
 #======
-# ARI models
+# ARI comparison
 need to run almost all the notebook sections for this
 ```{r}
 library(mclust) # if Adjusted RI
@@ -1241,18 +3097,431 @@ compare_ARI = function(mod1,mod2){
 	plot(1:53,ARIvec,type="l",main=paste0("ARI values - ",mod1," vs ",mod2),ylim=c(-0.5,1))
 	abline(h=0,col="gray80",lty=3)
 	
-	image.plot(ARIvec,
-			   main=paste0("ARI values - ",mod1," vs ",mod2),axes=FALSE,col=cols_ARI,
-			   breaks=brks)
-	mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
+	# image.plot(ARIvec,
+	# 		   main=paste0("ARI values - ",mod1," vs ",mod2),axes=FALSE,col=cols_ARI,
+	# 		   breaks=brks)
+	# mtext(text=c(paste("",1:LEN)), side=2, line=0.3,at=seq(0,1,length=LEN), las=1, cex=0.8)
 
 }
 
-mods = c("DRPM","sPPM","Gaussian PPMx")
+mods = c("DRPM","sPPM","Gaussian PPMx","Curve PPMx")
 compare_ARI(mods[1],mods[2])
 compare_ARI(mods[1],mods[3])
+compare_ARI(mods[1],mods[4])
+
 compare_ARI(mods[2],mods[3])
+compare_ARI(mods[2],mods[4])
+
+compare_ARI(mods[3],mods[4])
 
 # dev.off()
 ```
+
+
+```{r}
+ARIvec = list()
+titoli = c()
+col_idx = 1
+# cols = colora(6,"rand",1)
+cols = colora(6,81,0)
+
+for(i in 1:3){
+	for(j in (i+1):4){
+		# cat(mods[i],mods[j],"\n")
+		titolo = paste0(mods[i]," - ",mods[j])
+		titoli = c(titoli,titolo)
+		
+		ARIvec[[titolo]] = matrix(NA, nrow=1, ncol=LEN)
+		for(k in 1:53){
+			ARIvec[[titolo]][k] <- adjustedRandIndex(
+				salso_out_lists[[mods[i]]][[k]][1:105],
+				salso_out_lists[[mods[j]]][[k]][1:105])
+		}	
+		if (i==1 && j==2){
+			plot(1:53,ARIvec[[titolo]],type="l",col=cols[col_idx],
+				 ylim=c(-0.2,0.8),xlim=c(1,80))
+		} else {
+			lines(1:53,ARIvec[[titolo]],type="l",col=cols[col_idx])
+		}
+		col_idx = col_idx +1
+	}
+}
+abline(h=0,lty=2,col="gray")
+legend("topright",titoli,fill=cols,bty="n")
+```
+
+
+```{r}
+dati = data.frame(x=1:53,
+				  y1=ARIvec[[titoli[1]]][1,],
+				  y2=ARIvec[[titoli[2]]][1,],
+				  y3=ARIvec[[titoli[3]]][1,],
+				  y4=ARIvec[[titoli[4]]][1,],
+				  y5=ARIvec[[titoli[5]]][1,],
+				  y6=ARIvec[[titoli[6]]][1,]
+				  )
+
+cols = colora(6,81,0)
+# cols = colora(6,114,0)
+
+colors <- c(
+"DRPM - sPPM"                = cols[1],
+"DRPM - Gaussian PPMx"       = cols[2],
+"DRPM - Curve PPMx"          = cols[3],
+"sPPM - Gaussian PPMx"       = cols[4],
+"sPPM - Curve PPMx"          = cols[5],
+"Gaussian PPMx - Curve PPMx" = cols[6])
+
+
+pari = ggplot(dati,aes(x=x))+
+	geom_line(aes(y=y1,color= "DRPM - sPPM"               ))+
+	geom_line(aes(y=y2,color= "DRPM - Gaussian PPMx"      ))+
+	geom_line(aes(y=y3,color= "DRPM - Curve PPMx"         ))+
+	geom_line(aes(y=y4,color= "sPPM - Gaussian PPMx"      ))+
+	geom_line(aes(y=y5,color= "sPPM - Curve PPMx"         ))+
+	geom_line(aes(y=y6,color= "Gaussian PPMx - Curve PPMx"))+
+        # ylim(-0.2, 0.8) +
+        # xlim(1, 80) +
+	theme_bw()+ 
+	geom_hline(yintercept = 0, linetype = "dashed", color = "gray") +
+	# scale_color_identity()+
+	theme(panel.grid = element_blank(),legend.position = "top")+
+	labs(y="ARI(ρ1,ρ2) values",x="",color="")+
+	scale_color_manual(values = colors)+
+	guides(color = guide_legend(override.aes = list(linewidth = 3)))
+		# theme(legend.position = "none")
+
+
+	# ggsave(file="../FIGURES presentation-report/ARI_models_comparison.png",
+	ggsave(file="../FIGURES presentation-report/ARI_models_comparison.pdf", device=cairo_pdf,
+		   plot=pari,
+		   units="px",width=2500, height=1400, dpi=300) # maybe 1200 is better
+		   # units="px",width=2500, height=1400, dpi=300)
+	dev.off()
+```
+
+# Trace plots
+```{r}
+gimme_a_station = function(){
+	# sampled_station = 42
+	sampled_station = floor(runif(1,1,106))
+	cat("sampled_station =",sampled_station,
+		"- that is station called",unique(df_wsc$IDStations)[sampled_station])	
+	return(sampled_station)
+}
+sampled_station = gimme_a_station()
+```
+
+```{r}
+# example
+drpm_tr = drpm1$sig2[time,sampled_station,]
+sppm_tr = sppm_C4_list[[time]]$sig2[,sampled_station]
+gppmx_tr = gppmx_fit[[time]]$sig2[,sampled_station]
+cppmx_tr = all_fits[[time]]$sig2[,sampled_station]
+```
+
+
+# condensed weeks
+### drpm
+```{r}
+sampled_station = gimme_a_station()
+sampled_station = 97
+
+pdf("../FIGURES presentation-report/DRPM/traceplot-skipped-sig2.pdf", width = 16,height = 23)
+par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,2)){
+# for(time in seq(1,53,4)){
+	VALUES = drpm1$sig2[time,sampled_station,]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("DRPM - Trace plot of "*sigma^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+	# par(mar=c(2,2,3,2))
+	# acf(VALUES,main=paste("week",time))
+}
+dev.off()
+
+pdf("../FIGURES presentation-report/DRPM/traceplot-skipped-mu.pdf", width = 16,height = 23)
+par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,2)){
+# for(time in seq(1,53,4)){
+	VALUES = drpm1$mu[time,sampled_station,]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("DRPM - Trace plot of "*mu*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+	# par(mar=c(2,2,3,2))
+	# acf(VALUES,main=paste("week",time))
+}
+dev.off()
+```
+
+### sppm
+```{r}
+sampled_station = gimme_a_station()
+# sampled_station = 26,69,2
+# sampled_station = 18
+
+pdf("../FIGURES presentation-report/sPPM/traceplot-skipped-sig2.pdf", width = 16,height = 23)
+par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,2)){
+	VALUES = sppm_C4_list[[time]]$sig2[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("sPPM - Trace plot of "*sigma^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+}
+dev.off()
+
+pdf("../FIGURES presentation-report/sPPM/traceplot-skipped-mu.pdf", width = 16,height = 23)
+par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+for(time in seq(1,53,2)){
+	VALUES = sppm_C4_list[[time]]$mu[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("sPPM - Trace plot of "*mu*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+}
+dev.off()
+```
+
+### gaussian ppmx
+```{r}
+sampled_station = gimme_a_station()
+# sampled_station = 68,82,50,8,35
+sampled_station = 82
+
+pdf("../FIGURES presentation-report/Gaussian PPMx/traceplot-skipped-sig2.pdf", width = 16,height = 23)
+par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,2)){
+	VALUES = gppmx_fit[[time]]$sig2[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("Gaussian PPMx - Trace plot of "*sigma^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+}
+dev.off()
+
+pdf("../FIGURES presentation-report/Gaussian PPMx/traceplot-skipped-mu.pdf", width = 16,height = 23)
+par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+for(time in seq(1,53,2)){
+	VALUES = gppmx_fit[[time]]$mu[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("Gaussian PPMx - Trace plot of "*mu*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+}
+dev.off()
+```
+
+
+### curve ppmx
+```{r}
+sampled_station = gimme_a_station()
+# sampled_station = 42,35
+sampled_station = 35
+
+pdf("../FIGURES presentation-report/Curve PPMx/traceplot-skipped-sig2.pdf", width = 16,height = 23)
+par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,2)){
+	VALUES = all_fits[[time]]$sig2[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("Curve PPMx - Trace plot of "*sigma^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+}
+dev.off()
+
+pdf("../FIGURES presentation-report/Curve PPMx/traceplot-skipped-beta0.pdf", width = 16,height = 23)
+par(mfrow=c(7,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+for(time in seq(1,53,2)){
+	VALUES = all_fits[[time]]$beta0[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("Curve PPMx - Trace plot of "*beta[0]*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+}
+dev.off()
+```
+
+#======
+# with acf
+### drpm
+```{r}
+sampled_station = gimme_a_station()
+sampled_station = 97
+
+pdf("../FIGURES presentation-report/DRPM/traceplot-acf-sig2.pdf", width = 16,height = 12)
+par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,7)){
+	VALUES = drpm1$sig2[time,sampled_station,]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("DRPM - Trace plot of "*sigma^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+	par(mar=c(2,2,3,2))
+	acf(VALUES,main=paste("week",time))
+}
+dev.off()
+
+pdf("../FIGURES presentation-report/DRPM/traceplot-acf-mu.pdf", width = 16,height = 12)
+par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,7)){
+	VALUES = drpm1$mu[time,sampled_station,]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("DRPM - Trace plot of "*mu*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+	par(mar=c(2,2,3,2))
+	acf(VALUES,main=paste("week",time))
+}
+dev.off()
+```
+
+### sppm
+```{r}
+sampled_station = gimme_a_station()
+# sampled_station = 26,69,2,18
+sampled_station = 35
+
+pdf("../FIGURES presentation-report/sPPM/traceplot-acf-sig2.pdf", width = 16,height = 12)
+par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,7)){
+	VALUES = sppm_C4_list[[time]]$sig2[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("sPPM - Trace plot of "*sigma^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+		par(mar=c(2,2,3,2))
+	acf(VALUES,main=paste("week",time))
+}
+dev.off()
+
+pdf("../FIGURES presentation-report/sPPM/traceplot-acf-mu.pdf", width = 16,height = 12)
+par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+for(time in seq(1,53,7)){
+	VALUES = sppm_C4_list[[time]]$mu[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("sPPM - Trace plot of "*mu*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+		par(mar=c(2,2,3,2))
+	acf(VALUES,main=paste("week",time))
+}
+dev.off()
+```
+
+### gaussian ppmx
+```{r}
+sampled_station = gimme_a_station()
+# sampled_station = 68,82,50,8,35
+# sampled_station = 82
+sampled_station = 73
+
+pdf("../FIGURES presentation-report/Gaussian PPMx/traceplot-acf-sig2.pdf", width = 16,height = 12)
+par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,7)){
+	VALUES = gppmx_fit[[time]]$sig2[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("Gaussian PPMx - Trace plot of "*sigma^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+		par(mar=c(2,2,3,2))
+	acf(VALUES,main=paste("week",time))
+}
+dev.off()
+
+pdf("../FIGURES presentation-report/Gaussian PPMx/traceplot-acf-mu.pdf", width = 16,height = 12)
+par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+for(time in seq(1,53,7)){
+	VALUES = gppmx_fit[[time]]$mu[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("Gaussian PPMx - Trace plot of "*mu*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+		par(mar=c(2,2,3,2))
+	acf(VALUES,main=paste("week",time))
+}
+dev.off()
+```
+
+
+### curve ppmx
+```{r}
+sampled_station = gimme_a_station()
+# sampled_station = 42,35,23,55
+sampled_station = 55
+
+pdf("../FIGURES presentation-report/Curve PPMx/traceplot-acf-sig2.pdf", width = 16,height = 12)
+par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+
+for(time in seq(1,53,7)){
+	VALUES = all_fits[[time]]$sig2[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		mtext(bquote("Curve PPMx - Trace plot of "*sigma^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+		par(mar=c(2,2,3,2))
+	acf(VALUES,main=paste("week",time))
+}
+dev.off()
+
+pdf("../FIGURES presentation-report/Curve PPMx/traceplot-acf-tau2.pdf", width = 16,height = 12)
+par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
+for(time in seq(1,53,7)){
+	VALUES = all_fits[[time]]$tau2[,sampled_station]
+	plot(VALUES,type="l",main=paste("week",time))
+	if(time==1) {
+		# mtext(bquote("Curve PPMx - Trace plot of "*beta[0]*" at station "* .(sampled_station)),
+		mtext(bquote("Curve PPMx - Trace plot of "*tau^2*" at station "* .(sampled_station)),
+			  side=3,line=1.5,cex=1.5,adj=0)
+	}
+	par(mar=c(2,2,3,2))
+	acf(VALUES,main=paste("week",time))
+}
+dev.off()
+```
+#=====
+# drpm stuff
+```{r}
+alpha_avg = c()
+for (time in 1:53){
+	VALUES = drpm1$alpha[,time]
+	# plot(VALUES,type="l",ylim=c(0,1),
+	# 	 main=bquote("Week "* .(time) * " - "*alpha*" mean = " * .(mean(VALUES)))
+	# )
+	# abline(h=mean(VALUES),col="red",lty=2)
+	alpha_avg = c(alpha_avg,mean(VALUES))
+}
+```
+
+
+```{r}
+plot(alpha_avg,type="b",ylim=c(0,1))
+```
+
 

@@ -1,0 +1,300 @@
+---
+title: "Pmmsuite - Curveppm ( No covariates)"
+output: html_document
+date: "2024-01-26"
+
+
+---
+
+```{r}
+library(ppmSuite)
+library(tidyverse)
+library(lubridate)
+library(patchwork)
+library(salso)
+```
+
+
+```{r,warning=FALSE}
+source("include.R") 
+source("plot functions/plotter.R")
+
+```
+
+```{r include=FALSE}
+source("include_clusters_functions.R")
+```
+
+# cluster plots stuff
+Stuff needed for the plot functions to work
+```{r}
+cols = colora(10,"div")[-2] # divergent palette; togliamo il giallino
+
+time_span = c(1:53)
+sites = data.frame(
+	longitude = unique(df_weekly$Longitude), 
+	latitude = unique(df_weekly$Latitude))
+
+std_sites = data.frame(
+	longitude = unique(df_wsc$Longitude), 
+	latitude = unique(df_wsc$Latitude))
+
+stations = unique(df_wsc$IDStations)
+y=data.frame()
+
+for(st in stations){
+  y_we_pm10=cbind(as.data.frame(st),t(df_wsc[which(df_wsc$IDStations==st),"AQ_pm10"]))
+  y=rbind(y,y_we_pm10)
+}
+
+rownames(y) = NULL
+colnames(y)<- c("id",paste0("w", 1:53))
+df_wsc
+y
+plot(sites)
+plot(std_sites)
+# this y needs to not be overwritten
+```
+
+
+
+
+# fit
+
+Fix number of stations, ...
+```{r}
+var_selected <- c("Altitude","EM_nox_sum","WE_mode_wind_direction_100m","WE_wind_speed_100m_max", "LA_lvi")
+
+nobs <- 53 # number of week for each stations
+nsubject <- length(unique(df_wsc$IDStations)) # number of station
+
+# input data for the curve_PPmX function
+y_fit = matrix(nrow = 0, ncol = nobs) 
+y_fit = df_wsc$AQ_pm10
+dat <- data.frame(y_fit=c(y_fit),
+                   z=rep(1:nobs, times=nsubject), # is the time
+                   Name=rep(1:nsubject, each=nobs))
+
+allXcons = list()
+allXcats = list()
+for (time in 1:53) {
+	allXcons[[time]] = data.frame(
+		Altitude = df_wsc$Altitude[seq(from=i, by = 53, length.out=105)],
+		EM_nox_sum = df_wsc$EM_nox_sum[seq(from=i, by = 53, length.out=105)],
+		WE_wind_speed_100m_max = df_wsc$WE_wind_speed_100m_max[seq(from=i, by = 53, length.out=105)],
+		LA_lvi = df_wsc$LA_lvi[seq(from=i, by = 53, length.out=105)]
+	)
+	allXcats[[time]] = data.frame(
+		WE_mode_wind_direction_100m = df_wsc$WE_mode_wind_direction_100m[seq(from=i, by = 53, length.out=105)]
+	)
+}
+
+subject_obs_vec <- dat$Name
+y_fit <- dat$y_fit
+z <- dat$z
+
+```
+
+Hyperparameters
+```{r}
+nknots <- 20
+
+# niter <- 20000
+# nburn <- 10000
+# nthin <- 10 # we consider every nthin iteartions 
+
+niter <- 10000
+nburn <- 5000
+nthin <- 5 # we consider every nthin iteartions
+
+nout <- (niter-nburn)/nthin # the number of interatio that we coniser from the mcmc
+cat("Getting",nout,"total iterations")
+```
+
+Similarity function parameters
+```{r}
+## the order here is c(mu0, s20, v, k0, nu0, a0, alpha)
+## If simularity is N-NIG then k0 and nu0 are used but v is not
+## If simularity is N-N then v is used but no k0 and nu0
+
+simparms <- c(0.0, 1.0, 0.1, 1.0, 1.0, 0.1, 1) # WHAT IS THEIR MEANING IF WE DON'T USE COV
+```
+
+Prior:
+```{r}
+modelPriors <- c(0.5, # Asig
+                 100^2, # s2_mu
+                 0, # mb0
+                 1000^2, # s2b0
+                 1, # as2b0
+                 1, # bs2b0
+                 1, # at
+                 1.0/0.05) # bt
+```
+
+```{r}
+df <- data.frame(
+  DirezioneVento = c("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+)
+
+# Definire un vettore di direzioni ordinate
+direzioni_ordinate <- c("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+
+# Creare una funzione di mapping per assegnare i numeri
+mappa_direzioni <- function(direzione) {
+  return(match(direzione, direzioni_ordinate) - 1)
+}
+```
+
+
+```{r}
+all_fits = list()
+```
+
+
+```{r}
+for (time in 17:53){
+
+	cat(crayon::red("##############\n"))
+	cat(crayon::red("Fitting time",time,"\n"))
+	cat(crayon::red("##############\n"))
+  fit <- curve_ppmx(y=cbind(y_fit), z=z,
+                  subject=subject_obs_vec,
+                  Xcon = allXcons[[time]], 
+  				  Xcat = as.data.frame(apply(allXcats[[time]],2,mappa_direzioni)),
+                  Xconp=NULL, 
+  				  Xcatp=NULL,
+                  PPM=FALSE, 
+  				  M=1,
+                  q=3, 
+  				  rw_order=1,
+  				  balanced=1,
+                  nknots=nknots, 
+  				  npredobs=1,
+                  Aparm=60,
+                  similarity_function=1,
+                  consim=1,
+  				  calibrate=0,
+                  
+  				  modelPriors=modelPriors,
+                  simParms=simparms,
+                  mh=c(0.2, 0.2),
+                  draws=niter,
+                  burn=nburn,
+                  thin=nthin
+  				  )
+
+  all_fits[[time]] = fit  
+
+}
+```
+
+```{r}
+save(all_fits, file="curveppmx_fed_update.Rdata")
+
+```
+
+
+```{r}
+for(time in 14:17){
+	cat(time,"\n")
+	salso_out = salso(all_fits[[time]]$Si,loss=binder(a=1.2),maxNClusters = 8)
+	# print(salso_out)
+	easy_plot(salso_out,nint=15)
+}
+```
+
+
+```{r}
+```
+
+
+# trace plots
+```{r}
+sampled_station = floor(runif(1,1,106))
+cat("sampled_station =",sampled_station,"- that is station called",unique(df_weekly$IDStations)[sampled_station])
+```
+
+```{r}
+plot(fit$sig2[,sampled_station],type="l",
+		 main=bquote("Trace plot of " * sigma2 * " at time (=week) " * .(t) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+```
+
+```{r}
+plot(fit$beta0[,sampled_station],type="l",
+		 main=bquote("Trace plot of " * beta * " at time (=week) " * .(t) * 
+		 				" - station " * .(sampled_station)),
+		 xlab = "MCMC iterations",ylab="values")
+```
+
+
+# old stuff
+Don't run this codes its just for debugging!!!!
+```{r}
+fits <- list()
+fit <- curve_ppmx(y=cbind(y), z=z,
+                  subject=subject_obs_vec,
+                  Xcon = allXcons[[1]], Xcat = NULL,
+                  Xconp=NULL, Xcatp=NULL,
+                  PPM=FALSE, M=1,
+                  q=3, rw_order=1, balanced=1,
+                  nknots=nknots, npredobs=1,
+                  Aparm=100,
+                  modelPriors=modelPriors,
+                  similarity_function=1,
+                  consim=1, calibrate=0,
+                  simParms=simparms,
+                  mh=c(0.1, 1e-4),
+                  draws=niter,
+                  burn=nburn,
+                  thin=nthin)
+```
+
+
+```{r}
+fits[[3]] = fit
+```
+
+
+```{r}
+salso_out = salso(all_fits[[1]]$Si,loss=binder(a=NULL), maxNClusters = 8)
+easy_plot(salso_out)
+```
+
+Compute the clusters
+```{r}
+clus <- salso(fit$Si, binder(a=NULL), nRuns=4, nCores=1, maxNClusters = 0)
+
+```
+
+Plot
+```{r}
+plot(summary(clus), 
+	 type = c("heatmap", "mds", "pairs", "dendrogram")[4])
+
+```
+
+
+
+
+```{r}
+df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
+
+# ⚠️⚠️⚠️ IMPORTANT!
+# salso_out <- salso(t(fit$Si[time,,]),loss="binder") # drpm style
+salso_out <- salso(fit$Si,loss="binder") # here there is no time concept
+# we will have to loop on time and fit at evert instant the model, to see the time evolution
+# ⚠️⚠️⚠️ end IMPORTANT!
+time <- 1
+easy_plot(salso_out)
+
+
+```
+
+
+
+
+
+

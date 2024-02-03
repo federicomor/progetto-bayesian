@@ -741,7 +741,7 @@ for (st in stations){
   t2=(covs$week)^2
   sint=sin(covs$week)
   cost=cos(covs$week)
-  covs=cbind(covs,sint)
+  covs=cbind(covs,t2,sint,cost)
  
   covs=as.data.frame(covs)
   covariates=scale(covs,center = TRUE)     #normalization on the station
@@ -787,7 +787,90 @@ print(count_for_selection_l)
 #saveRDS(count_for_selection_l,"count_for_selection_l.RData")
 #saveRDS(count_for_selection_hs,"count_for_selection_hs.RData")
 #saveRDS(count_for_selection_l,"c_for_sel_l_with_nonlin_on_time.RData") 
+
+#sel_cov=readRDS("c_for_sel_l_with_nonlin_on_time.RData")
 ```
 
+
+
+
+
+## Linear model with only selected covariates
+```{r}
+index = 1
+covariates_to_keep = c("WE_tot_precipitation","WE_surface_pressure","EM_nh3_livestock_mm","LA_hvi","LA_lvi")
+#not numerical or constant over same  (lat, long, alti and land_use)
+covar=df_weekly[,which(colnames(df_weekly)%in% covariates_to_keep)]
+k = dim(covar)[2]+1  #+1 if gonna use sint on time
+bayesian_coefficients=rep(0,k)
+
+
+for (st in stations){
+	cat(crayon::red("Station",st,index,"\n"))
+	index = index+1
+ #covariates and target
+  y=df_weekly[which(df_weekly$IDStations==st),"AQ_pm10"]
+  y=as.numeric(y[[1]])
+  y=scale(y)[1:53]    #normalization on each single station ( 53 weeks)
+  
+  covs=covar[which(df_weekly$IDStations==st),]
+  
+  #to add nonlinearities on time
+  sint=sin(df_weekly[which(df_weekly$IDStations==st),]$week)
+  covs=cbind(covs,sint)
+ 
+  covs=as.data.frame(covs)
+  covariates=scale(covs,center = TRUE)     #normalization on the station
+  #jitter to avoid nans in constant columns
+  for(i in 1:k){
+    if(sum(is.na(covariates[,i]))>0)
+      covs[,i]=jitter(covs[,i],0.01)
+  }
+  covs=scale(covs, center=TRUE)
+  covs=as.data.frame(covs)
+
+  
+  #build model
+  data = list(y=y,
+            x=covs,
+            n=dim(covs)[1],
+            k=k)
+  inits = function() {list(beta0=0,
+                         beta=rep(0,k),
+                         sigma=100) }
+
+#run model  
+  modelRegress=jags.model("LinearRegCov.bug",data=data,inits=inits,n.adapt=1000,n.chains=1)
+  update(modelRegress,n.iter=5000) #this is the burn-in period
+  
+
+  outputRegress=coda.samples(model=modelRegress,variable.names=c("beta0", "beta", "sigma"),n.iter=5000,thin=10)
+  
+  data.out=as.matrix(outputRegress) # trasform the mcmc.list into a matrix,
+  data.out=data.frame(data.out)     # or, better, into a dataframe (easiest to handle in R)
+  attach(data.out)
+  n.chain=dim(data.out)[1] 
+
+ #the betas
+  beta.post <- data.out[,0:k+1]   #posterior mean of the beta parameters
+  beta.bayes  <- apply(beta.post,2,"mean")
+  beta.bayes <- c(beta.bayes[k+1],beta.bayes[1:k])  #just to put beta0 in first position
+  bayesian_coefficients <- bayesian_coefficients + beta.bayes
+  
+  detach(data.out)
+  
+}
+
+#to give columns names
+bayesian_coefficients = t(as.data.frame(bayesian_coefficients))
+colnames(bayesian_coefficients)<-c("beta0",covariates_to_keep,"sint")
+bayesian_coefficients=bayesian_coefficients/len(stations)
+
+```
+
+
+```{r}
+#saveRDS(bayesian_coefficients,"betas_lin_mod.RData")
+```
 
 

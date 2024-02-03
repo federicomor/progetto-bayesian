@@ -23,6 +23,7 @@ See also that for understand how to create the plots of the clusters.
 - Gaussian PPMx (Federica): just covariates
 - SPPM (Oswaldo): just space
 - Curve ppmx (Aby): time and covariates
+- Linear (Giulia): time and covariates, simple baseline model
 
 | Model                    | Time     | Space    | Covariates | Clustering|
 |--------------------------|----------|----------|------------|-----------|
@@ -31,6 +32,7 @@ See also that for understand how to create the plots of the clusters.
 | SPPM (Oswaldo)           |  X       |    ✓       | X      | ✓      |
 | Curve PPMx (Aby)         |   ✓     | X           |  ✓     | ✓      |
 | CarBayesST               |   ✓     | ✓           |  ✓      |  X    |
+| Linear                   |    ✓    |    X        |    ✓    |   X    |
 
 
 The models without time means that time is not inside the model. Then we can "force" time to be included by looping or doing some other tricks, but time will never be inside the model.
@@ -41,44 +43,70 @@ The models without space could consider to use space as a covariate? like the lo
 Report here at https://it.overleaf.com/6577451481wwsqvrgxswjy#c9ce5d
 
 1. Data inspection + problem presentation
-	- 1.1. NAs treatment, stations descarded 
-	- 1.2. trends, choice of the year
+	- 1.0 Introduction (Ettore)
+	- 1.1. NAs treatment, stations descarded (Giulia)
+	- 1.2. trends, choice of the year (Federico, but help may be needed)
 	- ?
-2. Models
-	- 2.1. SPPM (as it is just spatial, like the start point)
-	- 2.2. DRPM (space plus time)
-	- 2.3. CARBayesST + covariate selection (Ettore and Giulia work, to prepare for the models with covariates)
-	- 2.4. Gaussian PPMx (only covariates)
-	- 2.5. Curve PPMx (covariates and time)
-
-	+ variable selection ( different for every model but summerized in 1)
+2. Models 
+	- 2.1. SPPM, as it is just spatial, like the start point (Oswaldo)
+	- 2.2. DRPM, space plus time (Federico)
+	- 2.3. Gaussian PPMx, only covariates (Federica) 
+	- 2.4. Curve PPMx, covariates and time (Aby)
+        - 2.5. Giulia's linear model (Giulia)
+ -  2.6  CARBayesST + covariate selection, so Ettore and Giulia work, to prepare for the models with covariates  (only cited as a not determinant attempt) + variable selection, different for every model but summerized in 1 
 
 3. Model choice
-	- 3.1. model comparison with the metrics used
-	- 3.2. why model X is the "best"
-	- CV (?), MSE, ARI  and other metrics used to compare the models
+	- 3.1. model comparison with the metrics used (Federico)
+	- 3.2. why model X is the "best" 
+	- CV (?), MSE, ARI  and other metrics used to compare the models (Federico)
 4. Analysis of the results
-	- 4.1. How do we interpret the model? Why some covariates seem more important than others?
-	- 4.2. Does our results conflict with the ones of the literature?
-5. Conclusion
-6. Further Developments
+	- 4.1. How do we interpret the model? Why some covariates seem more important than others? (Ettore)
+5. Conclusion (Ettore)
+6. Further Developments (Ettore)
 	- 6.1. model averaging Package‘AICcmodavg’
-	- 6.2.  weekend-weekday division
+	- 6.2. weekend-weekday division
 	- 6.3. prior dall'anno precedente
 7. Appendix
-	- plot librairies, animations, html...
-	-
+	- plot librairies, animations, html... (Ettore)
+	- link (Federico)
 
 
+## Comments on the models
+Write them here so are easily available to everyone, and to be able to build a general frame of the information we can extract.
+Write them below each mode model plot.  
+Use the visualize html page to see peculiar features of your model, as we are ok interested in common comments, on which all models agree, but also some patterns that a certain model may spot and others models not. So especially use the "Covariates visualization" section in the html page.
 
-interpratation of the clusters
-cluster spitting for drpm 
+1. General comments
+	- read page 49 of report/allegato pria ecc for understading the causes of pollution "l'influenza delle condizioni meteorologiche sulle concentrazioni degli inquinanti".
 
-curveppmx adding covariates
+![](./src/figures/DRPM/Time%20Series/plt_modemap.png)
 
-confirm on the workflow
-how deep the results interpratation needs to be
+1. Comments:
+	- DRPM shows as the other models a clear division in mountain (alpi), pre-mountain (prealpi), milan area, the south-east area (the area of mantova) and the one on the south part (around pavia), but also defines another area between milan and the prealpi, passing through monza and brescia (which maybe is ok as they are both highly industrial areas? brescia for sure).
+	- the most differentiating covariates are
+		- altitude (as all the models)
+		- EM_nh3_agr_soils (like in all models, but with different patterns) toghether with the other antropogenic (nox sum, nh3, ecc)
+	- the EM_nox_traffic shows a strange pattern, where the yellow and and red curves swap for intensities, as also Gaussian PPMx model will show. This is because "Nel luglio 2018, la Regione Lombardia ha adottato il Piano Aria Integrato Regionale (PAIR) 2018-2020, che contiene le misure per ridurre le emissioni inquinanti da diverse fonti, tra cui il traffico veicolare, i generatori di calore a biomassa legnosa, il settore industriale e agricolo". Go in report folder and check the file named "Allegato pria ecc"
+	- the selection of a single cluster of two units in the south zone (the light blue ones) is done also by all the other models but Gaussian PPMx
+
+![](./src/figures/sPPM/Time%20Series/plt_modemap.png)
+
+1. Comments:
+	- ecc
+	- ecc
 
 
-urban vs rural data
-ARI between different models
+![](./src/figures/Gaussian%20PPMx/Time%20Series/plt_modemap.png)
+
+1. Comments:
+	- ecc
+	- ecc
+
+
+![](./src/figures/Curve%20PPMx/Time%20Series/plt_modemap.png)
+
+1. Comments:
+	- ecc
+	- ecc
+
+

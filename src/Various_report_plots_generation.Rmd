@@ -1,0 +1,262 @@
+---
+title: "R Notebook"
+output: html_document
+---
+
+```{r}
+source("include.R")
+```
+
+# trends
+```{r}
+df_agri_full$week = week(df_agri_full$Time)
+```
+
+```{r}
+for(year in 2016:2021){
+
+pdf(paste0("../FIGURES presentation-report/pm10_trend_year_",year,".pdf"),
+	height = 5,width = 8)
+	
+cols = colora(141,56,show=F)
+data_from_to = df_agri_full[intersect(
+	which(df_agri_full$Time >= as.Date(paste0(year,"-01-01"))),
+	which(df_agri_full$Time <= as.Date(paste0(year,"-12-31")))
+	),]
+
+stations = unique(data_from_to$IDStations)
+par(mar=c(2,2,2,1))
+for(st in 1:141){
+	xx = 1:max(data_from_to$week)
+	yy = c()
+	for (w in 1:max(data_from_to$week)){
+		yy = c(yy,mean(na.omit(data_from_to$AQ_pm10[intersect(
+			which(data_from_to$week==w),
+			which(data_from_to$IDStations==stations[st])
+			)])))
+	}
+	if(st==1){
+		plot(xx,yy,col=cols[st],type="l",ylim=c(0,130),
+			 main=paste0("Year ",year," weekly PM10 trend"))
+	} else {
+		lines(xx,yy,col=cols[st],type="l")
+	}
+}
+dev.off()
+
+}
+
+```
+
+
+
+```{r}
+
+pdf("../FIGURES presentation-report/pm10_trend_all_years.pdf",height = 5,width = 8)
+	
+for(year in 2016:2021){
+	
+cols = colora(6,56,show=F)
+
+	data_from_to = df_agri_full[intersect(
+		which(df_agri_full$Time >= as.Date(paste0(year,"-01-01"))),
+		which(df_agri_full$Time <= as.Date(paste0(year,"-12-31")))
+		),]
+	
+	xx = 1:max(data_from_to$week)
+	yy = c()
+	for (w in 1:max(data_from_to$week)){
+		yy = c(yy,mean(na.omit(data_from_to$AQ_pm10[which(data_from_to$week==w)])))
+	}
+	if(year==2016){
+		par(mar=c(2,2,2,1))
+		plot(xx,yy,col=cols[year-2015],type="l",ylim=c(0,130))
+	} else {
+		lines(xx,yy,col=cols[year-2015],type="l")
+	}
+}
+dev.off()
+
+
+```
+
+# mappa lombardia
+```{r}
+time_span = c(1:53)
+
+sites = data.frame(
+	longitude = unique(df_weekly$Longitude), 
+	latitude = unique(df_weekly$Latitude))
+std_sites = data.frame(
+	longitude = unique(df_wsc$Longitude), 
+	latitude = unique(df_wsc$Latitude))
+
+stations = unique(df_wsc$IDStations)
+y=data.frame()
+
+for(st in stations){
+  y_we_pm10=cbind(as.data.frame(st),t(df_wsc[which(df_wsc$IDStations==st),"AQ_pm10"]))
+  y=rbind(y,y_we_pm10)
+}
+
+rownames(y) = NULL
+colnames(y)<- c("id",paste0("w", 1:53))
+df_wsc
+y
+plot(sites)
+plot(std_sites)
+
+sites_plt = sites
+colnames(sites_plt) = c("Longitude","Latitude")
+rownames(sites_plt) = paste(1:105)
+
+salso_out_lists = list()
+```
+
+
+## na time series plot
+```{r}
+load("../data/df_agri.Rdata")
+df_agri_full = df_agri
+rm(df_agri)
+
+size(df_agri_full)[1] == 2192 *141 # days * stations
+```
+
+
+```{r}
+# colnames(df_agri)
+# load("../data/Cleaned_data.Rdata")
+df_agri = df_agri_full
+
+stations = unique(df_agri$IDStations)
+nas = as.data.frame(matrix(nrow=2192,ncol=length(unique(stations))))
+df_stat = create_df_stat(df_agri)
+for (j in 1:length(unique(stations)) ){
+	nas[,j] = df_stat[[stations[j]]]$AQ_pm10
+}
+nas = matrix(as.integer(!is.na(nas)),nrow = 2192,ncol=length(unique(stations)))
+rownames(nas)=1:nrow(nas)
+colnames(nas) = stations
+# head(nas)
+```
+
+
+```{r}
+
+cols = colora(3,69)
+cols = cols[c(2,3,1)]
+
+cols = colora(3,65)
+cols = cols[c(2,3,1)]
+
+cols = colora(3,64)
+cols = cols[c(2,3,1)]
+
+```
+
+
+```{r}
+cols = colora(3,"rand",1)
+cols = cols[c(2,3,1)]
+```
+
+
+```{r}
+# pdf("../FIGURES presentation-report/na_time_series.pdf",height = 6,width=10)
+library(fields)
+
+# cols = colora(3,"rand",1)[c(2,3,1)]
+
+par(mar=c(2,1,1,1))
+brks = seq(-1,1,length.out=2+1)
+image(nas,
+		   # main=paste0("PM10 data, missing values (in white) by stations and years"),
+	  axes=FALSE,col=cols[2:1],
+		   breaks=brks)
+
+abline(v=c(366,731,1096,1461,1827)/2192,col=cols[3])
+mtext(text=c(paste("",2016:2021)), side=1, line=0.08,at=seq(0.1,0.9,length=6), las=1, cex=0.7)
+# mtext(text=c(paste("",1:141)), side=4, line=0.1,at=seq(0,1,length=141), las=1, cex=0.4)
+
+# dev.off()
+```
+
+
+```{r}
+# heatmap(t(nas[,1:length(unique(stations))]),Colv=NA, Rowv=NA,col = c("gray", "darkred"), scale='none',xlab="days",ylab="stations",
+# heatmap(t(nas[,1:length(unique(stations))]),Colv=NA, Rowv=NA,col = c("white",cols[1]), scale='none',xlab="days",ylab="stations",
+heatmap(t(nas[,1:length(unique(stations))]),
+		Colv=NA, Rowv=NA,
+		col = c(cols[2],cols[1]),
+		scale='none',xlab="days",ylab="stations",
+		cexRow = 0.3,
+		margins = c(3, 3),main="NA time series (white are NAs) all data",
+		# add.expr = abline(v=c(366,731,1096,1461,1827),col="#231292",lwd=1))
+		add.expr = abline(v=c(366,731,1096,1461,1827),col=cols[3],lwd=1))
+text(x = 100, y = 100, labels = "2020", col = "orange", cex = 1.5)
+# dev.off()
+```
+
+# covariate na
+```{r}
+# dati = df_agri_full
+dati = df_2018[,c(2:37)]
+size(dati)
+dati_by_station = create_df_stat(dati)
+```
+
+
+
+```{r}
+na_covariate = matrix(NA,nrow = 105 ,ncol = ncol(dati))
+stations_names = unique(dati$IDStations)
+
+for(i in 1:105){
+	for(j in 1:(ncol(dati))){
+		# na_covariate[i,j]=0
+		cur_col = dati_by_station[[stations_names[i]]][,j]
+		na_covariate[i,j]=sum(is.na(cur_col))/lenght(cur_col)*100
+	}
+}
+# na_covariate
+```
+
+
+```{r}
+pdf("../FIGURES presentation-report/na_covariate_map_df2018.pdf",height = 5,width=6)
+
+par(mar=c(1,8,1,2))
+ncols = 20
+cols = colora(ncols,74,0)
+brks = seq(0,100,length.out=ncols+1)
+image.plot(na_covariate,
+	  # main=paste0("PM10 data, missing values (in white) by stations and years"),
+	  axes=FALSE,
+	  legend.line = 2.4,
+	  legend.lab = "% of missing data",
+	  col= cols,
+	  # col= rev(cols),
+	  breaks=brks)
+
+# abline(v=c(366,731,1096,1461,1827)/2192,col=cols[3])
+mtext(text=colnames(dati), side=2, line=0.4,
+	  at=seq(0,1,length=length(colnames(dati))), las=2, cex=0.6)
+# mtext(text=c(paste("",1:141)), side=1, line=0.3,at=seq(0,1,length=141), las=2, cex=0.35)
+
+dev.off()
+```
+
+```{r}
+heatmap(na_covariate,
+		Colv=NA, Rowv=NA,
+		# col = c(cols[2],cols[1]),
+		# scale='none',xlab="days",ylab="stations",
+		cexRow = 0.3,
+		# margins = c(3, 3),
+		main="NA time series (white are NAs) all data")
+
+# text(x = 100, y = 100, labels = "2020", col = "orange", cex = 1.5)
+```
+
+

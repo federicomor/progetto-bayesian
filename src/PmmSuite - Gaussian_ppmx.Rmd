@@ -621,7 +621,8 @@ easy_plot(clusters_now)
 sampled_station = floor(runif(1,0,105))
 cat("sampled_station =",sampled_station,"- that is station called",unique(df_weekly$IDStations)[sampled_station])
 
-# sampled_sation = 2,5,42,52,81,38,39,104,98 buon trace plot
+# sampled_sation = 68, 
+#2,5,42,52,81,38,39,104,98 buon trace plot
 
 ```
  I TRACE PLOT CAMBIANO MOLTO CON LE STAZIONI SCELTE!!!
@@ -734,7 +735,18 @@ fit = gaussian_ppmx(
 ```
 
 ```{r}
-saveRDS(lista, file="Gaussian_ppmX.RData")
+for (i  in 1:length(lista)){
+	
+	clusters_now = salso(lista[[i]]$Si,loss="binder")
+    clusters_now = clusters_now[1:105]
+    time = i # mancava questo, l'indicazione della week scelta nel fit
+    easy_plot(clusters_now)
+	}
+```
+
+
+```{r}
+saveRDS(lista, file="Gaussian_ppmX2.RData")
 ```
 
 

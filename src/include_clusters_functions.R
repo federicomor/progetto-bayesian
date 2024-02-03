@@ -440,7 +440,7 @@ cols_default=colora(12,"div",0)[-2]
 xlims = c(-2.5,1.5)
 cat(crayon::red("- get_graph_plot(df_cluster_cut)\n"))
 get_graph_plot = function(df_cluster_cut,cols=cols_default,
-						  titolo=paste("Cluster map - time",time),verbose=0){ # already mode_corrected
+						  titolo=paste("Cluster map - time",time),verbose=0,legenda=1){ # already mode_corrected
 	clusters_now = df_cluster_cut$clusters
 	edges_list = assemble_edges_list(clusters_now)
 	
@@ -468,10 +468,13 @@ get_graph_plot = function(df_cluster_cut,cols=cols_default,
 			guides(color = guide_legend(title = "Clusters"))
 		}
 	}
-	
 	q = q +
 		scale_colour_identity(guide="legend",labels=paste0("cl",actual_clusters),
 							  breaks=cols[actual_clusters])
+	if(legenda==0){
+		q = q+theme(legend.position = "none")
+	}
+	return(q)
 }
 
 
