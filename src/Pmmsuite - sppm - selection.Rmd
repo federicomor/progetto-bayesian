@@ -1,0 +1,713 @@
+---
+title: "ppmSuite: sppm method - model selection - data 2017"
+output: html_notebook
+---
+
+```{r message=FALSE, warning=FALSE}
+library(ppmSuite)
+library(tidyverse)
+library(salso)
+library(zoo)
+```
+
+
+```{r}
+source("include.R")
+# source("plot functions/plotter.R")
+# source("include_clusters_functions.R")
+```
+
+
+```{r}
+# df = df_weekly %>% 
+# 	select(IDStations, Latitude, Longitude, AQ_pm10, week) %>%
+# 	spread(week, AQ_pm10)
+
+df_2017 = df_agri %>% select(IDStations, Latitude, Longitude, Time, AQ_pm10) %>% 
+	filter(Time >= "2017-01-01" & Time < "2018-01-01") %>%
+	filter(!IDStations %in% c("STA-CH0011A","STA-CH0033A","STA-CH0043A")) %>% #problematic_stations (for year 2018)
+	mutate(week = week(Time)) %>% 
+	group_by(IDStations) %>% filter(sum(is.na(AQ_pm10)) <= 30) %>% #keeping stations that have less than 30 null values
+	ungroup %>% mutate(AQ_pm10 = na.approx(AQ_pm10)) %>% #interpolating null values
+	
+	#computing the mean for each week
+	group_by(IDStations, week) %>%
+	summarize(IDStations = first(IDStations),
+			  Latitude = first(Latitude),  Longitude = first(Longitude),
+			  AQ_pm10 = mean(AQ_pm10, na.rm = TRUE), week = first(week)) %>% ungroup() %>%
+	
+	mutate(AQ_pm10 = log(AQ_pm10))# log-transformation
+
+
+
+df = df_2017 %>%
+	spread(week, AQ_pm10)
+
+# glimpse(df)
+head(df)
+```
+
+```{r}
+# splitting train and test data
+set.seed(123)
+train_ind <- sample(seq_len(nrow(df)), size = 70)
+
+df_train <- df[train_ind, ]
+df_test <- df[-train_ind, ]
+```
+
+
+```{r}
+s_coords <- data.matrix(df[,2:3]) #lat and long
+# m <- dim(s_coords)[1]
+
+# standardize spatial coordinates
+smn <- apply(s_coords,2,mean)
+ssd <- apply(s_coords,2,sd)
+s_std <- t((t(s_coords) - smn)/ssd)
+
+
+# splitting train and test data
+s_std_train = s_std[train_ind,]
+s_std_test <- s_std[-train_ind,] # standardized prediction spatial coordinates
+
+```
+
+
+```{r}
+# MCMC parameters'
+niter <- 20000
+nburn <- 10000
+nthin <- 10
+nout <- (niter - nburn)/nthin
+
+
+
+# sppm hyperparameters
+M_list = c(1.0, 0.1, 0.01)
+
+alpha_C1_list = c(1,2)
+alpha_C2 = median(dist(s_std))# setting alpha of C2 as the median of the distances between locations
+
+
+params_model = c(0, 100^2, 10, 10)# as in the paper 
+# obs: in the paper observations are standardaized, but here AQ_pm10 has mean near 3.3 and the std near .4
+#		so not a big problem (I think)
+```
+
+
+# Fitting
+## M1
+```{r}
+
+M = M_list[1]
+```
+
+
+### C1 - 1
+```{r}
+cohesion_number = 1
+params_cohesion = c(alpha_C1_list[1], 1.5, 0, 1, 2, 1)
+
+
+sppm_list = list()
+for (week in 1:53){#max weeks 53
+	Y <- df_train %>% pull(as.character(week))
+	out <- sppm(y = Y, s = s_std_train,
+				s.pred = s_std_test,
+				cohesion=cohesion_number,
+				M=M, 
+				modelPriors = params_model,
+				cParms = params_cohesion,
+				mh = c(0.5, 0.5),
+				draws=niter, burn=nburn, thin=nthin)
+	
+	
+	sppm_list <- c(sppm_list, list(out))
+}
+
+
+
+save(sppm_list,file="M1_C1_1.RData")
+```
+
+
+
+
+
+### C1 - 2
+```{r}
+cohesion_number = 1
+params_cohesion = c(alpha_C1_list[2], 1.5, 0, 1, 2, 1)
+
+
+sppm_list = list()
+for (week in 1:53){#max weeks 53
+	Y <- df_train %>% pull(as.character(week))
+	out <- sppm(y = Y, s = s_std_train,
+				s.pred = s_std_test,
+				cohesion=cohesion_number,
+				M=M, 
+				modelPriors = params_model,
+				cParms = params_cohesion,
+				mh = c(0.5, 0.5),
+				draws=niter, burn=nburn, thin=nthin)
+	
+	
+	sppm_list <- c(sppm_list, list(out))
+}
+
+
+
+save(sppm_list,file="M1_C1_2.RData")
+```
+
+
+### C2
+```{r}
+cohesion_number = 2
+params_cohesion = c(1, alpha_C2, 0, 1, 2, 1)
+
+
+sppm_list = list()
+for (week in 1:53){#max weeks 53
+	Y <- df_train %>% pull(as.character(week))
+	out <- sppm(y = Y, s = s_std_train,
+				s.pred = s_std_test,
+				cohesion=cohesion_number,
+				M=M, 
+				modelPriors = params_model,
+				cParms = params_cohesion,
+				mh = c(0.5, 0.5),
+				draws=niter, burn=nburn, thin=nthin)
+	
+	
+	sppm_list <- c(sppm_list, list(out))
+}
+
+
+
+save(sppm_list,file="M1_C2.RData")
+```
+
+### C3
+```{r}
+cohesion_number = 3
+params_cohesion = c(1, alpha_C2, 0, 1, 2, 1)
+
+
+sppm_list = list()
+for (week in 1:53){#max weeks 53
+	Y <- df_train %>% pull(as.character(week))
+	out <- sppm(y = Y, s = s_std_train,
+				s.pred = s_std_test,
+				cohesion=cohesion_number,
+				M=M, 
+				modelPriors = params_model,
+				cParms = params_cohesion,
+				mh = c(0.5, 0.5),
+				draws=niter, burn=nburn, thin=nthin)
+	
+	
+	sppm_list <- c(sppm_list, list(out))
+}
+
+
+
+save(sppm_list,file="M1_C3.RData")
+```
+
+### C4
+```{r}
+cohesion_number = 4
+params_cohesion = c(1, alpha_C2, 0, 1, 2, 1)
+
+
+sppm_list = list()
+for (week in 1:53){#max weeks 53
+	Y <- df_train %>% pull(as.character(week))
+	out <- sppm(y = Y, s = s_std_train,
+				s.pred = s_std_test,
+				cohesion=cohesion_number,
+				M=M, 
+				modelPriors = params_model,
+				cParms = params_cohesion,
+				mh = c(0.5, 0.5),
+				draws=niter, burn=nburn, thin=nthin)
+	
+	
+	sppm_list <- c(sppm_list, list(out))
+}
+
+
+
+save(sppm_list,file="M1_C4.RData")
+```
+
+
+## M01
+```{r}
+
+M = M_list[2]
+```
+
+
+### C1 - 1
+```{r}
+cohesion_number = 1
+params_cohesion = c(alpha_C1_list[1], 1.5, 0, 1, 2, 1)
+
+
+sppm_list = list()
+for (week in 1:53){#max weeks 53
+	Y <- df_train %>% pull(as.character(week))
+	out <- sppm(y = Y, s = s_std_train,
+				s.pred = s_std_test,
+				cohesion=cohesion_number,
+				M=M, 
+				modelPriors = params_model,
+				cParms = params_cohesion,
+				mh = c(0.5, 0.5),
+				draws=niter, burn=nburn, thin=nthin)
+	
+	
+	sppm_list <- c(sppm_list, list(out))
+}
+
+
+
+save(sppm_list,file="M01_C1_1.RData")
+```
+
+
+
+
+
+### C1 - 2
+```{r}
+cohesion_number = 1
+params_cohesion = c(alpha_C1_list[2], 1.5, 0, 1, 2, 1)
+
+
+sppm_list = list()
+for (week in 1:53){#max weeks 53
+	Y <- df_train %>% pull(as.character(week))
+	out <- sppm(y = Y, s = s_std_train,
+				s.pred = s_std_test,
+				cohesion=cohesion_number,
+				M=M, 
+				modelPriors = params_model,
+				cParms = params_cohesion,
+				mh = c(0.5, 0.5),
+				draws=niter, burn=nburn, thin=nthin)
+	
+	
+	sppm_list <- c(sppm_list, list(out))
+}
+
+
+
+save(sppm_list,file="M01_C1_2.RData")
+```
+
+
+### C2
+```{r}
+cohesion_number = 2
+params_cohesion = c(1, alpha_C2, 0, 1, 2, 1)
+
+
+sppm_list = list()
+for (week in 1:53){#max weeks 53
+	Y <- df_train %>% pull(as.character(week))
+	out <- sppm(y = Y, s = s_std_train,
+				s.pred = s_std_test,
+				cohesion=cohesion_number,
+				M=M, 
+				modelPriors = params_model,
+				cParms = params_cohesion,
+				mh = c(0.5, 0.5),
+				draws=niter, burn=nburn, thin=nthin)
+	
+	
+	sppm_list <- c(sppm_list, list(out))
+}
+
+
+
+save(sppm_list,file="M01_C2.RData")
+```
+
+### C3
+```{r}
+cohesion_number = 3
+params_cohesion = c(1, alpha_C2, 0, 1, 2, 1)
+
+
+sppm_list = list()
+for (week in 1:53){#max weeks 53
+	Y <- df_train %>% pull(as.character(week))
+	out <- sppm(y = Y, s = s_std_train,
+				s.pred = s_std_test,
+				cohesion=cohesion_number,
+				M=M, 
+				modelPriors = params_model,
+				cParms = params_cohesion,
+				mh = c(0.5, 0.5),
+				draws=niter, burn=nburn, thin=nthin)
+	
+	
+	sppm_list <- c(sppm_list, list(out))
+}
+
+
+
+save(sppm_list,file="M01_C3.RData")
+```
+
+### C4
+```{r}
+cohesion_number = 4
+params_cohesion = c(1, alpha_C2, 0, 1, 2, 1)
+
+
+sppm_list = list()
+for (week in 1:53){#max weeks 53
+	Y <- df_train %>% pull(as.character(week))
+	out <- sppm(y = Y, s = s_std_train,
+				s.pred = s_std_test,
+				cohesion=cohesion_number,
+				M=M, 
+				modelPriors = params_model,
+				cParms = params_cohesion,
+				mh = c(0.5, 0.5),
+				draws=niter, burn=nburn, thin=nthin)
+	
+	
+	sppm_list <- c(sppm_list, list(out))
+}
+
+
+
+save(sppm_list,file="M01_C4.RData")
+```
+
+
+
+## M001
+```{r}
+
+M = M_list[3]
+```
+
+
+### C1 - 1
+```{r}
+cohesion_number = 1
+params_cohesion = c(alpha_C1_list[1], 1.5, 0, 1, 2, 1)
+
+
+sppm_list = list()
+for (week in 1:53){#max weeks 53
+	Y <- df_train %>% pull(as.character(week))
+	out <- sppm(y = Y, s = s_std_train,
+				s.pred = s_std_test,
+				cohesion=cohesion_number,
+				M=M, 
+				modelPriors = params_model,
+				cParms = params_cohesion,
+				mh = c(0.5, 0.5),
+				draws=niter, burn=nburn, thin=nthin)
+	
+	
+	sppm_list <- c(sppm_list, list(out))
+}
+
+
+
+save(sppm_list,file="M001_C1_1.RData")
+```
+
+
+
+
+
+### C1 - 2
+```{r}
+cohesion_number = 1
+params_cohesion = c(alpha_C1_list[2], 1.5, 0, 1, 2, 1)
+
+
+sppm_list = list()
+for (week in 1:53){#max weeks 53
+	Y <- df_train %>% pull(as.character(week))
+	out <- sppm(y = Y, s = s_std_train,
+				s.pred = s_std_test,
+				cohesion=cohesion_number,
+				M=M, 
+				modelPriors = params_model,
+				cParms = params_cohesion,
+				mh = c(0.5, 0.5),
+				draws=niter, burn=nburn, thin=nthin)
+	
+	
+	sppm_list <- c(sppm_list, list(out))
+}
+
+
+
+save(sppm_list,file="M001_C1_2.RData")
+```
+
+
+### C2
+```{r}
+cohesion_number = 2
+params_cohesion = c(1, alpha_C2, 0, 1, 2, 1)
+
+
+sppm_list = list()
+for (week in 1:53){#max weeks 53
+	Y <- df_train %>% pull(as.character(week))
+	out <- sppm(y = Y, s = s_std_train,
+				s.pred = s_std_test,
+				cohesion=cohesion_number,
+				M=M, 
+				modelPriors = params_model,
+				cParms = params_cohesion,
+				mh = c(0.5, 0.5),
+				draws=niter, burn=nburn, thin=nthin)
+	
+	
+	sppm_list <- c(sppm_list, list(out))
+}
+
+
+
+save(sppm_list,file="M001_C2.RData")
+```
+
+### C3
+```{r}
+cohesion_number = 3
+params_cohesion = c(1, alpha_C2, 0, 1, 2, 1)
+
+
+sppm_list = list()
+for (week in 1:53){#max weeks 53
+	Y <- df_train %>% pull(as.character(week))
+	out <- sppm(y = Y, s = s_std_train,
+				s.pred = s_std_test,
+				cohesion=cohesion_number,
+				M=M, 
+				modelPriors = params_model,
+				cParms = params_cohesion,
+				mh = c(0.5, 0.5),
+				draws=niter, burn=nburn, thin=nthin)
+	
+	
+	sppm_list <- c(sppm_list, list(out))
+}
+
+
+
+save(sppm_list,file="M001_C3.RData")
+```
+
+### C4
+```{r}
+cohesion_number = 4
+params_cohesion = c(1, alpha_C2, 0, 1, 2, 1)
+
+
+sppm_list = list()
+for (week in 1:53){#max weeks 53
+	Y <- df_train %>% pull(as.character(week))
+	out <- sppm(y = Y, s = s_std_train,
+				s.pred = s_std_test,
+				cohesion=cohesion_number,
+				M=M, 
+				modelPriors = params_model,
+				cParms = params_cohesion,
+				mh = c(0.5, 0.5),
+				draws=niter, burn=nburn, thin=nthin)
+	
+	
+	sppm_list <- c(sppm_list, list(out))
+}
+
+
+
+save(sppm_list,file="M001_C4.RData")
+```
+
+# Comparison
+```{r}
+models_names = c("M1_C1_1", "M1_C1_2","M1_C2","M1_C3","M1_C4",
+				 "M01_C1_1", "M01_C1_2","M01_C2","M01_C3","M01_C4",
+				 "M001_C1_1", "M001_C1_2","M001_C2","M001_C3","M001_C4"
+				 )
+```
+
+
+## Computing statistics
+```{r}
+stats_sppm = data.frame()
+
+for (m_name in models_names){
+	# Loading model
+	load(paste(m_name, ".RData", sep = ""))
+	
+	# Computing statistics
+	## MSE
+	Y_train = as.matrix(df_train[,4:56])
+	Y_fitted = matrix(0, nrow = nrow(Y_train), ncol = ncol(Y_train))
+	for (w in 1:ncol(Y_pred)){
+		Y_fitted[,w] = colMeans(sppm_list[[w]]$fitted)
+	}
+	MSE = apply(Y_train - Y_fitted, 2, FUN=function(x) mean(x^2))
+	
+	## MSPE
+	Y_test = as.matrix(df_test[,4:56])
+	Y_pred = matrix(0, nrow = nrow(Y_test), ncol = ncol(Y_test))
+	for (w in 1:ncol(Y_pred)){
+		Y_pred[,w] = colMeans(sppm_list[[w]]$ppred)
+	}
+	MSPE = apply(Y_test - Y_pred, 2, FUN=function(x) mean(x^2))
+	
+	## LPML and WAIC
+	LPML = numeric(53)
+	WAIC = numeric(53)
+	for (w in 1:53){
+		LPML[w] = sppm_list[[w]]$lpml
+		WAIC[w] = sppm_list[[w]]$WAIC
+	}
+	
+	
+	#Binding statistics
+	stats_sppm = rbind(stats_sppm,
+					   data.frame(
+					   	model = m_name,
+					   	week = seq(53),
+					   	MSE = MSE,
+					   	MSPE = MSPE,
+					   	LPML = LPML,
+					   	WAIC = WAIC)
+					   )
+}
+
+```
+
+
+# Analisys
+
+## All
+```{r}
+stats_sppm %>% ggplot(aes(x = model, y = MSE, colour = model)) + geom_boxplot() + 
+	scale_x_discrete(guide = guide_axis(angle = 60))+ theme(legend.position = "none")
+stats_sppm %>% ggplot(aes(x = model, y = MSPE, colour = model)) + geom_boxplot() + 
+	scale_x_discrete(guide = guide_axis(angle = 60))+ theme(legend.position = "none")
+stats_sppm %>% ggplot(aes(x = model, y = LPML, colour = model)) + geom_boxplot() + 
+	scale_x_discrete(guide = guide_axis(angle = 60))+ theme(legend.position = "none")
+stats_sppm %>% ggplot(aes(x = model, y = WAIC, colour = model)) + geom_boxplot() + 
+	scale_x_discrete(guide = guide_axis(angle = 60))+ theme(legend.position = "none")
+
+```
+
+```{r}
+# stats_sppm %>% group_by(model) %>% 
+# 	summarise(MSE = median(MSE), MSPE = median(MSPE), LPML = median(LPML), WAIC = median(WAIC))
+
+stats_sppm %>% group_by(model) %>% 
+	summarise(MSE = median(MSE)) %>%
+	arrange(MSE)
+
+stats_sppm %>% group_by(model) %>% 
+	summarise(MSPE = median(MSPE)) %>%
+	arrange(MSPE)
+
+stats_sppm %>% group_by(model) %>% 
+	summarise(LPML = median(LPML)) %>%
+	arrange(desc(LPML))
+
+stats_sppm %>% group_by(model) %>% 
+	summarise(WAIC = median(WAIC)) %>%
+	arrange(WAIC)
+
+```
+
+Since variability is more ore less similar and there are "outliers", we just look at the median
+```{r}
+# stats_sppm %>% group_by(model) %>% 
+# 	summarise(MSE = median(MSE), MSPE = median(MSPE), LPML = median(LPML), WAIC = median(WAIC))
+
+stats_sppm %>% group_by(model) %>%
+	summarise(MSE = median(MSE), MSPE = median(MSPE), LPML = median(LPML), WAIC = median(WAIC)) %>%
+	filter(str_detect(model,"C1"))
+
+stats_sppm %>% group_by(model) %>%
+	summarise(MSE = median(MSE), MSPE = median(MSPE), LPML = median(LPML), WAIC = median(WAIC)) %>%
+	filter(str_detect(model,"C2"))
+
+stats_sppm %>% group_by(model) %>%
+	summarise(MSE = median(MSE), MSPE = median(MSPE), LPML = median(LPML), WAIC = median(WAIC)) %>%
+	filter(str_detect(model,"C3"))
+
+stats_sppm %>% group_by(model) %>%
+	summarise(MSE = median(MSE), MSPE = median(MSPE), LPML = median(LPML), WAIC = median(WAIC)) %>%
+	filter(str_detect(model,"C4"))
+
+```
+We note that:
+- for cohesion C1, for both values of alpha, the lower M the better (in terms of MSPE LPML and WAIC)
+	for both M = 0.01 is better, 
+		however alpha2 is better in terms of MSPE and LPML
+		but alpha1 is better in terms of WAIC
+					
+- for cohesion C2, the lower the M the better it is (in terms of MSPE and LPML) 
+	in terms of WAIC M=0.1 performs better
+	in terms of LPML and MSPE M=0.01 is better
+
+- for cohesion C3, the higher M the better it is (in terms of MSPE LPML and WAIC)
+	we also note that for low M it tends to overfit
+	the best is M = 1
+
+- for cohesion C4, it works well for M = 0.1 and M = 1; 
+	we also note that for low M it tends to overfit
+	in terms of MSPE, both M = 0.1 and M = 1 are similar
+	However in general M = 0.1 is better
+
+
+
+## The good ones
+For now on, we analyse just the good ones for each cohesion function
+
+```{r}
+good_models = c("M001_C1_1", "M001_C1_2",
+				"M01_C2", "M001_C2",
+				"M1_C3",
+				"M01_C4")
+
+stats_sppm  %>% filter(model %in% good_models)  %>% group_by(model) %>% 
+	summarise(MSE = median(MSE), MSPE = median(MSPE), LPML = median(LPML), WAIC = median(WAIC))
+```
+
+
+```{r}
+
+
+stats_sppm %>% filter(model %in% good_models) %>% 
+	ggplot(aes(x = week, y = MSE, group = model, colour = model)) + geom_line()
+stats_sppm %>% filter(model %in% good_models) %>% 
+	ggplot(aes(x = week, y = MSPE, group = model, colour = model)) + geom_line()
+stats_sppm %>% filter(model %in% good_models) %>% 
+	ggplot(aes(x = week, y = LPML, group = model, colour = model)) + geom_line()
+stats_sppm %>% filter(model %in% good_models) %>% 
+	ggplot(aes(x = week, y = WAIC, group = model, colour = model)) + geom_line()
+
+```
+- In terms of MSPE the behave similarly
+- we observe an eccentric behaviour of cohesion C2 in LPML in LPML
+
+
+At the end, in terms of MSPE, LPML, WAIC, the best one is the cohesion function C4 with M = 0.1
