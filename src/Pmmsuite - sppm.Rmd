@@ -14,117 +14,37 @@ library(salso)
 
 ```{r}
 source("include.R")
-# source("plot functions/plotter.R")
-# source("include_clusters_functions.R")
 ```
 
 
 ```{r}
-# cols = colora(10,"div", show = 0)[-2] # divergent palette; togliamo il giallino
-
 df = df_weekly %>% 
 	select(IDStations, Latitude, Longitude, AQ_pm10, week) %>%
 	spread(week, AQ_pm10)
 
 
 # glimpse(df)
-df
+head(df)
 ```
 
+From selection analysis of sppm we choose cohesion function C4 with M = 0.1
 
-# All days
 
-
-## C1
+# Fitting
 ```{r}
 s_coords <- data.matrix(df[,2:3]) #lat and long
-# m <- dim(s_coords)[1]
 
 # standardize spatial coordinates
 smn <- apply(s_coords,2,mean)
 ssd <- apply(s_coords,2,sd)
 s_std <- t((t(s_coords) - smn)/ssd)
-
-# Create a grid of prediction locations
-np <- 10
-sp <- expand.grid(seq(min(s_coords[,1]), max(s_coords[,1]),length=np),
-                  seq(min(s_coords[,2]), max(s_coords[,2]), length=np))
-sp_std <- t((t(sp) - smn)/ssd) # standardized prediction spatial coordinates
-
-
-niter <- 20000
-nburn <- 10000
-nthin <- 10
-nout <- (niter - nburn)/nthin
-
-
-```
-
-```{r}
-summ_list = list()
-for (week in 1:5){
-	Y <- df %>% pull(as.character(week))
-	out <- sppm(y=Y, s=s_std,
-				s.pred=sp_std,
-				cohesion=1,
-				M=1, 
-				modelPriors=c(0, 100^2, 10, 10),
-				cParms=c(3, 1.5, 0, 1, 2, 2),#alpha 3
-				mh=c(0.5, 0.5),
-				draws=niter, burn=nburn, thin=nthin)
-	
-	### Salso
-	maxnclusters = 0#default is 0
-	Si <- out$Si
-	
-	clus <- salso(Si, binder(a=NULL), nRuns=4, nCores=1, maxNClusters = maxnclusters)
-	summ_list <- c(summ_list, list(summary(clus)))
-}
-```
-
-```{r}
-for (summ in summ_list){
-	# plot(summ,type="heatmap")
-	# plot(summ,type="mds")
-	plot(summ,type="pairs",data=s_coords)
-	# plot(summ,type="dendrogram")
-}
 ```
 
 
 ```{r}
-saveRDS(summ_list, file="sppm_C1_fit.RData")
-```
+seed = 123
 
-```{r}
-t1 <- readRDS("../other files/sppm_C1_fit.RData")
-head(t1)
-
-load(file="sppm_C4_fit.RData")
-
-readRDS("sppm_C4_fit.RData")
-```
-
-
-
-
-## C2
-```{r}
-s_coords <- data.matrix(df[,2:3]) #lat and long
-# m <- dim(s_coords)[1]
-
-# standardize spatial coordinates
-smn <- apply(s_coords,2,mean)
-ssd <- apply(s_coords,2,sd)
-s_std <- t((t(s_coords) - smn)/ssd)
-
-# Create a grid of prediction locations
-np <- 10
-sp <- expand.grid(seq(min(s_coords[,1]), max(s_coords[,1]),length=np),
-                  seq(min(s_coords[,2]), max(s_coords[,2]), length=np))
-sp_std <- t((t(sp) - smn)/ssd) # standardized prediction spatial coordinates
-
-
+# MCMC parameters'
 niter <- 20000
 nburn <- 10000
 nthin <- 10
@@ -132,187 +52,47 @@ nout <- (niter - nburn)/nthin
 
 
 
-# param
-s_std_median = median(dist(s_std))
+# sppm hyperparameters
+cohesion_number = 4
+M = 0.1
 
+params_model = c(0, 100^2, 10, 10)# as in the paper 
+# obs: in the paper observations are standardaized, but here AQ_pm10 has mean near 3.3 and the std near .4
+#	so not a big problem (I think)
+params_cohesion = c(1, 1.5, 0, 1, 2, 1)
 ```
 
-```{r}
-sppm_C2_list = list()
-for (week in 1:2){# +-55 minutes
+```{r message=FALSE, warning=FALSE}
+set.seed(seed)
+
+sppm_list = list()
+for (week in 1:53){#max weeks 53
 	Y <- df %>% pull(as.character(week))
-	out <- sppm(y=Y, s=s_std,
-				s.pred=sp_std,
-				cohesion=2,
-				M=1, 
-				modelPriors=c(0, 100^2, 10, 10),
-				cParms=c(1, s_std_median, 0, 1, 2, 2),
-				mh=c(0.5, 0.5),
+	out <- sppm(y = Y, s = s_std,
+				s.pred = NULL,
+				cohesion=cohesion_number,
+				M=M, 
+				modelPriors = params_model,
+				cParms = params_cohesion,
+				mh = c(0.5, 0.5),
 				draws=niter, burn=nburn, thin=nthin)
 	
 	
-	sppm_C2_list <- c(sppm_C2_list, list(out))
-}
-```
-
-```{r}
-idx_st = c(45,50,60)
-
-for (out in sppm_C2_list[1:1]){
-	matplot(out$mu[, idx_st], type = "l")
-	plot(out$sig20,type="l")
+	sppm_list <- c(sppm_list, list(out))
 }
 
+
+
+save(sppm_list,file="sppm_2018_C4_M01.RData")
 ```
 
 
-```{r}
-
-
-for (out in sppm_C2_list[1:1]){
-	Si <- out$Si
-	# clus <- salso(Si, binder(a=NULL), nRuns=4, nCores=1, maxNClusters = maxnclusters)
-	# summ <- summary(clus)
-	summ <- summary(salso(Si, binder(a=NULL), nRuns=4, nCores=1))
-	
-	
-	# plot(summ,type="heatmap")
-	# plot(summ,type="mds")
-	plot(summ,type="pairs",data=s_coords)
-	# plot(summ,type="dendrogram")
-}
-```
-
-
-```{r}
-saveRDS(summ_list, file="sppm_C2_fit.RData")
-```
-
-## C3
-```{r}
-s_coords <- data.matrix(df[,2:3]) #lat and long
-# m <- dim(s_coords)[1]
-
-# standardize spatial coordinates
-smn <- apply(s_coords,2,mean)
-ssd <- apply(s_coords,2,sd)
-s_std <- t((t(s_coords) - smn)/ssd)
-
-# Create a grid of prediction locations
-np <- 10
-sp <- expand.grid(seq(min(s_coords[,1]), max(s_coords[,1]),length=np),
-                  seq(min(s_coords[,2]), max(s_coords[,2]), length=np))
-sp_std <- t((t(sp) - smn)/ssd) # standardized prediction spatial coordinates
-
-
-niter <- 20000
-nburn <- 10000
-nthin <- 10
-nout <- (niter - nburn)/nthin
-
-
-```
-
-```{r}
-summ_list = list()
-for (week in 1:5){
-	Y <- df %>% pull(as.character(week))
-	out <- sppm(y=Y, s=s_std,
-				s.pred=sp_std,
-				cohesion=3,
-				M=1, 
-				modelPriors=c(0, 100^2, 10, 10),
-				cParms=c(1, 1.5, 0, 1, 2, 2),
-				mh=c(0.5, 0.5),
-				draws=niter, burn=nburn, thin=nthin)
-	
-	### Salso
-	maxnclusters = 0#default is 0
-	Si <- out$Si
-	
-	clus <- salso(Si, binder(a=NULL), nRuns=4, nCores=1, maxNClusters = maxnclusters)
-	summ_list <- c(summ_list, list(summary(clus)))
-}
-```
-
-
-```{r, results = 'hide'}
-sppm_C3_list = list()
-for (week in 1:53){
-	Y <- df %>% pull(as.character(week))
-	out <- sppm(y=Y, s=s_std,
-				s.pred=sp_std,
-				cohesion=3,
-				M=1, 
-				modelPriors=c(0, 100^2, 10, 10),
-				cParms=c(1, 1.5, 0, 1, 2, 2),
-				mh=c(0.5, 0.5),
-				draws=niter, burn=nburn, thin=nthin)
-	
-	
-	sppm_C3_list <- c(sppm_C3_list, list(out))
-}
-```
-
-```{r}
-for (summ in summ_list){
-	# plot(summ,type="heatmap")
-	# plot(summ,type="mds")
-	plot(summ,type="pairs",data=s_coords)
-	# plot(summ,type="dendrogram")
-}
-```
-
-
-
-## C4
-```{r}
-s_coords <- data.matrix(df[,2:3]) #lat and long
-# m <- dim(s_coords)[1]
-
-# standardize spatial coordinates
-smn <- apply(s_coords,2,mean)
-ssd <- apply(s_coords,2,sd)
-s_std <- t((t(s_coords) - smn)/ssd)
-
-# Create a grid of prediction locations
-np <- 10
-sp <- expand.grid(seq(min(s_coords[,1]), max(s_coords[,1]),length=np),
-                  seq(min(s_coords[,2]), max(s_coords[,2]), length=np))
-sp_std <- t((t(sp) - smn)/ssd) # standardized prediction spatial coordinates
-
-
-niter <- 20000
-nburn <- 10000
-nthin <- 10
-nout <- (niter - nburn)/nthin
-
-
-```
-
-```{r, results = 'hide'}
-sppm_C4_list = list()
-for (week in 1:53){# +-55 minutes
-	Y <- df %>% pull(as.character(week))
-	out <- sppm(y=Y, s=s_std,
-				s.pred=sp_std,
-				cohesion=4,
-				M=1, 
-				modelPriors=c(0, 100^2, 10, 10),
-				cParms=c(1, 1.5, 0, 1, 2, 2),
-				mh=c(0.5, 0.5),
-				draws=niter, burn=nburn, thin=nthin)
-	
-	
-	sppm_C4_list <- c(sppm_C4_list, list(out))
-}
-```
 
 Traceplots
 ```{r}
 idx_st = c(45,50,60)
 
-for (out in sppm_C4_list[1:1]){
+for (out in sppm_list[1:1]){
 	matplot(out$mu[, idx_st], type = "l")
 	plot(out$sig20,type="l")
 }
@@ -322,8 +102,8 @@ for (out in sppm_C4_list[1:1]){
 ```{r}
 # ### Salso plots
 
-for (out in sppm_C4_list[1:10]){
-	Si <- out$Si
+for (w in seq(1,53,10)){
+	Si <- sppm_list[[w]]$Si
 	clus <- salso(Si, binder(a=NULL), nRuns=4, nCores=1, maxNClusters = 0)
 	summ <- summary(clus)
 	
@@ -335,11 +115,3 @@ for (out in sppm_C4_list[1:10]){
 }
 ```
 
-
-```{r}
-
-# save(sppm_C2_list,file="sppm_c4_list.RData")
-# 
-# 
-# load("sppm_c4_list.RData")
-```
