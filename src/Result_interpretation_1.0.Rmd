@@ -28,6 +28,7 @@ other_vars <- c("IDStations","Latitude","Longitude","week")
 df_interst <- df_weekly[,c(interest_variables,"AQ_pm10",other_vars)]
 head(df_interst)
 df_interst$logAltitude = log(df_interst$Altitude)
+interest_variables <- c(interest_variables,"logAltitude")
 # small modification to not change functions
 colnames(df_interst)[which(colnames(df_interst)=="week") ] = "Time"
 ```
@@ -103,6 +104,8 @@ mode_clusters <- list(
   c(44, 45, 47, 59, 60, 68, 73, 75, 76, 78, 79, 81, 86, 89, 93, 94, 95, 96, 97, 100, 104),
   c(92, 101)
 )
+
+
 colors_clusters = rep(1,105)
 for(i in 2:length(mode_clusters)){
 	colors_clusters[mode_clusters[[i]]] = i
@@ -130,12 +133,10 @@ for(vars in interest_variables){
 	xyplot <- xyPlot_weekly(file_name,vars,var2_name,size_name)
 	xyplot
 }
-
-xyplot <- xyPlot_weekly(paste0("xy_plot_pm10-","logAltitude"),"logAltitude",var2_name,size_name)
 ```
 
 
-## cls see
+## plots separeted
 ```{r}
 df_cluster = data.frame(Longitude=c(),Latitude=c(),values=c(),clusters=c(),Time=c())
 mode_clusters_vect = rep(0,105)
@@ -175,34 +176,42 @@ map
 
 # settings
 ```{r}
-cols = colora(2,800,show=T)
+cols = colora(2,20,show=T)
 color_low =  cols[2]
 color_high = cols[1]
+initial_date = "2018-01-01"
+final_date = "2019-01-01"
 
-filter_date_list = filter_date(data_agc_lomb,"2016-01-01","2016-01-01","")
+filter_date_list = filter_date(data_agc_lomb,initial_date,final_date,"month")
 data_from_to = filter_date_list[[1]]
+len_time = filter_date_list[[2]]
 
-chosen_variable = as.numeric((data_from_to[,"Altitude"]))
+chosen_variable_name = "Altitude"
+chosen_variable_name = "WE_wind_speed_100m_max"
 
-df_cluster_cut = df_temp
+chosen_variable = as.numeric((data_from_to[,chosen_variable_name]))
+
+
 cols=cols_default
-titolo = "ciao"
+titolo = chosen_variable_name
 verbose = 0
 
-clusters_now = df_cluster_cut$clusters
 edges_list = assemble_edges_list(clusters_now)
 ```
 
 # plot composition
+
+## grid
 ```{r}
 p  <-  ggplot() +
 
 	geom_tile(data = data_from_to, aes(x = Longitude, y = Latitude, fill = chosen_variable), 
 			  colour = "grey50",alpha = 0.9) +
 	
-	scale_fill_gradient(low = color_low, high = color_high,na.value = "gray",trans = "sqrt",  # Apply a logarithmic transformation (adjust as needed)
-  oob = scales::squish  # Squish out-of-bounds values to the nearest limit
-) +
+	scale_fill_gradient(low = color_low, high = color_high,na.value = "gray"
+					#	,trans = "log",  # Apply a logarithmic transformation (adjust as needed)
+					#	oob = scales::squish  # Squish out-of-bounds values to the nearest limit
+						) +
 	labs(title = chosen_variable_name, fill = chosen_variable_name)+
 		
 		
@@ -214,45 +223,90 @@ p  <-  ggplot() +
 
 ```
 
+## wind
+```{r}
+color_background_map = "forestgreen"
+
+
+data_from_to <- data_from_to[order(data_from_to$Latitude), ]
+data_from_to <- data_from_to[order(data_from_to$Longitude), ]
+
+wind_arrows <- data.frame(
+	longitude = data_from_to$Longitude,
+	latitude = data_from_to$Latitude,
+	direction = cardinal_to_degree(data_from_to$WE_mode_wind_direction_10m),
+	intensity = as.numeric(data_from_to$WE_wind_speed_10m_mean)
+)
+
+# Calcola le coordinate di fine delle frecce in base alla direzione 
+# l'intensità verra colorata invece di cambiare in lunghezza
+wind_arrows$end_longitude =( wind_arrows$longitude + sin(wind_arrows$direction)/10)
+wind_arrows$end_latitude = ( wind_arrows$latitude + cos(wind_arrows$direction)/10)
+# put a 0 in the NA
+wind_arrows[is.na(wind_arrows)] <- 0
+
+time_vect = c()
+for(i in 1:1053) {
+	time_vect <- c(time_vect,seq(1,len_time))
+}
+wind_arrows$Time = time_vect
+
+
+mappa_wind <- ggplot() +
+	
+	geom_sf(data = shp_map, fill = color_background_map , color = "black", linewidth = 0.5,alpha=0.6)+
+	coord_sf(xlim = range(na.omit(wind_arrows$longitude))+padding,
+			 ylim = range(na.omit(wind_arrows$latitude))+padding, expand = FALSE)+
+	
+	geom_segment(data = wind_arrows,
+				 aes(x = longitude, y = latitude, xend = end_longitude, yend = end_latitude,
+				 	color = intensity),
+				 arrow = arrow(type = "closed", length = unit(0.08, "inches"), ends = "last"),
+				 lineend = "round", size = 0.3,alpha=0.9 )+
+
+	labs(title="Wind map")
+
+p = mappa_wind
+```
 
 ```{r}
 q = p
+
 actual_clusters = c()
 for(cl in 1:len(edges_list)){
 	edges_to_plot = edges_list[[cl]]
-	if(!is.null(edges_to_plot)){
-		actual_clusters = c(actual_clusters,cl)
-		if(verbose==1){
-			cat("procesing cluster",cl,"\n")
-			print(actual_clusters)
-		}
-	q = q + geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
-							 color = cols[as.numeric(cluster)]),
-						 # color = paste0("cl",cl)),
-						 linewidth=1.2,
-						 data = edges_to_plot,show.legend = TRUE)+
-		guides(color = guide_legend(title = "Clusters"))
-	}
+	actual_clusters = c(actual_clusters,cl)
+		q = q + geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
+								 color = cols[as.numeric(cluster)])
+							 # color = paste0("cl",cl)),
+							 , linewidth=1.2, data = edges_to_plot, show.legend = TRUE)+
+			guides(color = guide_legend(title = "Clusters"))
 }
 
-q = q +
+qf = q +
+	geom_sf(data = altre_regioni, fill = color_empty ,
+				color = color_fill, linewidth = 0.1,alpha=0.01, show.legend = FALSE) +
+	geom_sf(data = lombardia_2, fill = color_empty, color = "yellow", 
+			linewidth = 0.3,alpha=0.07, show.legend = FALSE) +
+	
+	coord_sf(xlim = range(sites$longitude) + padding, ylim = range(sites$latitude) + padding, 
+			 expand = FALSE)+
 	scale_colour_identity(guide="legend",labels=paste0("cl",actual_clusters),
 						  breaks=cols[actual_clusters])
-qf = q +
-	geom_sf(data = altre_regioni, fill = color_empty ,color = color_fill, linewidth = 0.1,alpha=0.01, show.legend = FALSE) +
-	geom_sf(data = lombardia_2, fill = color_empty, color = "yellow", linewidth = 0.3,alpha=0.07, show.legend = FALSE) +
-	
-	coord_sf(xlim = range(sites$longitude) + padding, ylim = range(sites$latitude) + padding, expand = FALSE)+
-	
 	theme_bw()+
 	theme(panel.grid = element_blank())
 
 print(qf)
-
-
-
-
 ```
-`
+
+
+
+# animate
+```{r}
+file_name = paste0("2grid+graph-",chosen_variable_name)
+animated_plot = animator(file_name,qf,data_from_to,len_time,1920,1080)
+```
+
+
 
 
