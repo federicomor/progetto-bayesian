@@ -199,9 +199,8 @@ verbose = 0
 edges_list = assemble_edges_list(clusters_now)
 ```
 
-# plot composition
+# plot composition with animation-mode of the cluster
 
-## grid
 ```{r}
 p  <-  ggplot() +
 
@@ -220,11 +219,6 @@ p  <-  ggplot() +
 										  color = cols[clusters_now]), size = 2)+
 	labs(title = titolo)
 
-
-```
-
-
-```{r}
 q = p
 
 actual_clusters = c()
@@ -254,7 +248,7 @@ qf = q +
 print(qf)
 ```
 
-# united
+# plot composition with changing graphs
 ```{r}
 cols = colora(2,20,show=T)
 color_low =  cols[2]
@@ -274,13 +268,9 @@ initial_date <- ymd("2018-01-01")
 ### TO DEFINE
 # - df_cluster
 ```
-
-
 ```{r}
 united_plot <- function(time_step){
 	
-
-		
 	data_from_to = data_agc_lomb[data_agc_lomb$Time==initial_date + weeks(time_step),]
 
 	chosen_variable = as.numeric(data_from_to[,chosen_variable_name])
@@ -354,21 +344,7 @@ for(i in 1:10){
 
 ```
 
-```{r}
-for(time in time_span[1:4]){
-	cat(crayon::red("Time",time,"\n"))
-	
-	df_cluster_cut = df_cluster[df_cluster$Time==time,]
-	clusters_now = df_cluster_cut$clusters
-	clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
-	df_cluster_cut$clusters = clusters_now
-	
-	q = get_graph_plot(df_cluster_cut,titolo="mio titolo")
-	
-	print(q)
-	clusters_old = clusters_now
-}
-```
+
 
 
 
