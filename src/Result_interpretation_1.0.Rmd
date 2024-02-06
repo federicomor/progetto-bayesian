@@ -1,6 +1,6 @@
 ---
 title: "R Notebook"
-output: html_notebook
+output: html_document
 ---
 
 ```{r,warning = FALSE}
@@ -12,23 +12,50 @@ library(patchwork)
 ```
 
 ```{r}
+# need these for the plotting functions
+sites = data.frame(
+	longitude = unique(df_weekly$Longitude), 
+	latitude = unique(df_weekly$Latitude))
+
+std_sites = data.frame(
+	longitude = unique(df_wsc$Longitude), 
+	latitude = unique(df_wsc$Latitude))
+
+stations = unique(df_wsc$IDStations)
+y=data.frame()
+rownames(y) = NULL
+colnames(y)<- c("id",paste0("w", 1:53))
+
+
 load("salso_out_lists.Rdata")
 # usage: clusters are given by
 #    salso_out_lists[["model name"]][week]
 # where model name in
 mods = c("DRPM","sPPM","Gaussian PPMx","Curve PPMx")
 
-# if around we need df_cluster_cut for the graph plot, here is how it is defined
-df_cluster_cut = data.frame(
-	Longitude = sites$longitude,
-	Latitude = sites$latitude,
-	clusters = CLUSTERS, # change with something from salso_out_lists
-	Time = WEEK # change with the current week
-)
-
 # and this for mode clusters
 load("salso_out_mode_cl.Rdata")
 salso_out_mode_cl
+```
+
+
+```{r}
+# if around we need df_cluster_cut for the graph plot, here is how it is defined
+# df_cluster_cut = data.frame(
+# 	Longitude = sites$longitude,
+# 	Latitude = sites$latitude,
+# 	clusters = CLUSTERS, # change with something from salso_out_lists
+# 	Time = WEEK # change with the current week
+# )
+build_df_cluster_cut = function(time,clusters){
+	df_cluster_cut = data.frame(
+		Longitude = sites$longitude,
+		Latitude = sites$latitude,
+		clusters = clusters, # change with something from salso_out_lists
+		Time = time # change with the current week
+	)
+	return(df_cluster_cut)
+}
 ```
 
 ```{r}
