@@ -1,38 +1,49 @@
-library(ggplot2)
-library(grDevices)
-library(png)
-library(crayon)
-library(hash)
-library(RColorBrewer)
-library(grid)
-library(gridBase)
-library(gridExtra)
-library(igraph)
-library(lubridate)
-library(maps)
-library(sf)
-library(lubridate)
-library(gganimate)
-library(av)
-library(ggpubr)
-library(jpeg)
-library(png)
-library(drpm)
-library(salso)
-library(ppmSuite)
-library(ggrepel)
-library(mclust) 
-library(fields)
-library(magick)
-library(animation)
-library(gifski)
-library(av)
-library(svglite)
-library(CARBayesST)
-library(sp)
-library(proxy)
-library(coda)
-library(MASS)  # For mvrnorm function (multivariate normal distribution)
-library(spdep) # For spatial dependency functions
-library(stats)  # For kronecker function
-library(patchwork)
+# Installazione delle librerie se non presenti
+install_if_missing <- function(package_name) {
+  if (!requireNamespace(package_name, quietly = TRUE)) {
+    install.packages(package_name, dependencies = TRUE)
+  }
+}
+
+# Lista delle librerie da installare
+libraries_to_install <- c(
+  "ggplot2",
+  "grDevices",
+  "png",
+  "crayon",
+  "hash",
+  "RColorBrewer",
+  "grid",
+  "gridBase",
+  "gridExtra",
+  "igraph",
+  "lubridate",
+  "maps",
+  "sf",
+  "gganimate",
+  "av",
+  "ggpubr",
+  "jpeg",
+  "drpm",
+  "salso",
+  "ppmSuite",
+  "ggrepel",
+  "mclust",
+  "fields",
+  "magick",
+  "animation",
+  "gifski",
+  "svglite",
+  "CARBayesST",
+  "sp",
+  "proxy",
+  "coda",
+  "MASS",
+  "spdep",
+  "stats",
+  "patchwork"
+)
+
+# Installazione delle librerie
+invisible(sapply(libraries_to_install, install_if_missing))
+
