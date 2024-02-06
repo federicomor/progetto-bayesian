@@ -101,20 +101,81 @@ for(st in stations){
 
 rownames(y) = NULL
 colnames(y)<- c("id",paste0("w", 1:53))
-df_wsc
-y
-plot(sites)
-plot(std_sites)
 
 sites_plt = sites
 colnames(sites_plt) = c("Longitude","Latitude")
 rownames(sites_plt) = paste(1:105)
-
-salso_out_lists = list()
 ```
 
 
-## na time series plot
+```{r}
+library(ggrepel)
+
+# p_stations_codes = 
+	# ggplot()+
+	# geom_sf(data = altre_regioni, fill = color_empty ,color = color_fill,
+	# 		linewidth = 0.1,alpha=0.1, show.legend = FALSE) +
+	# geom_sf(data = lombardia_2, fill = color_empty, color = color_comuni_lombardia,
+	# 		linewidth = 0.3,alpha=0.7, show.legend = FALSE) +
+	# coord_sf(xlim = range(sites$longitude) + padding,
+	# 		 ylim = range(sites$latitude) + padding, expand = FALSE)+
+	# theme_bw()+
+	# theme(panel.grid = element_blank())+
+
+province = sites_plt[c(19,39,15,16,51,
+					   4,6,8,37,32,50,44),]
+rownames(province) = c("Sondrio","Brescia","Varese","Como","Lecco",
+					   "Bergamo","Monza","Milan","Pavia","Lodi","Cremona","Mantua")
+
+p_stations_codes =
+	DefaultPlot()+
+	geom_point(data = sites_plt, aes(x = Longitude, y = Latitude, color = "col"), size = 1)+
+	theme(legend.position = "none")+
+	# geom_text_repel(data = sites_plt, aes(x = Longitude, y = Latitude, col="col", 
+										  # label = rownames(sites_plt)),	
+	geom_label_repel(data = province, aes(x = Longitude, y = Latitude, col="col2",
+										  label = rownames(province)),
+					size = 4,
+					max.overlaps = 100,
+					min.segment.length = 12,
+					force_pull = 3,
+					force = 0.1
+					)+
+	# scale_colour_manual(name="",values = c("col"="#aa0010","col2"="#80146E"))+
+	scale_colour_manual(name="",values = c("col"="#aa0010","col2"="#7D2E4C"))+
+	# scale_colour_manual(name="",values = c("col"="#1000aa"))+
+	# scale_colour_manual(name="",values = c("col"="#1022a1"))+
+	labs(title = "Stations codes")
+p_stations_codes
+```
+
+```{r}
+ggsave(file="../FIGURES presentation-report/stations_map_with_provinces.pdf",p_stations_codes,height=5, width=5)
+
+```
+
+
+```{r}
+#  [1] "#80146E" "#83409B" "#6C6AB5"
+#  [4] "#478EC1" "#2BABC2" "#4AC3BD"
+#  [7] "#7ED5B8" "#B0E3B8" "#DAEDC2"
+# [10] "#F5F2D8"
+#  [1] "#67223F" "#722846" "#7D2E4C"
+#  [4] "#883352" "#933958" "#9E3F5F"
+#  [7] "#AA4665" "#B54C6B" "#C15371"
+# [10] "#C85D77" "#CE687E" "#D47386"
+# [13] "#D97D8D" "#DF8895" "#E5929D"
+# [16] "#EA9CA5" "#F0A7AD" "#F6B1B6"
+# [19] "#FDBBBE" "#FFC5C7"
+```
+
+```{r}
+DefaultPlot(add_bg = T)
+```
+
+
+
+# na time series plot
 ```{r}
 load("../data/df_agri.Rdata")
 df_agri_full = df_agri
@@ -226,6 +287,7 @@ for(i in 1:105){
 ```{r}
 pdf("../FIGURES presentation-report/na_covariate_map_df2018.pdf",height = 5,width=6)
 
+
 par(mar=c(1,8,1,2))
 ncols = 20
 cols = colora(ncols,74,0)
@@ -245,18 +307,6 @@ mtext(text=colnames(dati), side=2, line=0.4,
 # mtext(text=c(paste("",1:141)), side=1, line=0.3,at=seq(0,1,length=141), las=2, cex=0.35)
 
 dev.off()
-```
-
-```{r}
-heatmap(na_covariate,
-		Colv=NA, Rowv=NA,
-		# col = c(cols[2],cols[1]),
-		# scale='none',xlab="days",ylab="stations",
-		cexRow = 0.3,
-		# margins = c(3, 3),
-		main="NA time series (white are NAs) all data")
-
-# text(x = 100, y = 100, labels = "2020", col = "orange", cex = 1.5)
 ```
 
 

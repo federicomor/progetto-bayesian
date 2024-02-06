@@ -12,6 +12,26 @@ library(patchwork)
 ```
 
 ```{r}
+load("salso_out_lists.Rdata")
+# usage: clusters are given by
+#    salso_out_lists[["model name"]][week]
+# where model name in
+mods = c("DRPM","sPPM","Gaussian PPMx","Curve PPMx")
+
+# if around we need df_cluster_cut for the graph plot, here is how it is defined
+df_cluster_cut = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	clusters = CLUSTERS, # change with something from salso_out_lists
+	Time = WEEK # change with the current week
+)
+
+# and this for mode clusters
+load("salso_out_mode_cl.Rdata")
+salso_out_mode_cl
+```
+
+```{r}
 interest_variables <- c("EM_nh3_livestock_mm",
 "LA_hvi",
 "LA_lvi",

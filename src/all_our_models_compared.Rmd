@@ -55,6 +55,7 @@ colnames(sites_plt) = c("Longitude","Latitude")
 rownames(sites_plt) = paste(1:105)
 
 salso_out_lists = list()
+salso_out_mode_cl = list()
 ```
 
 
@@ -1232,6 +1233,11 @@ PP1 = get_graph_plot(df_cluster_cut,titolo = "Mode clusters",cols=cols_gr,verbos
 PP1
 ```
 
+
+```{r,warning=F}
+salso_out_mode_cl[[base_folder]] = tssites$cl
+```
+
 ```{r,warning=F}
 alfa = 70
 lsize = 0.9
@@ -1484,14 +1490,27 @@ ggsave(paste0("./figures/",base_folder,"/Time Series/plt_modemap.png"),
 # sPPM DONE!
 ```{r}
 load("../data/sppm_c4_list.RData")
+# load("../data/sppm/sppm_2018_C4_M01.RData")
 ```
 
 ```{r}
 FIT = sppm_C4_list
+# FIT = sppm_list
 base_folder = "sPPM"
 ```
 
+new fit
+```{r}
+lpml_tot_sppm = waic_tot_sppm = 0
+for (time in 1:53){
+	lpml_tot_sppm = lpml_tot_sppm + FIT[[time]]$lpml
+	waic_tot_sppm = waic_tot_sppm + FIT[[time]]$WAIC
+}
+cat(crayon::red("\nLPML =",lpml_tot_sppm, "\nWAIC =",waic_tot_sppm))
+# niente ancora lontani da drpm
+```
 
+old fit
 ```{r}
 lpml_tot_sppm = waic_tot_sppm = 0
 for (time in 1:53){
@@ -1709,7 +1728,18 @@ for (st in 1:105){
 }
 cl_regions
 ```
+new
+```{r}
+cl_regions[[4]] = cl_regions[[5]]
+cl_regions[[5]] =
+tssites$cl[77] = 4
+tssites$cl[92] = 4 
+tssites$cl[101] = 4 
+```
 
+
+
+old
 ```{r}
 ## manual changes if we want to separately study some suspitious stations
 # cl_regions[[4]] = setdiff(cl_regions[[4]],80)
@@ -1774,6 +1804,10 @@ df_cluster_cut = data.frame(
 cols_gr = cols[1:length(unique(tssites$cl))]
 PP1 = get_graph_plot(df_cluster_cut,titolo = "Mode clusters",cols=cols_gr,verbose=0,legenda=0)
 PP1
+```
+
+```{r,warning=F}
+salso_out_mode_cl[[base_folder]] = tssites$cl
 ```
 
 ```{r,warning=F}
@@ -2028,7 +2062,7 @@ ggsave(paste0("./figures/",base_folder,"/Time Series/plt_modemap.png"),
 # Gaussian PPmx DONE! - ref
 ```{r}
 FIT = readRDS("Gaussian_ppmX.RData")
-gppmx_fit = readRDS("Gaussian_ppmX.RData")
+gppmx_fit = FIT
 base_folder = "Gaussian PPMx"
 ```
 
@@ -2290,9 +2324,13 @@ df_cluster_cut = data.frame(
 	clusters = tssites$cl,
 	Time = 1
 )
-cols_gr = cols[1:length(unique(tssites$cl))]
+cols_gr = cols[1:(1+length(unique(tssites$cl)))]
 PP1 = get_graph_plot(df_cluster_cut,titolo = "Mode clusters",cols=cols_gr,verbose=0,legenda=0)
 PP1
+```
+
+```{r,warning=F}
+salso_out_mode_cl[[base_folder]] = tssites$cl
 ```
 
 ```{r,warning=F}
@@ -2650,6 +2688,11 @@ for(time in time_span){
 salso_out_lists[[base_folder]] = salso_out_list
 ```
 
+```{r}
+save(salso_out_lists,file="salso_out_lists.Rdata")
+```
+
+
 ### ari
 ```{r}
 ### ARI #######################################################################
@@ -2825,6 +2868,15 @@ cols_gr = cols[1:length(unique(tssites$cl))]
 PP1 = get_graph_plot(df_cluster_cut,titolo = "Mode clusters",cols=cols_gr,verbose=0,legenda=0)
 PP1
 ```
+
+```{r,warning=F}
+salso_out_mode_cl[[base_folder]] = tssites$cl
+```
+
+```{r}
+save(salso_out_mode_cl,file="salso_out_mode_cl.Rdata")
+```
+
 
 ```{r,warning=F}
 alfa = 70
@@ -3192,12 +3244,12 @@ pari = ggplot(dati,aes(x=x))+
 		# theme(legend.position = "none")
 
 
+print(pari)
 	# ggsave(file="../FIGURES presentation-report/ARI_models_comparison.png",
-	ggsave(file="../FIGURES presentation-report/ARI_models_comparison.pdf", device=cairo_pdf,
-		   plot=pari,
-		   units="px",width=2500, height=1400, dpi=300) # maybe 1200 is better
-		   # units="px",width=2500, height=1400, dpi=300)
-	dev.off()
+	# ggsave(file="../FIGURES presentation-report/ARI_models_comparison.pdf", device=cairo_pdf,
+	# 	   plot=pari,
+	# 	   units="px",width=2500, height=1400, dpi=300) # maybe 1200 is better
+	# dev.off()
 ```
 
 # Trace plots
@@ -3379,7 +3431,7 @@ for(time in seq(1,53,7)){
 }
 dev.off()
 
-pdf("../FIGURES presentation-report/DRPM/traceplot-acf-mu.pdf", width = 16,height = 12)
+# pdf("../FIGURES presentation-report/DRPM/traceplot-acf-mu.pdf", width = 16,height = 12)
 par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
 
 for(time in seq(1,53,7)){
