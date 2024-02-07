@@ -99,8 +99,22 @@ Use the visualize html page to see peculiar features of your model, as we are ok
 ![](./src/figures/Gaussian%20PPMx/Time%20Series/plt_modemap.png)
 
 1. Comments:
-	- ecc
-	- ecc
+	- Altitude: altitude plays an important role in the clustering of pm10 for the year 2018. The clusters are strongly influenced by the altitude of the stations. In particular, the blue cluster is characterized by stations that have a very high altitude compared to the average, on the contrary the red cluster includes stations with an altitude below the average.
+- PM10: PM10 levels are very different for the blue cluster (below average) and the red cluster (above average) particularly in the first and last part of the year. The trends are different for the different clusters.
+- Temp_2m: the temperature values for the different clusters are different (obviously, different latitude...) but we have the same trend.
+- Wind_speed_10m_max : red and yellow clusters have the same trend and wind speed values (above average). blue and green clusters have the same trend and wind speed values (below the average).
+- Precipitation: we have high precipitation for the blue cluster, particularly at the beginning and end of the year, when the pm10 level is at its minimum. Precipitation most likely reduces pm10.
+- NH3 livestock: the red cluster highlights a strong presence of NH3 due to livestock, particularly in the central part of the year. The other clusters have smaller values. Probably the presence of NH3 due to livestock contributes to raising PM10.
+Obviously for this cluster I have a large number of animals.
+- Nh3 agr_soil: see point before. Even more evidence for the red cluster (strong presence of NH3).
+- Nh3 _agr_waste_burn: see point before.
+- Nox: the yellow cluster has higher nox values than all the other clusters, but it is not the most "polluted" cluster. PM10 is therefore more induced by NH3 rather than NOX
+NH3 in all its origins (waste, pastures,..) negatively influences the PM10 level, more than NOX.
+
+- Li: the number of animals is higher in the red cluster. (see comment before)
+- Land: from the land use plot it can be seen that the blue cluster contains less exploited stations at ground level, therefore a positive factor for the pm10 level.
+In short, nothing that wasn't known, but at least we have statistical and scientific evidence.
+
 
 
 ![](./src/figures/Curve%20PPMx/Time%20Series/plt_modemap.png)

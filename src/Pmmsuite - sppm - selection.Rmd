@@ -694,8 +694,6 @@ stats_sppm  %>% filter(model %in% good_models)  %>% group_by(model) %>%
 
 
 ```{r}
-
-
 stats_sppm %>% filter(model %in% good_models) %>% 
 	ggplot(aes(x = week, y = MSE, group = model, colour = model)) + geom_line()
 stats_sppm %>% filter(model %in% good_models) %>% 
