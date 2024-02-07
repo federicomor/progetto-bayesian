@@ -3445,6 +3445,7 @@ for(time in seq(1,53,7)){
 	acf(VALUES,main=paste("week",time))
 }
 dev.off()
+
 ```
 
 ### sppm
@@ -3575,5 +3576,40 @@ for (time in 1:53){
 ```{r}
 plot(alpha_avg,type="b",ylim=c(0,1))
 ```
+# ess
+```{r}
+library(sns)
+library(coda)
+
+size(drpm1$mu[,97,])
+size(drpm1$sig2)
+
+```
+
+
+drpm
+```{r}
+sampled_station=97
+print(mean(ess(as.matrix(drpm1$sig2[,sampled_station,])), method = c("coda", "ise")))
+print(mean(ess(as.matrix(drpm1$mu[,sampled_station,])), method = c("coda", "ise")))
+```
+
+sppm
+```{r}
+sampled_station = 35
+svals = muvals = c()
+for(time in 1:53){
+	svals = rbind(svals,sppm_C4_list[[time]]$sig2[,sampled_station])
+	muvals = rbind(muvals,sppm_C4_list[[time]]$mu[,sampled_station])
+}
+size(svals)
+
+print(mean(ess(t(as.matrix(drpm1$sig2[,sampled_station,])), method = c("coda", "ise"))))
+print(mean(ess(t(as.matrix(drpm1$mu[,sampled_station,])), method = c("coda", "ise"))))
+```
+
+
+
+
 
 
