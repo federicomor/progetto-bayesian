@@ -870,7 +870,7 @@ bayesian_coefficients=bayesian_coefficients/len(stations)
 
 
 ```{r}
-#saveRDS(bayesian_coefficients,"betas_lin_mod.RData")
+readRDS("")
 ```
 
 

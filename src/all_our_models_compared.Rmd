@@ -3126,6 +3126,11 @@ ggsave(paste0("./figures/",base_folder,"/Time Series/plt_modemap.png"),
 
 
 #======
+```{r}
+loa
+```
+
+
 # ARI comparison
 need to run almost all the notebook sections for this
 ```{r}
@@ -3168,6 +3173,9 @@ compare_ARI(mods[3],mods[4])
 
 # dev.off()
 ```
+```{r}
+load("salso_out_lists.Rdata")
+```
 
 
 ```{r}
@@ -3195,10 +3203,14 @@ for(i in 1:3){
 		} else {
 			lines(1:53,ARIvec[[titolo]],type="l",col=cols[col_idx])
 		}
+		abline(h=mean(ARIvec[[titolo]]),col=cols[col_idx])
+		cat(mean(ARIvec[[titolo]]), " ",titolo,"\n")
+		
+		# abline(h=mean(ARIvec[[titolo]]),col="red")
 		col_idx = col_idx +1
 	}
 }
-abline(h=0,lty=2,col="gray")
+# abline(h=0,lty=2,col="gray")
 legend("topright",titoli,fill=cols,bty="n")
 ```
 
@@ -3232,6 +3244,12 @@ pari = ggplot(dati,aes(x=x))+
 	geom_line(aes(y=y4,color= "sPPM - Gaussian PPMx"      ))+
 	geom_line(aes(y=y5,color= "sPPM - Curve PPMx"         ))+
 	geom_line(aes(y=y6,color= "Gaussian PPMx - Curve PPMx"))+
+	abline(aes(y=y1,color= "DRPM - sPPM"               ))+
+	abline(aes(y=y2,color= "DRPM - Gaussian PPMx"      ))+
+	abline(aes(y=y3,color= "DRPM - Curve PPMx"         ))+
+	abline(aes(y=y4,color= "sPPM - Gaussian PPMx"      ))+
+	abline(aes(y=y5,color= "sPPM - Curve PPMx"         ))+
+	abline(aes(y=y6,color= "Gaussian PPMx - Curve PPMx"))+
         # ylim(-0.2, 0.8) +
         # xlim(1, 80) +
 	theme_bw()+ 
