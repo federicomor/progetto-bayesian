@@ -1489,13 +1489,13 @@ ggsave(paste0("./figures/",base_folder,"/Time Series/plt_modemap.png"),
 #=======
 # sPPM DONE!
 ```{r}
-load("../data/sppm_c4_list.RData")
-# load("../data/sppm/sppm_2018_C4_M01.RData")
+# load("../data/sppm_c4_list.RData")
+load("../data/sppm/sppm_2018_C4_M01.RData")
 ```
 
 ```{r}
-FIT = sppm_C4_list
-# FIT = sppm_list
+# FIT = sppm_C4_list
+FIT = sppm_list
 base_folder = "sPPM"
 ```
 
@@ -3213,6 +3213,44 @@ for(i in 1:3){
 # abline(h=0,lty=2,col="gray")
 legend("topright",titoli,fill=cols,bty="n")
 ```
+```{r}
+ARIvec = list()
+titoli = c()
+col_idx = 1
+# cols = colora(6,"rand",1)
+cols = colora(6,81,0)
+
+for(i in 1:3){
+	for(j in (i+1):4){
+		# cat(mods[i],mods[j],"\n")
+		titolo = paste0(mods[i]," - ",mods[j])
+		titoli = c(titoli,titolo)
+		
+		ARIvec[[titolo]] = matrix(NA, nrow=1, ncol=LEN)
+		for(k in 1:53){
+			ARIvec[[titolo]][k] <- adjustedRandIndex(
+				salso_out_lists[[mods[i]]][[k]][1:105],
+				salso_out_lists[[mods[j]]][[k]][1:105])
+		}	
+		if (i==1 && j==2){
+			boxplot(1:53,ARIvec[[titolo]],type="l",col=cols[col_idx],
+				 ylim=c(-0.2,0.8),xlim=c(1,80))
+		} else {
+			boxplot(1:53,ARIvec[[titolo]],type="l",col=cols[col_idx])
+		}
+	
+		# abline(h=mean(ARIvec[[titolo]]),col="red")
+		col_idx = col_idx +1
+	}
+}
+# abline(h=0,lty=2,col="gray")
+legend("topright",titoli,fill=cols,bty="n")
+
+as.numeric(ARIvec[[titoli[1]]])
+```
+
+
+
 
 
 ```{r}
@@ -3244,12 +3282,6 @@ pari = ggplot(dati,aes(x=x))+
 	geom_line(aes(y=y4,color= "sPPM - Gaussian PPMx"      ))+
 	geom_line(aes(y=y5,color= "sPPM - Curve PPMx"         ))+
 	geom_line(aes(y=y6,color= "Gaussian PPMx - Curve PPMx"))+
-	abline(aes(y=y1,color= "DRPM - sPPM"               ))+
-	abline(aes(y=y2,color= "DRPM - Gaussian PPMx"      ))+
-	abline(aes(y=y3,color= "DRPM - Curve PPMx"         ))+
-	abline(aes(y=y4,color= "sPPM - Gaussian PPMx"      ))+
-	abline(aes(y=y5,color= "sPPM - Curve PPMx"         ))+
-	abline(aes(y=y6,color= "Gaussian PPMx - Curve PPMx"))+
         # ylim(-0.2, 0.8) +
         # xlim(1, 80) +
 	theme_bw()+ 
@@ -3264,9 +3296,9 @@ pari = ggplot(dati,aes(x=x))+
 
 print(pari)
 	# ggsave(file="../FIGURES presentation-report/ARI_models_comparison.png",
-	# ggsave(file="../FIGURES presentation-report/ARI_models_comparison.pdf", device=cairo_pdf,
-	# 	   plot=pari,
-	# 	   units="px",width=2500, height=1400, dpi=300) # maybe 1200 is better
+	ggsave(file="../FIGURES presentation-report/ARI_models_comparison.pdf", device=cairo_pdf,
+		   plot=pari,
+		   units="px",width=2500, height=1400, dpi=300) # maybe 1200 is better
 	# dev.off()
 ```
 
