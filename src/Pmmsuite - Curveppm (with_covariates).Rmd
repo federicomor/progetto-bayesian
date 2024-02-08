@@ -79,13 +79,13 @@ allXcons = list()
 allXcats = list()
 for (time in 1:53) {
 	allXcons[[time]] = data.frame(
-		Altitude = df_wsc$Altitude[seq(from=i, by = 53, length.out=105)],
-		EM_nox_sum = df_wsc$EM_nox_sum[seq(from=i, by = 53, length.out=105)],
-		WE_wind_speed_100m_max = df_wsc$WE_wind_speed_100m_max[seq(from=i, by = 53, length.out=105)],
-		LA_lvi = df_wsc$LA_lvi[seq(from=i, by = 53, length.out=105)]
+		Altitude = df_wsc$Altitude[seq(from=time, by = 53, length.out=105)],
+		EM_nox_sum = df_wsc$EM_nox_sum[seq(from=time, by = 53, length.out=105)],
+		WE_wind_speed_100m_max = df_wsc$WE_wind_speed_100m_max[seq(from=time, by = 53, length.out=105)],
+		LA_lvi = df_wsc$LA_lvi[seq(from=time, by = 53, length.out=105)]
 	)
 	allXcats[[time]] = data.frame(
-		WE_mode_wind_direction_100m = df_wsc$WE_mode_wind_direction_100m[seq(from=i, by = 53, length.out=105)]
+		WE_mode_wind_direction_100m = df_wsc$WE_mode_wind_direction_100m[seq(from=time, by = 53, length.out=105)]
 	)
 }
 
@@ -165,11 +165,11 @@ for (time in 17:53){
                   Xconp=NULL, 
   				  Xcatp=NULL,
                   PPM=FALSE, 
-  				  M=1,
+  				  M=0.1,
                   q=3, 
   				  rw_order=1,
   				  balanced=1,
-                  nknots=nknots, 
+                  nknots=40, 
   				  npredobs=1,
                   Aparm=60,
                   similarity_function=1,
@@ -293,8 +293,127 @@ easy_plot(salso_out)
 
 ```
 
+lpml
+```{r}
+all_fits_test = list()
+for (time in 1:2){
+
+	cat(crayon::red("##############\n"))
+	cat(crayon::red("Fitting time",time,"\n"))
+	cat(crayon::red("##############\n"))
+  fit_test <- curve_ppmx(y=cbind(y_fit), z=z,
+                  subject=subject_obs_vec,
+                  Xcon = allXcons[[time]], 
+  				  Xcat = as.data.frame(apply(allXcats[[time]],2,mappa_direzioni)),
+                  Xconp=NULL, 
+  				  Xcatp=NULL,
+                  PPM=FALSE, 
+  				  M=10,
+                  q=3, 
+  				  rw_order=1,
+  				  balanced=1,
+                  nknots=nknots, 
+  				  npredobs=1,
+                  Aparm=60,
+                  similarity_function=1,
+                  consim=1,
+  				  calibrate=0,
+                  
+  				  modelPriors=modelPriors,
+                  simParms=simparms,
+                  mh=c(0.2, 0.2),
+                  draws=niter,
+                  burn=nburn,
+                  thin=nthin
+  				  )
+
+  all_fits_test[[time]] = fit_test 
+
+}
+```
 
 
 
+```{r}
+all_fits_test2 = list()
+for (time in 1:2){
 
+	cat(crayon::red("##############\n"))
+	cat(crayon::red("Fitting time",time,"\n"))
+	cat(crayon::red("##############\n"))
+  fit_test2 <- curve_ppmx(y=cbind(y_fit), z=z,
+                  subject=subject_obs_vec,
+                  Xcon = allXcons[[time]], 
+  				  Xcat = as.data.frame(apply(allXcats[[time]],2,mappa_direzioni)),
+                  Xconp=NULL, 
+  				  Xcatp=NULL,
+                  PPM=FALSE, 
+  				  M=10,
+                  q=3, 
+  				  rw_order=1,
+  				  balanced=1,
+                  nknots=40, 
+  				  npredobs=1,
+                  Aparm=60,
+                  similarity_function=1,
+                  consim=1,
+  				  calibrate=0,
+                  
+  				  modelPriors=modelPriors,
+                  simParms=simparms,
+                  mh=c(0.2, 0.2),
+                  draws=niter,
+                  burn=nburn,
+                  thin=nthin
+  				  )
+
+  all_fits_test2[[time]] = fit_test2 
+
+}
+```
+```{r}
+# M = 1
+all_fits_test[[1]]$lpml
+all_fits_test[[1]]$WAIC
+all_fits_test[[2]]$lpml
+all_fits_test[[2]]$WAIC
+```
+
+```{r}
+# M = 1
+all_fits_test2[[1]]$lpml
+all_fits_test2[[1]]$WAIC
+all_fits_test2[[2]]$lpml
+all_fits_test2[[2]]$WAIC
+```
+```{r}
+# M = 0.1
+all_fits_test[[1]]$lpml
+all_fits_test[[1]]$WAIC
+all_fits_test[[2]]$lpml
+all_fits_test[[2]]$WAIC
+```
+
+```{r}
+# M = 0.1
+all_fits_test2[[1]]$lpml
+all_fits_test2[[1]]$WAIC
+all_fits_test2[[2]]$lpml
+all_fits_test2[[2]]$WAIC
+```
+```{r}
+# M = 10
+all_fits_test[[1]]$lpml
+all_fits_test[[1]]$WAIC
+all_fits_test[[2]]$lpml
+all_fits_test[[2]]$WAIC
+```
+
+```{r}
+# M = 10
+all_fits_test2[[1]]$lpml
+all_fits_test2[[1]]$WAIC
+all_fits_test2[[2]]$lpml
+all_fits_test2[[2]]$WAIC
+```
 
