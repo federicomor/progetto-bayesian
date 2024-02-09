@@ -122,35 +122,36 @@ library(ggrepel)
 	# theme_bw()+
 	# theme(panel.grid = element_blank())+
 
-province = sites_plt[c(19,39,15,16,51,
-					   4,6,8,37,32,50,44),]
-rownames(province) = c("Sondrio","Brescia","Varese","Como","Lecco",
-					   "Bergamo","Monza","Milan","Pavia","Lodi","Cremona","Mantua")
+# province = sites_plt[c(19,39,15,16,51,
+# 					   4,6,8,37,32,50,44),]
+# rownames(province) = c("Sondrio","Brescia","Varese","Como","Lecco",
+# 					   "Bergamo","Monza","Milan","Pavia","Lodi","Cremona","Mantua")
 
 p_stations_codes =
 	DefaultPlot()+
-	geom_point(data = sites_plt, aes(x = Longitude, y = Latitude, color = "col"), size = 1)+
+	geom_point(data = sites_plt, aes(x = Longitude, y = Latitude, color = "col"), size = 1.5)+
 	theme(legend.position = "none")+
 	# geom_text_repel(data = sites_plt, aes(x = Longitude, y = Latitude, col="col", 
 										  # label = rownames(sites_plt)),	
-	geom_label_repel(data = province, aes(x = Longitude, y = Latitude, col="col2",
-										  label = rownames(province)),
-					size = 4,
-					max.overlaps = 100,
-					min.segment.length = 12,
-					force_pull = 3,
-					force = 0.1
-					)+
+	# geom_label_repel(data = province, aes(x = Longitude, y = Latitude, col="col2",
+	# 									  label = rownames(province)),
+	# 				size = 4,
+	# 				max.overlaps = 100,
+	# 				min.segment.length = 12,
+	# 				force_pull = 3,
+	# 				force = 0.1
+	# 				)+
 	# scale_colour_manual(name="",values = c("col"="#aa0010","col2"="#80146E"))+
 	scale_colour_manual(name="",values = c("col"="#aa0010","col2"="#7D2E4C"))+
 	# scale_colour_manual(name="",values = c("col"="#1000aa"))+
 	# scale_colour_manual(name="",values = c("col"="#1022a1"))+
-	labs(title = "Stations codes")
+	labs(title = "Stations positions")
 p_stations_codes
 ```
 
 ```{r}
-ggsave(file="../FIGURES presentation-report/stations_map_with_provinces.pdf",p_stations_codes,height=5, width=5)
+ggsave(file="../FIGURES presentation-report/stations_map_only_dots.pdf",
+	   p_stations_codes,height=4, width=4)
 
 ```
 

@@ -259,34 +259,47 @@ len_time = 53
 # plot composition with changing graphs
 
 ```{r}
-united_plot <- function(time_step){
+united_plot <- function(time_step,chosen_variable_name,df_cluster_cut,cols){
 	
-	data_from_to = data_agc_lomb_weekly_2018_mean[data_agc_lomb_weekly_2018_mean$Week==time_step,]
+	data_from_to = data_agc_lomb_weekly_2018_mean[
+		data_agc_lomb_weekly_2018_mean$Week==time_step,]
 
 	chosen_variable = as.numeric(data_from_to[[chosen_variable_name]])
 	
-	edges_list = assemble_edges_list(df_cluster_cut$clusters)
-	p  <-  ggplot() +
+	### this to set lims looking at values of all weeks, ie are fixed for all t of the loop
+	lims = extrema(na.omit(data_agc_lomb_weekly_2018_mean[,chosen_variable_name]))
+	### this to set lims in a time dependent way
+	# lims = extrema(chosen_variable)
+		
+	### this to approximate them to int
+	# lims = c(floor(lims[1]),ceiling(lims[2]))
+	
+	edges_list = assemble_edges_list(df_ccut$clusters)
 
+	p =
+	ggplot() +
 	geom_tile(data = data_from_to, aes(x = Longitude, y = Latitude, fill = chosen_variable), 
 			  colour = "grey50",alpha = 0.9) +
-	
 	scale_fill_gradient(low = color_low, high = color_high,na.value = "gray",
-						breaks = extrema(chosen_variable)
-					#	,trans = "log",  # Apply a logarithmic transformation (adjust as needed)
-					#	oob = scales::squish  # Squish out-of-bounds values to the nearest limit
+						# breaks = seq(as.integer(floor(lims[1])),
+						# 			 as.integer(ceiling(lims[2])),
+						# 			 length.out = 10),
+						# labels=c(as.character(as.integer(floor(lims[1]))),
+						# 		 rep("",8),
+						# 		 as.character(as.integer(ceiling(lims[1]))))
+						limits = lims
 						) +
-	labs(title = chosen_variable_name, fill = chosen_variable_name)+
-		
-		
-	geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
-										  # color = cols[factor(clusters)]), size = 2)+
-										  color = cols[clusters]), size = 2)+
-	labs(title = titolo)+
- theme(legend.position = "right",  # Imposta la posizione della legenda in basso
-        legend.justification = "bottom")  # Allinea la legenda sulla sinistra
+	labs(title = paste0(chosen_variable_name," - ",modello," model (week ",time,")" ), 
+		 fill = chosen_variable_name)+
+	# theme(legend.position = "right",legend.justification = "bottom")
+	theme(legend.position = "bottom")+
+	theme_bw()
+
 	
-	q = p
+	q = p +	
+		geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
+										  color =  cols[as.numeric(clusters)]), size = 2)+
+		scale_color_identity(guide = 'none')
 
 	actual_clusters = c()
 	for(cl in 1:len(edges_list)){
@@ -300,27 +313,22 @@ united_plot <- function(time_step){
 			q = q + 
 				geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
 									 color = cols[as.numeric(cluster)]),
-								  linewidth=1.2, data = edges_to_plot, show.legend = TRUE)+
-				
-
-				guides(color = guide_legend(title = "Clusters"))
+								  linewidth=1.2, data = edges_to_plot, show.legend = FALSE)
 		}
 
 	}
+	q = q + scale_color_identity(guide = 'none')
 	qf = q +
 		geom_sf(data = altre_regioni, fill = color_empty ,
-					color = color_fill, linewidth = 0.3,alpha=0.01, show.legend = FALSE) +
+				color = color_fill, linewidth = 0.3,alpha=0.01, show.legend = FALSE) +
 		geom_sf(data = lombardia_2, fill = color_empty, color = "gold", 
 				linewidth = 0.3,alpha=0.07, show.legend = FALSE) +
-		
-		coord_sf(xlim = range(sites$longitude) + padding, ylim = range(sites$latitude) + padding, 
+		coord_sf(xlim = range(sites$longitude) + padding,
+				 ylim = range(sites$latitude) + padding, 
 				 expand = FALSE)+
-
 		theme_bw()
 	
-	print(qf)
-
-	
+	return(qf)
 }
 ```
 
@@ -330,10 +338,9 @@ library(magick)
 library(animation)
 library(gifski)
 library(av)
-cols=color_correct_clusters(df_cluster_cut,idea = 2,verbose = 0,nint= 15)
+
 color_low =  "white"
 color_high = "black" 
-cols=cols_default
 verbose = 0
 
 interest_variables_animated_grid = c("EM_nh3_livestock_mm",
@@ -348,13 +355,57 @@ build_df_cluster_cut = function(time,clusters){
 df_cluster_cut = data.frame(
 	Longitude = sites$longitude,
 	Latitude = sites$latitude,
-	clusters = clusters, # change with something from salso_out_lists
-	Time = i # change with the current week
-)
+	clusters = clusters # change with something from salso_out_lists
+	)
 return(df_cluster_cut)
 }
 
 ```
+#====
+## fede tests
+```{r}
+### small tests
+var = interest_variables_animated_grid[4]
+mods = c("DRPM","sPPM","Gaussian PPMx","Curve PPMx")
+modello = mods[1]
+
+for(time in 1:2){ # lascia time come nome, serve
+	
+	curr_clusters = salso_out_lists[[modello]][time][[1]][1:105]
+	df_ccut = build_df_cluster_cut(time,curr_clusters)
+	cols = color_correct_clusters(df_ccut,idea=2,verbose=0,nint=15)
+
+	plt = united_plot(time,var,df_ccut,cols)
+	
+	print(plt) # cambia con le varie ggsave
+	
+} # time
+```
+
+this for the intense plot generation
+```{r}
+mods = c("DRPM","sPPM","Gaussian PPMx","Curve PPMx")
+
+for (var in interest_variables_animated_grid){
+for (modello in mods){
+cat("Processing model",modello,"\n")
+
+for(time in 1:2){ # lascia time come nome, serve
+	
+	curr_clusters = salso_out_lists[[modello]][time][[1]][1:105]
+	df_ccut = build_df_cluster_cut(time,curr_clusters)
+	cols = color_correct_clusters(df_ccut,idea=2,verbose=0,nint=15)
+
+	plt = united_plot(time,var,df_ccut,cols)
+	
+	print(plt) # cambia con le varie ggsave ora
+	
+} # time
+} # modello
+} # var
+```
+
+#====
 
 # build gif and images
 

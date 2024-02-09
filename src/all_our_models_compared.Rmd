@@ -73,13 +73,13 @@ trendYearStation_week <- function(file_name){
 												 group=IDStations, 
 												 color = as.factor(IDStations))) +
 		geom_line(show.legend = FALSE) +
-		labs(x = "Stations", y = chosen_variable_name, title = "Year 2018, all stations") +
+		labs(x = "Stations", y = chosen_variable_name, title = "Year 2018") +
 		ylim(range(na.omit(chosen_variable))) +
 		scale_color_manual(values = cols) +
 		theme_bw()+
 		theme(panel.grid = element_blank()) +
 		guides(color = guide_legend())+
-		labs(x="Weeks")
+		labs(x="",y="")
 
 	len_time = (len_time%/%5)
 	return(trend_animator(file_name,station_trend, data_from_to$week,len_time))
@@ -1731,10 +1731,12 @@ cl_regions
 new
 ```{r}
 cl_regions[[4]] = cl_regions[[5]]
-cl_regions[[5]] =
+cl_regions[[5]] = numeric()
 tssites$cl[77] = 4
 tssites$cl[92] = 4 
 tssites$cl[101] = 4 
+
+cl_regions
 ```
 
 
@@ -2688,9 +2690,7 @@ for(time in time_span){
 salso_out_lists[[base_folder]] = salso_out_list
 ```
 
-```{r}
-save(salso_out_lists,file="salso_out_lists.Rdata")
-```
+
 
 
 ### ari
@@ -2873,9 +2873,6 @@ PP1
 salso_out_mode_cl[[base_folder]] = tssites$cl
 ```
 
-```{r}
-save(salso_out_mode_cl,file="salso_out_mode_cl.Rdata")
-```
 
 
 ```{r,warning=F}
@@ -3124,11 +3121,11 @@ ggsave(paste0("./figures/",base_folder,"/Time Series/plt_modemap.png"),
 
 ```
 
-
-#======
 ```{r}
-loa
+save(salso_out_lists,file="salso_out_lists.Rdata")
+save(salso_out_mode_cl,file="salso_out_mode_cl.Rdata")
 ```
+#======
 
 
 # ARI comparison
@@ -3175,6 +3172,7 @@ compare_ARI(mods[3],mods[4])
 ```
 ```{r}
 load("salso_out_lists.Rdata")
+load("salso_out_mode_cl.Rdata")
 ```
 
 
@@ -3502,7 +3500,7 @@ dev.off()
 ```{r}
 sampled_station = gimme_a_station()
 # sampled_station = 26,69,2,18
-sampled_station = 35
+# sampled_station = 35
 
 pdf("../FIGURES presentation-report/sPPM/traceplot-acf-sig2.pdf", width = 16,height = 12)
 par(mfrow=c(4,4),mai = rep(0.3,4), oma=c(1,1,2,1))
@@ -3658,6 +3656,32 @@ print(mean(ess(t(as.matrix(drpm1$sig2[,sampled_station,])), method = c("coda", "
 print(mean(ess(t(as.matrix(drpm1$mu[,sampled_station,])), method = c("coda", "ise"))))
 ```
 
+#====
+# gif Ettore
+```{r}
+MODELLO = "DRPM" # usare anche come folder
+# MODELLO = "sPPM" 
+# MODELLO = "Gaussian PPMx" 
+# MODELLO = "Curve PPMx"
+
+LISTA_PLOT = lista
+
+for (time in 1:53){
+	CUR_PLOT = LISTA_PLOT[[time]] # or similar, dipende come hai salvato le varie cose
+
+	cur_num = sprintf("%02d", time) # tempo con due cifre necessario per le gif su latex
+	
+	ggsave(file=paste0("..scegli.tu.qui../",MODELLO,"/GIF/",MODELLO,"-",cur_num,".pdf"),
+		   device=cairo_pdf, # questo non serve per forza credo
+		   plot=CUR_PLOT,
+		   units="px", width=2000, height=1200, dpi=300) # maybe try to change them
+	
+	ggsave(file=paste0("..scegli.tu.qui../",MODELLO,"/GIF/",MODELLO,"-",cur_num,".png"),
+		   plot = CUR_PLOT,
+		   units="px", width=2000, height=1200) # maybe try to change them
+
+}
+```
 
 
 
