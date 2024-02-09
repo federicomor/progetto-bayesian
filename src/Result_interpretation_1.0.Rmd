@@ -11,6 +11,7 @@ source("include_clusters_functions.R")
 library(patchwork)
 ```
 
+
 ```{r}
 # need these for the plotting functions
 sites = data.frame(
@@ -23,6 +24,12 @@ std_sites = data.frame(
 
 stations = unique(df_wsc$IDStations)
 y=data.frame()
+
+for(st in stations){
+  y_we_pm10=cbind(as.data.frame(st),t(df_wsc[which(df_wsc$IDStations==st),"AQ_pm10"]))
+  y=rbind(y,y_we_pm10)
+}
+
 rownames(y) = NULL
 colnames(y)<- c("id",paste0("w", 1:53))
 
@@ -51,7 +58,7 @@ build_df_cluster_cut = function(time,clusters){
 	df_cluster_cut = data.frame(
 		Longitude = sites$longitude,
 		Latitude = sites$latitude,
-		clusters = clusters, # change with something from salso_out_lists
+		clusters = salso_out_mode_cl$DRPM, # change with something from salso_out_lists
 		Time = time # change with the current week
 	)
 	return(df_cluster_cut)
@@ -65,8 +72,8 @@ interest_variables <- c("EM_nh3_livestock_mm",
 "Altitude",
 "EM_nox_sum",
 "WE_wind_speed_100m_max",
-"WE_mode_wind_direction_100m",
-"WE_tot_precipitation")
+"WE_tot_precipitation"
+)
 ```
 
 
@@ -142,29 +149,6 @@ xyPlot_weekly <- function(file_name,var1_name,var2_name,size_name){
 }
 ```
 
-# cluster colors
-```{r}
-mode_clusters <- list(
-  c(1, 14, 19, 20, 21, 40, 41, 52, 62, 65, 66, 67, 69, 71, 74, 80, 83, 84, 102),
-  c(2, 3, 5, 7, 8, 9, 11, 12, 26, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 48, 50, 53, 56, 57, 61, 63, 64, 70, 72, 77, 82, 85, 87, 88, 90, 91, 98, 99),
-  c(4, 6, 10, 13, 15, 16, 17, 18, 22, 23, 24, 25, 27, 28, 39, 42, 43, 46, 49, 51, 54, 55, 58, 103, 105),
-  c(44, 45, 47, 59, 60, 68, 73, 75, 76, 78, 79, 81, 86, 89, 93, 94, 95, 96, 97, 100, 104),
-  c(92, 101)
-)
-
-
-colors_clusters = rep(1,105)
-for(i in 2:length(mode_clusters)){
-	colors_clusters[mode_clusters[[i]]] = i
-}
-
-df_interst$color_clusters = rep(1,dim(df_interst)[1])
-ii = 1
-for(st in unique(df_interst$IDStations)){
-	df_interst$color_clusters[df_interst$IDStations==st] = colors_clusters[ii]
-	ii = ii + 1	
-}
-```
 
 # xy color+size in time
 ```{r,warning=FALSE}
@@ -172,13 +156,24 @@ var2_name = "AQ_pm10" # y
 size_name = 3
 #size_name = "Altitude"
 #file_name= "None"
-for(vars in interest_variables){
-	file_name= paste0("xy_plot_pm10-",vars)
-	# you can change size to refer to a particular variable
-
+for(j in 1:4){
+	colors_clusters = salso_out_mode_cl[[j]]
+	ii = 1
 	
-	xyplot <- xyPlot_weekly(file_name,vars,var2_name,size_name)
-	xyplot
+	for(st in unique(df_interst$IDStations)){
+		df_interst$color_clusters[df_interst$IDStations==st] = colors_clusters[ii]
+		ii = ii + 1	
+	}
+	
+
+	for(vars in interest_variables){
+		file_name= paste0(names(salso_out_mode_cl)[j],"xy_plot_pm10-",vars)
+		# you can change size to refer to a particular variable
+	
+		
+		xyplot <- xyPlot_weekly(file_name,vars,var2_name,size_name)
+		xyplot
+	}
 }
 ```
 
@@ -220,107 +215,55 @@ p
 map = gridMap("2016-01-01","2016-01-01","","None","Altitude")
 map
 ```
+# media settimanale
+```{r}
+# Carica la libreria dplyr
+library(dplyr)
+data_agc_lomb_weekly = data_agc_lomb[,c("EM_nh3_livestock_mm",
+										"LA_hvi"   ,              
+										"LA_lvi"    ,            
+										"Altitude" ,             
+										"EM_nox_sum"         ,    
+										"WE_wind_speed_100m_max", 
+										"WE_tot_precipitation" 
+										,"Latitude","Longitude","Time")]
+
+# Converti la variabile Time in formato Date
+data_agc_lomb_weekly$Time <- as.Date(data_agc_lomb_weekly$Time)
+
+
+data_agc_lomb_weekly_2018 = data_agc_lomb_weekly[lubridate::year(data_agc_lomb_weekly$Time)=="2018",]
+# Aggiungi una nuova colonna che rappresenta la settimana dell'anno
+data_agc_lomb_weekly_2018$Week <- lubridate::week(data_agc_lomb_weekly_2018$Time)
+
+data_agc_lomb_weekly_2018$LA_hvi = as.numeric(data_agc_lomb_weekly_2018$LA_hvi)
+data_agc_lomb_weekly_2018$LA_lvi = as.numeric(data_agc_lomb_weekly_2018$LA_lvi)
+data_agc_lomb_weekly_2018$WE_tot_precipitation = as.numeric(data_agc_lomb_weekly_2018$WE_tot_precipitation)
+
+
+
+# Calcola la media settimanale per tutte le variabili numeriche
+data_agc_lomb_weekly_2018_mean <- data_agc_lomb_weekly_2018 %>%
+  group_by(Latitude,Longitude,Week) %>%
+  summarise_all(funs(mean(., na.rm = TRUE)))
+```
 
 # settings
 ```{r}
-cols = colora(2,20,show=T)
-color_low =  cols[2]
-color_high = cols[1]
-initial_date = "2018-01-01"
-final_date = "2019-01-01"
+data_from_to = data_agc_lomb_weekly_2018_mean
+len_time = 53
 
-filter_date_list = filter_date(data_agc_lomb,initial_date,final_date,"month")
-data_from_to = filter_date_list[[1]]
-len_time = filter_date_list[[2]]
-
-chosen_variable_name = "Altitude"
-chosen_variable_name = "WE_wind_speed_100m_max"
-
-chosen_variable = as.numeric((data_from_to[,chosen_variable_name]))
-
-
-cols=cols_default
-titolo = chosen_variable_name
-verbose = 0
-
-edges_list = assemble_edges_list(clusters_now)
 ```
 
-# plot composition with animation-mode of the cluster
-
-```{r}
-p  <-  ggplot() +
-
-	geom_tile(data = data_from_to, aes(x = Longitude, y = Latitude, fill = chosen_variable), 
-			  colour = "grey50",alpha = 0.9) +
-	
-	scale_fill_gradient(low = color_low, high = color_high,na.value = "gray"
-					#	,trans = "log",  # Apply a logarithmic transformation (adjust as needed)
-					#	oob = scales::squish  # Squish out-of-bounds values to the nearest limit
-						) +
-	labs(title = chosen_variable_name, fill = chosen_variable_name)+
-		
-		
-	geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
-										  # color = cols[factor(clusters)]), size = 2)+
-										  color = cols[clusters_now]), size = 2)+
-	labs(title = titolo)
-
-q = p
-
-actual_clusters = c()
-for(cl in 1:len(edges_list)){
-	edges_to_plot = edges_list[[cl]]
-	actual_clusters = c(actual_clusters,cl)
-		q = q + geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
-								 color = cols[as.numeric(cluster)])
-							 # color = paste0("cl",cl)),
-							 , linewidth=1.2, data = edges_to_plot, show.legend = TRUE)+
-			guides(color = guide_legend(title = "Clusters"))
-}
-
-qf = q +
-	geom_sf(data = altre_regioni, fill = color_empty ,
-				color = color_fill, linewidth = 0.1,alpha=0.01, show.legend = FALSE) +
-	geom_sf(data = lombardia_2, fill = color_empty, color = "yellow", 
-			linewidth = 0.3,alpha=0.07, show.legend = FALSE) +
-	
-	coord_sf(xlim = range(sites$longitude) + padding, ylim = range(sites$latitude) + padding, 
-			 expand = FALSE)+
-	scale_colour_identity(guide="legend",labels=paste0("cl",actual_clusters),
-						  breaks=cols[actual_clusters])+
-	theme_bw()+
-	theme(panel.grid = element_blank())
-
-print(qf)
-```
 
 # plot composition with changing graphs
-```{r}
-cols = colora(2,20,show=T)
-color_low =  cols[2]
-color_high = cols[1]
-chosen_variable_name = "WE_wind_speed_100m_max"
-cols=cols_default
-titolo = chosen_variable_name
-verbose = 0
-initial_date = "2018-01-01"
-final_date = "2019-01-01"
 
-library(lubridate)
-
-# Your initial date
-initial_date <- ymd("2018-01-01")
-
-### TO DEFINE
-# - df_cluster
-```
 ```{r}
 united_plot <- function(time_step){
 	
-	data_from_to = data_agc_lomb[data_agc_lomb$Time==initial_date + weeks(time_step),]
+	data_from_to = data_agc_lomb_weekly_2018_mean[data_agc_lomb_weekly_2018_mean$Week==time_step,]
 
-	chosen_variable = as.numeric(data_from_to[,chosen_variable_name])
+	chosen_variable = as.numeric(data_from_to[[chosen_variable_name]])
 	
 	edges_list = assemble_edges_list(df_cluster_cut$clusters)
 	p  <-  ggplot() +
@@ -328,7 +271,8 @@ united_plot <- function(time_step){
 	geom_tile(data = data_from_to, aes(x = Longitude, y = Latitude, fill = chosen_variable), 
 			  colour = "grey50",alpha = 0.9) +
 	
-	scale_fill_gradient(low = color_low, high = color_high,na.value = "gray"
+	scale_fill_gradient(low = color_low, high = color_high,na.value = "gray",
+						breaks = extrema(chosen_variable)
 					#	,trans = "log",  # Apply a logarithmic transformation (adjust as needed)
 					#	oob = scales::squish  # Squish out-of-bounds values to the nearest limit
 						) +
@@ -338,7 +282,9 @@ united_plot <- function(time_step){
 	geom_point(data = df_cluster_cut, aes(x = Longitude, y = Latitude,
 										  # color = cols[factor(clusters)]), size = 2)+
 										  color = cols[clusters]), size = 2)+
-	labs(title = titolo)
+	labs(title = titolo)+
+ theme(legend.position = "right",  # Imposta la posizione della legenda in basso
+        legend.justification = "bottom")  # Allinea la legenda sulla sinistra
 	
 	q = p
 
@@ -351,47 +297,108 @@ united_plot <- function(time_step){
 				cat("procesing cluster",cl,"\n")
 				print(actual_clusters)
 			}
-			q = q + geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
-									 color = cols[as.numeric(cluster)])
-								 # color = paste0("cl",cl)),
-								 , linewidth=1.2, data = edges_to_plot, show.legend = TRUE)+
+			q = q + 
+				geom_segment(aes(x = x, y = y, xend = xend, yend = yend,
+									 color = cols[as.numeric(cluster)]),
+								  linewidth=1.2, data = edges_to_plot, show.legend = TRUE)+
+				
+
 				guides(color = guide_legend(title = "Clusters"))
 		}
 
 	}
 	qf = q +
 		geom_sf(data = altre_regioni, fill = color_empty ,
-					color = color_fill, linewidth = 0.1,alpha=0.01, show.legend = FALSE) +
-		geom_sf(data = lombardia_2, fill = color_empty, color = "yellow", 
+					color = color_fill, linewidth = 0.3,alpha=0.01, show.legend = FALSE) +
+		geom_sf(data = lombardia_2, fill = color_empty, color = "gold", 
 				linewidth = 0.3,alpha=0.07, show.legend = FALSE) +
 		
 		coord_sf(xlim = range(sites$longitude) + padding, ylim = range(sites$latitude) + padding, 
 				 expand = FALSE)+
-		scale_colour_identity(guide="legend",labels=paste0("cl",actual_clusters),
-							  breaks=cols[actual_clusters])+
-		theme_bw()+
-		theme(panel.grid = element_blank())
+
+		theme_bw()
 	
 	print(qf)
 
 	
 }
+```
 
-clusters_old = NULL
-for(i in 1:10){
 
-	df_cluster_cut = df_cluster[df_cluster$Time==i,]
-	clusters_now = df_cluster_cut$clusters
-	clusters_now = mode_correct_clusters(clusters_old,clusters_now,very_verbose = 0)
-	df_cluster_cut$clusters = clusters_now
-	united_plot(i)
-	clusters_old = clusters_now
+```{r}
+library(magick)
+library(animation)
+library(gifski)
+library(av)
+cols=color_correct_clusters(df_cluster_cut,idea = 2,verbose = 0,nint= 15)
+color_low =  "white"
+color_high = "black" 
+cols=cols_default
+verbose = 0
 
+interest_variables_animated_grid = c("EM_nh3_livestock_mm",
+"LA_hvi",
+"LA_lvi",
+"EM_nox_sum",
+"WE_wind_speed_100m_max",
+"WE_tot_precipitation"
+)
+
+build_df_cluster_cut = function(time,clusters){
+df_cluster_cut = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	clusters = clusters, # change with something from salso_out_lists
+	Time = i # change with the current week
+)
+return(df_cluster_cut)
 }
 
 ```
 
+# build gif and images
 
+```{r}
+frammeratte = 2
+for(mod in 1:4){
+	for( var in interest_variables_animated_grid){
+		chosen_variable_name = var
+		titolo = chosen_variable_name
+		name_rdata = paste0("./plot functions/gifs/",
+								  names(salso_out_mode_cl)[mod],"-",chosen_variable_name)
+								 # Crea la nuova cartella
+		dir.create(name_rdata)
+		
+	#	LISTA_PLOT = readRDS(paste0(name_rdata,".Rdata"))
+		for (time in 1:53){
+			#CUR_PLOT = LISTA_PLOT[[time]] # or similar, dipende come hai salvato le varie cose
+			
+			df_cluster_cut = build_df_cluster_cut(time,salso_out_mode_cl[[mod]])
+				current_plot = united_plot(time)
+			
+			
+			cur_num = sprintf("%02d", time) # tempo con due cifre necessario per le gif su latex
+			
+			
+			ggsave(file=paste0(name_rdata,"/",names(salso_out_mode_cl)[mod],"-",chosen_variable_name,"-",cur_num,".png"),
+			   plot = current_plot,
+			   units="px", width=2000, height=1200) # maybe try to change them
+
+		}
+		
+		#### create mp4 ####
+		imgs <- list.files(path = name_rdata, pattern = ".png", full.names = TRUE)
+		img_list <- lapply(imgs, image_read)
+		## join the images together
+		img_joined <- image_join(img_list)
+		## animate at 1 frames per second. 1 to freely control the fps/framerate later
+		img_animated <- image_animate(img_joined, fps = 1)
+		image_write_video(image = img_animated, path = paste0(name_rdata,".mp4"),framerate=frammeratte)
+
+	}
+	
+}
+```
 
 
 
