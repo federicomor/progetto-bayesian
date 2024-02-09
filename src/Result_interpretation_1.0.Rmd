@@ -279,7 +279,7 @@ united_plot <- function(time_step,chosen_variable_name,df_cluster_cut,cols){
 	p =
 	ggplot() +
 	geom_tile(data = data_from_to, aes(x = Longitude, y = Latitude, fill = chosen_variable), 
-			  colour = "grey50",alpha = 0.9) +
+			  colour = "grey50",alpha = 0.9,linewidth=0) +
 	scale_fill_gradient(low = color_low, high = color_high,na.value = "gray",
 						# breaks = seq(as.integer(floor(lims[1])),
 						# 			 as.integer(ceiling(lims[2])),
@@ -376,6 +376,7 @@ for(time in 1:2){ # lascia time come nome, serve
 	cols = color_correct_clusters(df_ccut,idea=2,verbose=0,nint=15)
 
 	plt = united_plot(time,var,df_ccut,cols)
+	plt = plt+theme(legend.title=element_blank())
 	
 	print(plt) # cambia con le varie ggsave
 	
