@@ -267,7 +267,7 @@ united_plot <- function(time_step,chosen_variable_name,df_cluster_cut,cols){
 	chosen_variable = as.numeric(data_from_to[[chosen_variable_name]])
 	
 	### this to set lims looking at values of all weeks, ie are fixed for all t of the loop
-	lims = extrema(na.omit(data_agc_lomb_weekly_2018_mean[,chosen_variable_name]))
+	lims = extrema(na.omit(data_from_to[,chosen_variable_name]))
 	### this to set lims in a time dependent way
 	# lims = extrema(chosen_variable)
 		
@@ -289,7 +289,7 @@ united_plot <- function(time_step,chosen_variable_name,df_cluster_cut,cols){
 						# 		 as.character(as.integer(ceiling(lims[1]))))
 						limits = lims
 						) +
-	labs(title = paste0(chosen_variable_name," - ",modello," model (week ",time,")" ), 
+	labs(title = paste0(chosen_variable_name," - ",mod," model (week ",time,")" ), 
 		 fill = chosen_variable_name)+
 	# theme(legend.position = "right",legend.justification = "bottom")
 	theme(legend.position = "bottom")+
@@ -412,27 +412,31 @@ for(time in 1:2){ # lascia time come nome, serve
 
 ```{r}
 frammeratte = 2
-for(mod in 1:4){
+for(mod in mods){
 	for( var in interest_variables_animated_grid){
 		chosen_variable_name = var
 		titolo = chosen_variable_name
 		name_rdata = paste0("./plot functions/gifs/",
-								  names(salso_out_mode_cl)[mod],"-",chosen_variable_name)
+								  mod,"-",chosen_variable_name)
 								 # Crea la nuova cartella
 		dir.create(name_rdata)
+
+		for (time in seq(1,53,by = 2)){
+
+			curr_clusters = salso_out_lists[[mod]][time][[1]][1:105]
 		
-	#	LISTA_PLOT = readRDS(paste0(name_rdata,".Rdata"))
-		for (time in 1:53){
-			#CUR_PLOT = LISTA_PLOT[[time]] # or similar, dipende come hai salvato le varie cose
 			
-			df_cluster_cut = build_df_cluster_cut(time,salso_out_mode_cl[[mod]])
-				current_plot = united_plot(time)
+			df_ccut = build_df_cluster_cut(time,curr_clusters)
+
+			cols = color_correct_clusters(df_ccut,idea=2,verbose=0,nint=15)
+			current_plot = united_plot(time,var,df_ccut,cols)
+			current_plot = current_plot+theme(legend.title=element_blank())
 			
 			
 			cur_num = sprintf("%02d", time) # tempo con due cifre necessario per le gif su latex
 			
 			
-			ggsave(file=paste0(name_rdata,"/",names(salso_out_mode_cl)[mod],"-",chosen_variable_name,"-",cur_num,".png"),
+			ggsave(file=paste0(name_rdata,"/",mod,"-",chosen_variable_name,"-",cur_num,".png"),
 			   plot = current_plot,
 			   units="px", width=2000, height=1200) # maybe try to change them
 
@@ -445,6 +449,52 @@ for(mod in 1:4){
 		img_joined <- image_join(img_list)
 		## animate at 1 frames per second. 1 to freely control the fps/framerate later
 		img_animated <- image_animate(img_joined, fps = 1)
+		image_write_video(image = img_animated, path = paste0(name_rdata,".mp4"),framerate=frammeratte)
+
+	}
+	
+}
+```
+```{r}
+frammeratte = 2
+for(mod in mods){
+	for( var in interest_variables_animated_grid){
+		chosen_variable_name = var
+		titolo = chosen_variable_name
+		name_rdata = paste0("./plot functions/gifs/MODE-",
+								  mod,"-",chosen_variable_name)
+								 # Crea la nuova cartella
+		dir.create(name_rdata)
+
+		for (time in seq(1,53,by = 2)){
+
+			#curr_clusters = salso_out_lists[[mod]][time][[1]][1:105]
+			# mode clusters
+			curr_clusters = salso_out_mode_cl[[mod]]
+			
+			df_ccut = build_df_cluster_cut(1,curr_clusters)
+
+			cols = color_correct_clusters(df_ccut,idea=2,verbose=0,nint=30)
+			current_plot = united_plot(time,var,df_ccut,cols)
+			current_plot = current_plot+theme(legend.title=element_blank())
+			
+			
+			cur_num = sprintf("%02d", time) # tempo con due cifre necessario per le gif su latex
+			
+			
+			ggsave(file=paste0(name_rdata,"/",mod,"-",chosen_variable_name,"-",cur_num,".png"),
+			   plot = current_plot,
+			   units="px", width=2000, height=1200) # maybe try to change them
+
+		}
+		
+		#### create mp4 ####
+		imgs <- list.files(path = name_rdata, pattern = ".png", full.names = TRUE)
+		img_list <- lapply(imgs, image_read)
+		## join the images together
+		img_joined <- image_join(img_list)
+		## animate at 1 frames per second. 1 to freely control the fps/framerate later
+		img_animated <- image_animate(img_joined, fps = 2)
 		image_write_video(image = img_animated, path = paste0(name_rdata,".mp4"),framerate=frammeratte)
 
 	}
@@ -493,6 +543,7 @@ animated_plot = animator(file_name,qf,data_from_to,len_time,1920,1080)
 
 
 ## wind-doesn't work
+
 ```{r}
 color_background_map = "forestgreen"
 
