@@ -259,7 +259,7 @@ len_time = 53
 # plot composition with changing graphs
 
 ```{r}
-united_plot <- function(time_step,chosen_variable_name,df_cluster_cut,cols){
+united_plot <- function(time_step,chosen_variable_name,df_cluster_cut,cols,lims_input,modello){
 	
 	data_from_to = data_agc_lomb_weekly_2018_mean[
 		data_agc_lomb_weekly_2018_mean$Week==time_step,]
@@ -267,7 +267,9 @@ united_plot <- function(time_step,chosen_variable_name,df_cluster_cut,cols){
 	chosen_variable = as.numeric(data_from_to[[chosen_variable_name]])
 	
 	### this to set lims looking at values of all weeks, ie are fixed for all t of the loop
-	lims = extrema(na.omit(data_from_to[,chosen_variable_name]))
+	lims = lims_input
+	# cat(lims,"\n")
+	# cat(chosen_variable_name,"\n")
 	### this to set lims in a time dependent way
 	# lims = extrema(chosen_variable)
 		
@@ -289,7 +291,7 @@ united_plot <- function(time_step,chosen_variable_name,df_cluster_cut,cols){
 						# 		 as.character(as.integer(ceiling(lims[1]))))
 						limits = lims
 						) +
-	labs(title = paste0(chosen_variable_name," - ",mod," model (week ",time,")" ), 
+	labs(title = paste0(chosen_variable_name,"\n",modello," model (week ",time,")" ), 
 		 fill = chosen_variable_name)+
 	# theme(legend.position = "right",legend.justification = "bottom")
 	theme(legend.position = "bottom")+
@@ -351,11 +353,12 @@ interest_variables_animated_grid = c("EM_nh3_livestock_mm",
 "WE_tot_precipitation"
 )
 
-build_df_cluster_cut = function(time,clusters){
+build_df_cluster_cut = function(time=1,clusters){
 df_cluster_cut = data.frame(
 	Longitude = sites$longitude,
 	Latitude = sites$latitude,
-	clusters = clusters # change with something from salso_out_lists
+	clusters = clusters, # change with something from salso_out_lists
+	Time=time
 	)
 return(df_cluster_cut)
 }
@@ -363,19 +366,21 @@ return(df_cluster_cut)
 ```
 #====
 ## fede tests
+
 ```{r}
 ### small tests
-var = interest_variables_animated_grid[4]
+var = interest_variables_animated_grid[5]
 mods = c("DRPM","sPPM","Gaussian PPMx","Curve PPMx")
 modello = mods[1]
 
-for(time in 1:2){ # lascia time come nome, serve
+for(time in 10:20){ # lascia time come nome, serve
 	
 	curr_clusters = salso_out_lists[[modello]][time][[1]][1:105]
 	df_ccut = build_df_cluster_cut(time,curr_clusters)
 	cols = color_correct_clusters(df_ccut,idea=2,verbose=0,nint=15)
 
-	plt = united_plot(time,var,df_ccut,cols)
+	lims = extrema(na.omit(data_agc_lomb_weekly_2018_mean[,var]))
+	plt = united_plot(time,var,df_ccut,cols,lims,modello)
 	plt = plt+theme(legend.title=element_blank())
 	
 	print(plt) # cambia con le varie ggsave
@@ -408,39 +413,42 @@ for(time in 1:2){ # lascia time come nome, serve
 
 #====
 
-# build gif and images
-
-```{r}
+## build gif and images
+## non mode
+```{r,warning=FALSE}
 frammeratte = 2
-for(mod in mods){
+for(mod in mods[2:4]){
+	cat(crayon::red("proccesing model",mod,"=============\n"))
 	for( var in interest_variables_animated_grid){
+		cat(crayon::red("proccesing variable",var,"###############\n"))
+
 		chosen_variable_name = var
 		titolo = chosen_variable_name
-		name_rdata = paste0("./plot functions/gifs/",
+		name_rdata = paste0("./plot functions/gifs_fede_update/",
 								  mod,"-",chosen_variable_name)
 								 # Crea la nuova cartella
 		dir.create(name_rdata)
 
-		for (time in seq(1,53,by = 2)){
+		for (time in seq(1,53,by = 1)){
+			cat(time," ")
 
 			curr_clusters = salso_out_lists[[mod]][time][[1]][1:105]
-		
 			
 			df_ccut = build_df_cluster_cut(time,curr_clusters)
 
 			cols = color_correct_clusters(df_ccut,idea=2,verbose=0,nint=15)
-			current_plot = united_plot(time,var,df_ccut,cols)
+			lims = extrema(na.omit(data_agc_lomb_weekly_2018_mean[,var]))
+			current_plot = united_plot(time,var,df_ccut,cols,lims,mod)
 			current_plot = current_plot+theme(legend.title=element_blank())
-			
 			
 			cur_num = sprintf("%02d", time) # tempo con due cifre necessario per le gif su latex
 			
-			
 			ggsave(file=paste0(name_rdata,"/",mod,"-",chosen_variable_name,"-",cur_num,".png"),
 			   plot = current_plot,
-			   units="px", width=2000, height=1200) # maybe try to change them
+			   units="px", width=1500, height=1200) # maybe try to change them
 
 		}
+		cat("\n")
 		
 		#### create mp4 ####
 		imgs <- list.files(path = name_rdata, pattern = ".png", full.names = TRUE)
@@ -449,35 +457,60 @@ for(mod in mods){
 		img_joined <- image_join(img_list)
 		## animate at 1 frames per second. 1 to freely control the fps/framerate later
 		img_animated <- image_animate(img_joined, fps = 1)
-		image_write_video(image = img_animated, path = paste0(name_rdata,".mp4"),framerate=frammeratte)
+		image_write_video(image = img_animated, 
+						  path = paste0(name_rdata,".mp4"),framerate=frammeratte)
 
 	}
 	
 }
 ```
+
+## mode
 ```{r}
 frammeratte = 2
 for(mod in mods){
+	cat(crayon::red("proccesing model",mod,"=============\n"))
 	for( var in interest_variables_animated_grid){
+		cat(crayon::red("proccesing variable",var,"###############\n"))
 		chosen_variable_name = var
 		titolo = chosen_variable_name
-		name_rdata = paste0("./plot functions/gifs/MODE-",
+		name_rdata = paste0("./plot functions/gifs_fede_update/MODE-",
 								  mod,"-",chosen_variable_name)
 								 # Crea la nuova cartella
 		dir.create(name_rdata)
 
-		for (time in seq(1,53,by = 2)){
-
+		
 			#curr_clusters = salso_out_lists[[mod]][time][[1]][1:105]
 			# mode clusters
 			curr_clusters = salso_out_mode_cl[[mod]]
 			
 			df_ccut = build_df_cluster_cut(1,curr_clusters)
+			lims = extrema(na.omit(data_agc_lomb_weekly_2018_mean[,var]))
 
-			cols = color_correct_clusters(df_ccut,idea=2,verbose=0,nint=30)
-			current_plot = united_plot(time,var,df_ccut,cols)
-			current_plot = current_plot+theme(legend.title=element_blank())
+			################### colori #############################			
+			non_null_clregions_indexes = length(unique(curr_clusters))
+			medie = rep(100,length(unique(curr_clusters)))
+			for (i in 1:length(unique(curr_clusters))){
+					medie[i] = mean(apply(y[which(curr_clusters==i),2:54],2,mean))
+			}
+			medie = medie[1:non_null_clregions_indexes]
+			ord = order(medie,decreasing = T)
 			
+			cols = colora(non_null_clregions_indexes,111,1)
+			cols_new = cols
+			for (i in 1:non_null_clregions_indexes){
+				cols_new[ord[i]] = cols[i]
+			}
+			cols = cols_new
+			cols_gr = cols[1:length(unique(curr_clusters))]
+			################################################			
+			
+			
+		for (time in seq(1,53,by = 1)){
+			cat(time," ")
+
+			current_plot = united_plot(time,var,df_ccut,cols,lims,mod)
+			current_plot = current_plot+theme(legend.title=element_blank())
 			
 			cur_num = sprintf("%02d", time) # tempo con due cifre necessario per le gif su latex
 			
@@ -487,6 +520,7 @@ for(mod in mods){
 			   units="px", width=2000, height=1200) # maybe try to change them
 
 		}
+		cat("\n")
 		
 		#### create mp4 ####
 		imgs <- list.files(path = name_rdata, pattern = ".png", full.names = TRUE)
