@@ -30,7 +30,7 @@ See also that for understand how to create the plots of the clusters.
 | DRPM (Federico)          |  ✓       | ✓          |  X      | ✓      | 
 | Gaussian PPMx (Federica) |  X       |   X        |  ✓      | ✓      | 
 | SPPM (Oswaldo)           |  X       |    ✓       | X      | ✓      |
-| Curve PPMx (Aby)         |   ✓     | X           |  ✓     | ✓      |
+| Curve PPMx (Aby)         |   X     | X           |  ✓     | ✓      |
 | CarBayesST               |   ✓     | ✓           |  ✓      |  X    |
 | Linear                   |    ✓    |    X        |    ✓    |   X    |
 
