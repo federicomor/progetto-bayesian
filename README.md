@@ -4,8 +4,9 @@
 
 - `data` constains, incredibly, all the datasets
 - `Papers` contains the documents from which we guided our study and comprehension about the project tasks
-<!-- - `report` and `Slides` contains materials about the project presentations -->
 - `src` contains all the codes 
+
+<!-- - `report` and `Slides` contains materials about the project presentations -->
 
 
 
