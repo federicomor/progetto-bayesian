@@ -92,7 +92,7 @@ trendYearStation_week("None")
 
 ## Scaling/Centering update
 ```{r}
-time_span = 1:53 # low time span for quick testing, real one will be 1:53
+time_span = 1:10 # low time span for quick testing, real one will be 1:53
 
 ### authors suggested to/did scale the spatial locations and also centered the observations
 y_fit = y[,1+time_span]
@@ -111,8 +111,9 @@ plot(std_sites)
 Burn in needs to be >= 10000. This after some long fits with low nburn (to see the whole behaviour of the MCMC) where there are some relevant changes even after 10000 iterations. So a lot of them needs to be discarded. I would set burn in to also 20000 maybe.
 
 ```{r}
+niter=8000; nburn=4000; nthin=4
 # niter=60000; nburn=20000; nthin=40 # original
-niter=100000; nburn=60000; nthin=40 # new one for more data
+# niter=100000; nburn=60000; nthin=40 # new one for more data
 nout <- (niter-nburn)/nthin
 cat(nout,"valid iterations\n")
 ```
@@ -186,7 +187,8 @@ cat(crayon::red("\nLPML =",drpm1$lpml, "\nWAIC =",drpm1$waic))
 
 ## model save
 ```{r}
-model_name = "pm_eta0_phi1_spcoes5_v2"
+model_name = "pm_test_for_tesi"
+# model_name = "pm_eta0_phi1_spcoes5_v2"
 save(drpm1,file=paste0("../data/Federico/",model_name,".Rdata"))
 ```
 
@@ -248,6 +250,17 @@ ma il fit non era su tutte le settimane, era sulle prime 6
 LPML = 285.202489478406 
 WAIC = -646.215550051243
 
+```{r}
+
+drpm1$mu[,1:7,5]
+```
+
+
+```{r}
+dim(drpm1$Si)
+drpm1$Si[,,2]
+```
+
 
 ```{r}
 names(drpm1)
@@ -290,7 +303,7 @@ sampled_station = floor(runif(1,1,105))
 cat("sampled_station =",sampled_station,"- that is station called",unique(df_wsc$IDStations)[sampled_station])
 sampled_station_name = unique(df_wsc$IDStations)[sampled_station]
 
-time_span_plot = c(1:53)
+time_span_plot = c(1:10)
 ```
 
 ## alpha
@@ -595,7 +608,7 @@ all the functions are in the include_clusters_function. Here is the code to plot
 ```{r}
 # cols chosen previously
 clusters_old = NULL
-for(time in time_span[20:40]){
+for(time in time_span){
 	cat(crayon::red("Time",time,"\n"))
 	
 	df_cluster_cut = df_cluster[df_cluster$Time==time,]

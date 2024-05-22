@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<link rel="icon" href="/assets/favicon.svg">	
+	<link href='https://fonts.googleapis.com/css?family=Rouge Script' rel='stylesheet'>
+	<link href='https://fonts.googleapis.com/css?family=Dancing Script' rel='stylesheet'>
+	<link href='https://fonts.googleapis.com/css?family=Tangerine' rel='stylesheet'>
+	<link href='https://fonts.googleapis.com/css?family=Satisfy' rel='stylesheet'>
+	<link href='https://fonts.googleapis.com/css?family=Courgette' rel='stylesheet'>
+	<link href='https://fonts.googleapis.com/css?family=Merienda' rel='stylesheet'>
+
+	<!-- ############# Load images ############# -->
+	<link rel="preload" href="DRPM/ARI/ari.png" as="image"/>
+	<link rel="preload" href="sPPM/ARI/ari.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/ARI/ari.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/ARI/ari.png" as="image"/>
+
+	<link rel="preload" href="DRPM/ARI/ari.svg" as="image"/>
+	<link rel="preload" href="sPPM/ARI/ari.svg" as="image"/>
+	<link rel="preload" href="Curve PPMx/ARI/ari.svg" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/ARI/ari.svg" as="image"/>
+	
+	<link rel="preload" href="DRPM/Time Series/AQ_pm10.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/Altitude.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/EM_nh3_agr_soils.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/EM_nh3_agr_waste_burn.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/EM_nh3_livestock_mm.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/EM_nh3_sum.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/EM_nox_sum.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/EM_nox_traffic.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/EM_so2_sum.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/LA_hvi.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/LA_land_use.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/LA_lvi.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/LI_bovine.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/LI_bovine_v2.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/LI_pigs.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/LI_pigs_v2.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/WE_blh_layer_max.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/WE_blh_layer_min.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/WE_precipitation_t.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/WE_rh_max.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/WE_rh_mean.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/WE_rh_min.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/WE_solar_radiation.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/WE_surface_pressure.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/WE_temp_2m.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/WE_tot_precipitation.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/WE_wind_speed_100m_max.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/WE_wind_speed_100m_mean.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/WE_wind_speed_10m_max.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/WE_wind_speed_10m_mean.png" as="image"/>
+	<link rel="preload" href="DRPM/Time Series/plt_modemap.png" as="image"/>
+
+	<link rel="preload" href="sPPM/Time Series/AQ_pm10.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/Altitude.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/EM_nh3_agr_soils.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/EM_nh3_agr_waste_burn.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/EM_nh3_livestock_mm.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/EM_nh3_sum.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/EM_nox_sum.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/EM_nox_traffic.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/EM_so2_sum.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/LA_hvi.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/LA_land_use.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/LA_lvi.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/LI_bovine.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/LI_bovine_v2.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/LI_pigs.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/LI_pigs_v2.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_blh_layer_max.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_blh_layer_min.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_precipitation_t.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_rh_max.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_rh_mean.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_rh_min.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_solar_radiation.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_surface_pressure.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_temp_2m.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_tot_precipitation.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_wind_speed_100m_max.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_wind_speed_100m_mean.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_wind_speed_10m_max.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/WE_wind_speed_10m_mean.png" as="image"/>
+	<link rel="preload" href="sPPM/Time Series/plt_modemap.png" as="image"/>
+
+	<link rel="preload" href="Gaussian PPMx/Time Series/AQ_pm10.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/Altitude.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/EM_nh3_agr_soils.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/EM_nh3_agr_waste_burn.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/EM_nh3_livestock_mm.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/EM_nh3_sum.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/EM_nox_sum.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/EM_nox_traffic.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/EM_so2_sum.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/LA_hvi.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/LA_land_use.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/LA_lvi.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/LI_bovine.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/LI_bovine_v2.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/LI_pigs.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/LI_pigs_v2.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/WE_blh_layer_max.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/WE_blh_layer_min.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/WE_precipitation_t.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/WE_rh_max.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/WE_rh_mean.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/WE_rh_min.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/WE_solar_radiation.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/WE_surface_pressure.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/WE_temp_2m.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/WE_tot_precipitation.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/WE_wind_speed_100m_max.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/WE_wind_speed_100m_mean.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/WE_wind_speed_10m_max.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/WE_wind_speed_10m_mean.png" as="image"/>
+	<link rel="preload" href="Gaussian PPMx/Time Series/plt_modemap.png" as="image"/>
+
+
+	<link rel="preload" href="Curve PPMx/Time Series/AQ_pm10.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/Altitude.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/EM_nh3_agr_soils.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/EM_nh3_agr_waste_burn.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/EM_nh3_livestock_mm.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/EM_nh3_sum.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/EM_nox_sum.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/EM_nox_traffic.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/EM_so2_sum.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/LA_hvi.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/LA_land_use.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/LA_lvi.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/LI_bovine.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/LI_bovine_v2.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/LI_pigs.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/LI_pigs_v2.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/WE_blh_layer_max.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/WE_blh_layer_min.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/WE_precipitation_t.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/WE_rh_max.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/WE_rh_mean.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/WE_rh_min.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/WE_solar_radiation.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/WE_surface_pressure.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/WE_temp_2m.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/WE_tot_precipitation.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/WE_wind_speed_100m_max.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/WE_wind_speed_100m_mean.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/WE_wind_speed_10m_max.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/WE_wind_speed_10m_mean.png" as="image"/>
+	<link rel="preload" href="Curve PPMx/Time Series/plt_modemap.png" as="image"/>
+	<!-- forse prefetch se sono online -->
+
+	<script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var head = document.head;
+            var baseFolders = [
+            	'DRPM/Graph/Graph-', 
+            	'DRPM/Graph and Boxplot/Graph and Boxplot-', 
+            	'DRPM/Salso/Salso-',
+				
+				'sPPM/Graph/Graph-', 
+            	'sPPM/Graph and Boxplot/Graph and Boxplot-', 
+            	'sPPM/Salso/Salso-',
+
+            	'Gaussian PPMx/Graph/Graph-', 
+            	'Gaussian PPMx/Graph and Boxplot/Graph and Boxplot-', 
+            	'Gaussian PPMx/Salso/Salso-',
+
+            	'Curve PPMx/Graph/Graph-', 
+            	'Curve PPMx/Graph and Boxplot/Graph and Boxplot-', 
+            	'Curve PPMx/Salso/Salso-',
+
+				'gifs/MODE-DRPM-EM_nh3_livestock_mm/DRPM-EM_nh3_livestock_mm-',
+				'gifs/MODE-DRPM-EM_nox_sum/DRPM-EM_nox_sum-',
+				'gifs/MODE-DRPM-LA_hvi/DRPM-LA_hvi-',
+				'gifs/MODE-DRPM-LA_lvi/DRPM-LA_lvi-',
+				'gifs/MODE-DRPM-WE_tot_precipitation/DRPM-WE_tot_precipitation-',
+				'gifs/MODE-DRPM-WE_wind_speed_100m_max/DRPM-WE_wind_speed_100m_max-',
+				'gifs/DRPM-EM_nh3_livestock_mm/DRPM-EM_nh3_livestock_mm-',
+				'gifs/DRPM-EM_nox_sum/DRPM-EM_nox_sum-',
+				'gifs/DRPM-LA_hvi/DRPM-LA_hvi-',
+				'gifs/DRPM-LA_lvi/DRPM-LA_lvi-',
+				'gifs/DRPM-WE_tot_precipitation/DRPM-WE_tot_precipitation-',
+				'gifs/DRPM-WE_wind_speed_100m_max/DRPM-WE_wind_speed_100m_max-',
+
+				'gifs/MODE-sPPM-EM_nh3_livestock_mm/sPPM-EM_nh3_livestock_mm-',
+				'gifs/MODE-sPPM-EM_nox_sum/sPPM-EM_nox_sum-',
+				'gifs/MODE-sPPM-LA_hvi/sPPM-LA_hvi-',
+				'gifs/MODE-sPPM-LA_lvi/sPPM-LA_lvi-',
+				'gifs/MODE-sPPM-WE_tot_precipitation/sPPM-WE_tot_precipitation-',
+				'gifs/MODE-sPPM-WE_wind_speed_100m_max/sPPM-WE_wind_speed_100m_max-',
+				'gifs/sPPM-EM_nh3_livestock_mm/sPPM-EM_nh3_livestock_mm-',
+				'gifs/sPPM-EM_nox_sum/sPPM-EM_nox_sum-',
+				'gifs/sPPM-LA_hvi/sPPM-LA_hvi-',
+				'gifs/sPPM-LA_lvi/sPPM-LA_lvi-',
+				'gifs/sPPM-WE_tot_precipitation/sPPM-WE_tot_precipitation-',
+				'gifs/sPPM-WE_wind_speed_100m_max/sPPM-WE_wind_speed_100m_max-',
+
+				'gifs/MODE-Gaussian PPMx-EM_nh3_livestock_mm/Gaussian PPMx-EM_nh3_livestock_mm-',
+				'gifs/MODE-Gaussian PPMx-EM_nox_sum/Gaussian PPMx-EM_nox_sum-',
+				'gifs/MODE-Gaussian PPMx-LA_hvi/Gaussian PPMx-LA_hvi-',
+				'gifs/MODE-Gaussian PPMx-LA_lvi/Gaussian PPMx-LA_lvi-',
+				'gifs/MODE-Gaussian PPMx-WE_tot_precipitation/Gaussian PPMx-WE_tot_precipitation-',
+				'gifs/MODE-Gaussian PPMx-WE_wind_speed_100m_max/Gaussian PPMx-WE_wind_speed_100m_max-',
+				'gifs/Gaussian PPMx-EM_nh3_livestock_mm/Gaussian PPMx-EM_nh3_livestock_mm-',
+				'gifs/Gaussian PPMx-EM_nox_sum/Gaussian PPMx-EM_nox_sum-',
+				'gifs/Gaussian PPMx-LA_hvi/Gaussian PPMx-LA_hvi-',
+				'gifs/Gaussian PPMx-LA_lvi/Gaussian PPMx-LA_lvi-',
+				'gifs/Gaussian PPMx-WE_tot_precipitation/Gaussian PPMx-WE_tot_precipitation-',
+				'gifs/Gaussian PPMx-WE_wind_speed_100m_max/Gaussian PPMx-WE_wind_speed_100m_max-',
+
+				'gifs/MODE-Curve PPMx-EM_nh3_livestock_mm/Curve PPMx-EM_nh3_livestock_mm-',
+				'gifs/MODE-Curve PPMx-EM_nox_sum/Curve PPMx-EM_nox_sum-',
+				'gifs/MODE-Curve PPMx-LA_hvi/Curve PPMx-LA_hvi-',
+				'gifs/MODE-Curve PPMx-LA_lvi/Curve PPMx-LA_lvi-',
+				'gifs/MODE-Curve PPMx-WE_tot_precipitation/Curve PPMx-WE_tot_precipitation-',
+				'gifs/MODE-Curve PPMx-WE_wind_speed_100m_max/Curve PPMx-WE_wind_speed_100m_max-',
+				'gifs/Curve PPMx-EM_nh3_livestock_mm/Curve PPMx-EM_nh3_livestock_mm-',
+				'gifs/Curve PPMx-EM_nox_sum/Curve PPMx-EM_nox_sum-',
+				'gifs/Curve PPMx-LA_hvi/Curve PPMx-LA_hvi-',
+				'gifs/Curve PPMx-LA_lvi/Curve PPMx-LA_lvi-',
+				'gifs/Curve PPMx-WE_tot_precipitation/Curve PPMx-WE_tot_precipitation-',
+				'gifs/Curve PPMx-WE_wind_speed_100m_max/Curve PPMx-WE_wind_speed_100m_max-',
+
+            ]; // Aggiungi qui le tue cartelle
+            var totalImages = 53;
+
+            for (var folderIndex = 0; folderIndex < baseFolders.length; folderIndex++) {
+                var baseFolder = baseFolders[folderIndex];
+
+                for (var i = 1; i <= totalImages; i++) {
+                    var link = document.createElement('link');
+                    link.rel = 'preload';
+                    link.href = baseFolder + pad(i, 2) + '.png';
+                    link.as = 'image';
+                    head.appendChild(link);
+                }
+            }
+
+            function pad(number, length) {
+                var str = '' + number;
+                while (str.length < length) {
+                    str = '0' + str;
+                }
+                return str;
+            }
+        });
+    </script>
+
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Plots dashboard</title>
+	<style>
+		body {
+			font-family: 'Arial', sans-serif;
+			background-color: #f4f4f4;
+			text-align: center;
+			margin: 0;
+			padding: 0;
+		}
+
+		#image-slider, #image-grid {
+			max-width: 85%;
+			margin: 20px auto;
+			background-color: #fff;
+			padding: 20px;
+			border-radius: 8px;
+			box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+		}
+	    #current-image-one img,
+	    #current-image-two img,
+	    #current-image-three img,
+	    #current-image-four img {
+	    	max-width: 90%;
+	    }
+
+		#folder-select, #slider {
+			margin-bottom: 10px;
+		}
+
+		#current-image, #current-number {
+			margin-top: 20px;
+		}
+
+		/*table {
+		    height: 100%;
+		    width: 100%;
+		    margin: 0 auto;
+		}
+		td {
+    		vertical-align: left;
+		}*/
+
+		img {
+			max-width: 90%;
+			height: auto;
+			border-radius: 8px;
+			box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+		}
+		/*h1 { color: #7c795d; font-family: 'Trocchi', serif; font-size: 45px; font-weight: normal; line-height: 48px; margin: 0; }*/
+		/*h1 { color: #173932; font-family: 'Lato', sans-serif; font-size: 54px; font-weight: 300; line-height: 58px; margin: 0 0 10px; }*/
+		/*h1 { color: #333333; font-family: 'Bitter', serif; font-size: 50px; font-weight: normal; line-height: 54px; margin: 0 0 20px; }*/
+
+		/*Rouge Script
+		Dancing Script
+		Tangerine
+		Satisfy
+		Courgette
+		Merienda*/
+		h1 { color: #CEF0D4; font-family: 'Merienda', cursive; font-size: 60px; font-weight: normal; line-height: 48px; margin: 0 0 30px; text-align: center; text-shadow: 1px 1px 2px #082b34; }
+		/*h1 { color: #1a50aa; font-family: 'Rouge Script', cursive; font-size: 60px; font-weight: normal; line-height: 48px; margin: 0 0 30px; text-align: center; text-shadow: 1px 1px 2px #082b34; }*/
+
+		/*h1 { font-family: 'Enriqueta', arial, serif; line-height: 1.25; margin: 0 0 10px; font-size: 40px; font-weight: bold; }*/
+		/*https://wdexplorer.com/20-examples-beautiful-css-typography-design/*/
+
+		/*h1 {
+		  text-align:center;
+		  text-transform:uppercase;
+		  font-size:26px; letter-spacing:1px;  
+		  display: grid;
+		  grid-template-columns: 1fr auto 1fr;
+		  grid-template-rows: 16px 0;
+		  grid-gap: 22px;
+		}
+		h1:after, h1:before {
+		  content: " ";
+		  display: block;
+		  border-bottom: 2px solid #ccc;
+		  background-color:#f8f8f8;
+		}*/
+		#scomparire {
+		  display: block;
+		}
+
+</style>
+</head>
+<body onload="changemodel(); changemodel_grid(); changemodel_cova(); mostraDescrizione();">
+
+
+
+<!-- ############# one model ############# -->
+<div id="image-slider">
+
+	<h1>One-model plots</h1>
+	<p id="scomparire_no">If when starting there are some glitches and some images do not display correctly then give the page some time to load ❤️🫠<br>As there are a lot of images behind the scenes, so it could require a deep, but totally legit, minute of setup.<br></p>
+	<script>
+	  // Funzione per far scomparire il testo dopo 3000 millisecondi (3 secondi)
+	  setTimeout(function() {
+	    var testoDaScomparire = document.getElementById('scomparire');
+	    testoDaScomparire.style.display = 'none';
+	  }, 30*1000); // k*1000 millisecondi = k secondi
+	</script>
+
+	<!-- Per i modelli senza covariate ho messo comunque i plot con le covariate (per ora quelle selezionate da Federica) che possono comunque essere utili per l'interpretazione magari.<br> Poi anziché la sezione dei four-plots potremmo fare quattro sezioni singole, una per modello, per anche spiegarli brevmente.<br><br> -->
+
+	<label for="model-select">Model </label>
+	<select id="model-select" onchange="changemodel()">
+	<!-- <select id="model-select"> -->
+		<option value="DRPM/">DRPM</option>
+		<option value="sPPM/">sPPM</option>
+		<option value="Gaussian PPMx/">Gaussian PPMx</option>
+		<option value="Curve PPMx/">Curve PPMx</option>
+	</select>
+
+	<!-- <br> -->
+	<label for="plot-select">Plot </label>
+	<select id="plot-select" onchange="changemodel()">
+	<!-- <select id="plot-select"> -->
+		<option value="Graph and Boxplot">Graph and Boxplot</option>
+		<option value="Graph">Graph</option>
+		<!-- <option value="With Covariates">With Covariates</option> -->
+		<option value="Salso">Salso</option>
+		<option value="ARI">ARI</option>
+	</select>
+
+	<!-- <br> -->
+	Week <input type="range" default="1" id="slider" style='width: 15%' value="1" min="1" max="53" oninput="this.nextElementSibling.value = this.value">
+	<output>1</output>
+	<div id="current-image"></div>
+</div>
+
+<script>
+	var slider = document.getElementById('slider');
+	var currentImage = document.getElementById('current-image');
+	var modelselect = document.getElementById('model-select');
+	var plotselect = document.getElementById('plot-select');
+	var height=500
+	var width=500
+
+	slider.addEventListener('input', function () {
+		changemodel();
+	});
+
+	function changemodel() {
+		// Aggiorna l'immagine quando si cambia la cartella
+		var currentValue = parseInt(slider.value);
+		var selectedmodel = modelselect.value;
+		var selectedplot = plotselect.value;
+
+		var imagePath;
+        if (selectedplot =='ARI') {
+            imagePath = selectedmodel + 'ARI/ari.svg';
+        } else if (selectedplot == 'Time series') {
+        	imagePath = selectedmodel + 'Time series/Time series.svg"';
+        } else {
+            imagePath = selectedmodel + selectedplot + '/' + selectedplot + '-' + pad(currentValue, 2) + '.png';
+        }
+        // console.log(imagePath)
+		currentImage.innerHTML = '<img src="' + imagePath + '"alt="Image ' + currentValue + '" />';
+	}
+
+	function pad(number, length) {
+		var str = '' + number;
+		while (str.length < length) {
+			str = '0' + str;
+		}
+		return str;
+	}
+</script>
+
+
+
+<!-- ############# four models ############# -->
+<div id="image-grid">
+	<h1>Four-models plots</h1>
+	<!-- In realtà penso la toglierò questa parte, meglio avere piuttosto quattro sezioni distinte, ognuna per modello. Cioè a me non convince molto, vediamo cosa ne pensiamo insieme.<br><br> -->
+
+	<label for="plot-select-grid">Plot </label>
+	<select id="plot-select-grid" onchange="changemodel_grid()">
+		<option value="Graph and Boxplot">Graph and Boxplot</option>
+		<option value="Graph">Graph</option>
+		<option value="Salso">Salso</option>
+		<option value="ARI">ARI</option>
+		<!-- <option value="Time series">Time series</option> -->
+	</select>
+
+	Week <input type="range" default="1" style='width: 15%' id="slider-grid" value="1" min="1" max="53" oninput="this.nextElementSibling.value = this.value">
+	<output>1</output>
+
+	<table>
+	    <tr>
+			<td><div id="current-image-one"></div></td>
+			<td><div id="current-image-two"></div></td>            
+		</tr>
+		<tr>
+			<td><div id="current-image-three"></div></td>
+			<td><div id="current-image-four"></div></td>
+		</tr>
+	</table>
+</div>
+
+<script>
+	var sliderGrid = document.getElementById('slider-grid');
+	var currentImage_one = document.getElementById('current-image-one');
+	var currentImage_two = document.getElementById('current-image-two');
+	var currentImage_three = document.getElementById('current-image-three');
+	var currentImage_four = document.getElementById('current-image-four');
+	var plotselectGrid = document.getElementById('plot-select-grid');
+
+	sliderGrid.addEventListener('input', function () {
+		changemodel_grid();
+	});
+
+	function changemodel_grid() {
+		// Aggiorna l'immagine quando si cambia la cartella
+		var currentValue = parseInt(sliderGrid.value);
+		var selectedplotGrid = plotselectGrid.value;
+		var imagePath;
+        if (selectedplotGrid =='ARI') {
+            imagePath_one = "DRPM/" + 'ARI/ari.svg';
+            imagePath_two = "sPPM/" + 'ARI/ari.svg';
+            imagePath_three = "Gaussian PPMx/" + 'ARI/ari.svg';
+            imagePath_four = "Curve PPMx/" + 'ARI/ari.svg';
+        } else if (selectedplotGrid == 'Time series') {
+            imagePath_one = "DRPM/" + 'Time series/Time series.svg';
+            imagePath_two = "sPPM/" + 'Time series/Time series.svg';
+            imagePath_three = "Gaussian PPMx/" + 'Time series/Time series.svg';
+            imagePath_four = "Curve PPMx/" + 'Time series/Time series.svg';
+        }  else {
+            imagePath_one = "DRPM/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
+            imagePath_two = "sPPM/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
+            imagePath_three = "Gaussian PPMx/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
+            imagePath_four = "Curve PPMx/" + selectedplotGrid + '/' + selectedplotGrid + '-' + pad(currentValue,2) + '.png';
+        }
+		currentImage_one.innerHTML = '<img src="' + imagePath_one + '"alt="Image ' + currentValue + '" />';
+		currentImage_two.innerHTML = '<img src="' + imagePath_two + '"alt="Image ' + currentValue + '" />';
+		currentImage_three.innerHTML = '<img src="' + imagePath_three + '"alt="Image ' + currentValue + '" />';
+		currentImage_four.innerHTML = '<img src="' + imagePath_four + '"alt="Image ' + currentValue + '" />';
+	}
+	function pad(number, length) {
+		var str = '' + number;
+		while (str.length < length) {
+			str = '0' + str;
+		}
+		return str;
+	}
+</script>
+
+
+
+<!-- ############# new stuff ############# -->
+<div id="image-slider">
+	<h1>Covariates visualization</h1>
+
+	Covariates 
+	<select id="covariate-select-1" onchange="changemodel_cova(); mostraDescrizione();">
+		<option value="AQ_pm10.png" selected>AQ_pm10</option>
+		<option value="Altitude.png">Altitude</option>
+		<option value="EM_nh3_agr_soils.png">EM_nh3_agr_soils</option>
+		<option value="EM_nh3_agr_waste_burn.png">EM_nh3_agr_waste_burn</option>
+		<option value="EM_nh3_livestock_mm.png">EM_nh3_livestock_mm</option>
+		<option value="EM_nh3_sum.png">EM_nh3_sum</option>
+		<option value="EM_nox_sum.png">EM_nox_sum</option>
+		<option value="EM_nox_traffic.png">EM_nox_traffic</option>
+		<option value="EM_so2_sum.png">EM_so2_sum</option>
+		<option value="LA_hvi.png">LA_hvi</option>
+		<option value="LA_land_use.png">LA_land_use</option>
+		<option value="LA_lvi.png">LA_lvi</option>
+		<option value="LI_bovine.png">LI_bovine</option>
+		<option value="LI_bovine_v2.png">LI_bovine_v2</option>
+		<option value="LI_pigs.png">LI_pigs</option>
+		<option value="LI_pigs_v2.png">LI_pigs_v2</option>
+		<option value="WE_blh_layer_max.png">WE_blh_layer_max</option>
+		<option value="WE_blh_layer_min.png">WE_blh_layer_min</option>
+		<option value="WE_precipitation_t.png">WE_precipitation_t</option>
+		<option value="WE_rh_max.png">WE_rh_max</option>
+		<option value="WE_rh_mean.png">WE_rh_mean</option>
+		<option value="WE_rh_min.png">WE_rh_min</option>
+		<option value="WE_solar_radiation.png">WE_solar_radiation</option>
+		<option value="WE_surface_pressure.png">WE_surface_pressure</option>
+		<option value="WE_temp_2m.png">WE_temp_2m</option>
+		<option value="WE_tot_precipitation.png">WE_tot_precipitation</option>
+		<option value="WE_wind_speed_100m_max.png">WE_wind_speed_100m_max</option>
+		<option value="WE_wind_speed_100m_mean.png">WE_wind_speed_100m_mean</option>
+		<option value="WE_wind_speed_10m_max.png">WE_wind_speed_10m_max</option>
+		<option value="WE_wind_speed_10m_mean.png">WE_wind_speed_10m_mean</option>
+	</select> 
+
+	<select id="covariate-select-2" onchange="changemodel_cova(); mostraDescrizione();">
+		<option value="AQ_pm10.png">AQ_pm10</option>
+		<option value="Altitude.png">Altitude</option>
+		<option value="EM_nh3_agr_soils.png">EM_nh3_agr_soils</option>
+		<option value="EM_nh3_agr_waste_burn.png">EM_nh3_agr_waste_burn</option>
+		<option value="EM_nh3_livestock_mm.png">EM_nh3_livestock_mm</option>
+		<option value="EM_nh3_sum.png">EM_nh3_sum</option>
+		<option value="EM_nox_sum.png" selected>EM_nox_sum</option>
+		<option value="EM_nox_traffic.png">EM_nox_traffic</option>
+		<option value="EM_so2_sum.png">EM_so2_sum</option>
+		<option value="LA_hvi.png">LA_hvi</option>
+		<option value="LA_land_use.png">LA_land_use</option>
+		<option value="LA_lvi.png">LA_lvi</option>
+		<option value="LI_bovine.png">LI_bovine</option>
+		<option value="LI_bovine_v2.png">LI_bovine_v2</option>
+		<option value="LI_pigs.png">LI_pigs</option>
+		<option value="LI_pigs_v2.png">LI_pigs_v2</option>
+		<option value="WE_blh_layer_max.png">WE_blh_layer_max</option>
+		<option value="WE_blh_layer_min.png">WE_blh_layer_min</option>
+		<option value="WE_precipitation_t.png">WE_precipitation_t</option>
+		<option value="WE_rh_max.png">WE_rh_max</option>
+		<option value="WE_rh_mean.png">WE_rh_mean</option>
+		<option value="WE_rh_min.png">WE_rh_min</option>
+		<option value="WE_solar_radiation.png">WE_solar_radiation</option>
+		<option value="WE_surface_pressure.png">WE_surface_pressure</option>
+		<option value="WE_temp_2m.png">WE_temp_2m</option>
+		<option value="WE_tot_precipitation.png">WE_tot_precipitation</option>
+		<option value="WE_wind_speed_100m_max.png">WE_wind_speed_100m_max</option>
+		<option value="WE_wind_speed_100m_mean.png">WE_wind_speed_100m_mean</option>
+		<option value="WE_wind_speed_10m_max.png">WE_wind_speed_10m_max</option>
+		<option value="WE_wind_speed_10m_mean.png">WE_wind_speed_10m_mean</option>
+	</select>
+
+	<select id="covariate-select-3" onchange="changemodel_cova(); mostraDescrizione();">
+		<option value="AQ_pm10.png">AQ_pm10</option>
+		<option value="Altitude.png" selected>Altitude</option>
+		<option value="EM_nh3_agr_soils.png">EM_nh3_agr_soils</option>
+		<option value="EM_nh3_agr_waste_burn.png">EM_nh3_agr_waste_burn</option>
+		<option value="EM_nh3_livestock_mm.png">EM_nh3_livestock_mm</option>
+		<option value="EM_nh3_sum.png">EM_nh3_sum</option>
+		<option value="EM_nox_sum.png">EM_nox_sum</option>
+		<option value="EM_nox_traffic.png">EM_nox_traffic</option>
+		<option value="EM_so2_sum.png">EM_so2_sum</option>
+		<option value="LA_hvi.png">LA_hvi</option>
+		<option value="LA_land_use.png">LA_land_use</option>
+		<option value="LA_lvi.png">LA_lvi</option>
+		<option value="LI_bovine.png">LI_bovine</option>
+		<option value="LI_bovine_v2.png">LI_bovine_v2</option>
+		<option value="LI_pigs.png">LI_pigs</option>
+		<option value="LI_pigs_v2.png">LI_pigs_v2</option>
+		<option value="WE_blh_layer_max.png">WE_blh_layer_max</option>
+		<option value="WE_blh_layer_min.png">WE_blh_layer_min</option>
+		<option value="WE_precipitation_t.png">WE_precipitation_t</option>
+		<option value="WE_rh_max.png">WE_rh_max</option>
+		<option value="WE_rh_mean.png">WE_rh_mean</option>
+		<option value="WE_rh_min.png">WE_rh_min</option>
+		<option value="WE_solar_radiation.png">WE_solar_radiation</option>
+		<option value="WE_surface_pressure.png">WE_surface_pressure</option>
+		<option value="WE_temp_2m.png">WE_temp_2m</option>
+		<option value="WE_tot_precipitation.png">WE_tot_precipitation</option>
+		<option value="WE_wind_speed_100m_max.png">WE_wind_speed_100m_max</option>
+		<option value="WE_wind_speed_100m_mean.png">WE_wind_speed_100m_mean</option>
+		<option value="WE_wind_speed_10m_max.png">WE_wind_speed_10m_max</option>
+		<option value="WE_wind_speed_10m_mean.png">WE_wind_speed_10m_mean</option>
+	</select>
+
+	<br>
+	<label for="model-select-cova">Model </label>
+	<select id="model-select-cova" onchange="changemodel_cova()">
+	<!-- <select id="model-select"> -->
+		<option value="DRPM/">DRPM</option>
+		<option value="sPPM/">sPPM</option>
+		<option value="Gaussian PPMx/">Gaussian PPMx</option>
+		<option value="Curve PPMx/">Curve PPMx</option>
+	</select>
+
+	Week <input type="range" default="1" id="slider-cova" style='width: 15%' value="1" min="1" max="53" oninput="this.nextElementSibling.value = this.value">
+	<output>1</output>
+
+	<table>
+		<tr>
+			<td><div id="image-cova1"></div></td>            
+			<td><div id="image-cova2"></div></td>
+			<td><div id="image-cova3"></div></td>
+		</tr>
+	    <tr>
+			<td colspan="2"><div id="image-graphboxplot"></div></td>
+			<td><div id="image-modemap"></div></td>
+		</tr>
+	</table>
+
+	<br>
+	<b><span id="nomeCovariata-1"></span>:</b>
+	<span id="descrizioneCovariata-1"></span><br>
+	<b><span id="nomeCovariata-2"></span>:</b>
+	<span id="descrizioneCovariata-2"></span><br>
+	<b><span id="nomeCovariata-3"></span>:</b>
+	<span id="descrizioneCovariata-3"></span><br>
+</div>
+
+<script>
+	var sliderGridCova = document.getElementById('slider-cova');
+	var modelselectCova = document.getElementById('model-select-cova');
+
+	var ImageGraphboxplot = document.getElementById('image-graphboxplot');
+	var ImageModemap = document.getElementById('image-modemap');
+	var ImageCova1 = document.getElementById('image-cova1');
+	var ImageCova2 = document.getElementById('image-cova2');
+	var ImageCova3 = document.getElementById('image-cova3');
+
+	var OptCovariateSelect1 = document.getElementById('covariate-select-1');
+	var OptCovariateSelect2 = document.getElementById('covariate-select-2');
+	var OptCovariateSelect3 = document.getElementById('covariate-select-3');
+	
+    var select1 = document.getElementById("covariate-select-1");
+    var select2 = document.getElementById("covariate-select-2");
+    var select3 = document.getElementById("covariate-select-3");
+
+	sliderGridCova.addEventListener('input', function () {
+		changemodel_cova();
+	});
+
+	function changemodel_cova() {
+		// Aggiorna l'immagine quando si cambia la cartella
+		var currentValueCova = parseInt(sliderGridCova.value);
+		var selectedmodelCova = modelselectCova.value;
+
+		ImageGraphboxplot.innerHTML = '<img style="border:1px solid #aaaaaa" src="' + selectedmodelCova + 'Graph and Boxplot/Graph and Boxplot-' + pad(currentValueCova, 2) + '.png" />';
+		ImageModemap.innerHTML = '<img src="' + selectedmodelCova + 'Time Series/plt_modemap.png" />'
+		ImageCova1.innerHTML = '<img src="' + selectedmodelCova + "Time Series/" + select1.options[select1.selectedIndex].value + '" />'
+		ImageCova2.innerHTML = '<img src="' + selectedmodelCova + "Time Series/" + select2.options[select2.selectedIndex].value + '" />'
+		ImageCova3.innerHTML = '<img src="' + selectedmodelCova + "Time Series/" + select3.options[select3.selectedIndex].value + '" />'
+	}
+	function pad(number, length) {
+		var str = '' + number;
+		while (str.length < length) {
+			str = '0' + str;
+		}
+		return str;
+	}
+
+	function mostraDescrizione() {
+		var nomeCovariata1 = document.getElementById("nomeCovariata-1");
+		var nomeCovariata2 = document.getElementById("nomeCovariata-2");
+		var nomeCovariata3 = document.getElementById("nomeCovariata-3");
+
+        var descrizioneCovariata1 = document.getElementById("descrizioneCovariata-1");
+        var descrizioneCovariata2 = document.getElementById("descrizioneCovariata-2");
+        var descrizioneCovariata3 = document.getElementById("descrizioneCovariata-3");
+
+        var selezione1 = select1.options[select1.selectedIndex].value;
+        var selezione2 = select2.options[select2.selectedIndex].value;
+        var selezione3 = select3.options[select3.selectedIndex].value;
+
+        // Aggiungi descrizioni per ciascuna opzione
+        var descrizioni = {
+			"AQ_pm10.png": "Concentration of particles with an aerodynamic diameter of less than 10 micrometers (µm) [ μg m^(-3) ]",
+			"Altitude.png": "Elevations of the stations [ m ]",
+			"EM_nh3_agr_soils.png": "Emissions of NH3 originating from the agriculture soils [ mg m^(-2) ]",
+			"EM_nh3_agr_waste_burn.png": "Emissions of NH3 originating from the burning of agriculture waste [ mg m^(-2) ]",
+			"EM_nh3_livestock_mm.png": "Emissions of NH3 originating from the livestock sector within the manure management [ mg m^(-2) ]",
+			"EM_nh3_sum.png": "Total emissions of NH3 across all sectors (anthropogenic) [ mg m^(-2) ]",
+			"EM_nox_sum.png": "Emissions of NOx across all sectors (anthroprogenic) [ mg m^(-2) ]",
+			"EM_nox_traffic.png": "Emissions of NOx from the on road transportation [ mg m^(-2) ]",
+			"EM_so2_sum.png": "Total emissions of SO2 across all sectors (anthroprogenic) [ mg m^(-2) ]",
+			"LA_hvi.png": "One-half of the total green leaf area per unit horizontal ground surface area for high vegetation type [ unitless (m^2/m^2) ]",
+			"LA_land_use.png": "Land use across 44 sectors [ categorical ]",
+			"LA_lvi.png": "One-half of the total green leaf area per unit horizontal ground surface area for low vegetation type [ unitless (m^2/m^2) ]",
+			"LI_bovine.png": "Density of bovines [ Number km^(-2) ]",
+			"LI_bovine_v2.png": "Density of bovines [ Number km^(-2) ]",
+			"LI_pigs.png": "Density of pigs [ Number km^(-2) ]",
+			"LI_pigs_v2.png": "Density of pigs [ Number km^(-2) ]",
+			"WE_blh_layer_max.png": "The maximum depth of air next to the Earth's surface which is most affected by the resistance to the transfer of momentum or heat or moisture across the surface [ m ]",
+			"WE_blh_layer_min.png": "The minimum depth of air next to the Earth's surface which is most affected by the resistance to the transfer of momentum or heat or moisture across the surface [ m ]",
+			"WE_precipitation_t.png": "The type of precipitation at the surface at the specified time [ categorical ]",
+			"WE_rh_max.png": "Maximum of amount of water vapour present in air expressed as a percentage of the amount needed for saturation at the same temperature [ % ]",
+			"WE_rh_mean.png": "Mean of amount of water vapour present in air expressed as a percentage of the amount needed for saturation at the same temperature [ % ]",
+			"WE_rh_min.png": "Minimum of amount of water vapour present in air expressed as a percentage of the amount needed for saturation at the same temperature [ % ]",
+			"WE_solar_radiation.png": "Amount of solar radiation that reaches a horizontal plane at the surface of the Earth (both direct and diffuse) minus the amount reflected by the Earth's surface [ J m^(-2) ]",
+			"WE_surface_pressure.png": "The pressure (force per unit area) of the atmosphere at the surface of land and sea and inland water [ Pa ]",
+			"WE_temp_2m.png": "Temperature of air at 2 m above the surface of land or sea or inland water [ Celsius ]",
+			"WE_tot_precipitation.png": "The accumulated liquid and frozen water (comprising rain and snow) that falls to the Earth's surface [ m ]",
+			"WE_wind_speed_100m_max.png": "Max horizontal wind speed at a height of 100 m above the surface of the Earth [ m/s ]",
+			"WE_wind_speed_100m_mean.png": "Mean horizontal wind speed at a height of 100 m above the surface of the Earth [ m/s ]",
+			"WE_wind_speed_10m_max.png": "Maximum horizontal wind speed at a height of 10 m above the surface of the Earth [ m/s ]",
+			"WE_wind_speed_10m_mean.png": "Mean horizontal wind speed at a height of 10 m above the surface of the Earth [ m/s ]"
+            // Aggiungi descrizioni per le altre opzioni
+        };
+
+        // Mostra la descrizione corrispondente alla selezione
+        descrizioneCovariata1.textContent = descrizioni[selezione1];
+        descrizioneCovariata2.textContent = descrizioni[selezione2];
+        descrizioneCovariata3.textContent = descrizioni[selezione3];
+
+		nomeCovariata1.textContent = select1.value.slice(0,-4);
+		nomeCovariata2.textContent = select2.value.slice(0,-4);
+		nomeCovariata3.textContent = select3.value.slice(0,-4);
+    }
+</script>
+
+
+<!-- ############# covariates videos ############# -->
+<div id="image-slider">
+	<h1>Map grids</h1>
+
+	Covariate 
+	<select id="covariate-select-mapgrid" onchange="changemodel_mapgrid()">
+		<option value="EM_nh3_livestock_mm">EM_nh3_livestock_mm</option>
+		<option value="EM_nox_sum" selected>EM_nox_sum</option>
+		<option value="LA_hvi">LA_hvi</option>
+		<option value="LA_lvi">LA_lvi</option>
+		<option value="WE_precipitation_t">WE_precipitation_t</option>
+		<option value="WE_wind_speed_100m_max">WE_wind_speed_100m_max</option>
+	</select> 
+
+	<label for="model-select-mapgrid">Model </label>
+	<select id="model-select-mapgrid" onchange="changemodel_mapgrid()">
+		<option value="DRPM" selected>DRPM</option>
+		<option value="sPPM">sPPM</option>
+		<option value="Gaussian PPMx">Gaussian PPMx</option>
+		<option value="Curve PPMx">Curve PPMx</option>
+	</select>
+
+	Mode <input type="checkbox" id="mapgrid-mode-check" onchange="changemodel_mapgrid()">
+    <!-- </option> -->
+
+	Week <input type="range" default="1" id="slider-mapgrid" style='width: 15%' value="1" min="1" max="53" oninput="this.nextElementSibling.value = this.value">
+	<output>1</output>
+
+	<div id="current-image-mapgrid"></div>
+</div>
+
+<script>
+	var sliderMapgrid = document.getElementById('slider-mapgrid');
+	var modelselectMapgrid = document.getElementById('model-select-mapgrid');
+	var covaselectMapgrid = document.getElementById('covariate-select-mapgrid');
+
+	var checkbox = document.getElementById('mapgrid-mode-check');
+	var imgMapgrid = document.getElementById('current-image-mapgrid');
+
+	sliderMapgrid.addEventListener('input', function () {
+		changemodel_mapgrid();
+	});
+
+	function changemodel_mapgrid() {
+		// Aggiorna l'immagine quando si cambia la cartella
+		var currentValueMapgrid = parseInt(sliderMapgrid.value);
+		var selectedmodelMapgrid = modelselectMapgrid.value;
+		var selectedCovaMapgrid = covaselectMapgrid.options[covaselectMapgrid.selectedIndex].value
+		var isSelected = checkbox.checked
+
+		// if in bayesian src
+		var imagePath = "../plot functions/gifs_fede_update/" 
+		// if on site
+		// var imagePath = "./"
+
+	 	if (isSelected) {
+            imagePath = imagePath + "MODE-";
+    		// console.log(imagePath)
+        }
+		// var nome = selectedmodelMapgrid + "-" + selectedCovaMapgrid;
+		imagePath = imagePath + selectedmodelMapgrid + "-" + selectedCovaMapgrid + "/" + selectedmodelMapgrid + "-" + selectedCovaMapgrid + "-" + pad(currentValueMapgrid,2) + '.png';
+		imgMapgrid.innerHTML = '<img src="' + imagePath + '"alt="Image ' + imagePath + '" />';
+	}
+	function pad(number, length) {
+		var str = '' + number;
+		while (str.length < length) {
+			str = '0' + str;
+		}
+		return str;
+	}
+</script>
+
+
+
+
+</body>
+</html>

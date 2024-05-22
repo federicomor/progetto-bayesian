@@ -177,6 +177,50 @@ for(j in 1:4){
 }
 ```
 
+```{r}
+hist(rnorm(100))
+abline(v=0,col="red")
+```
+
+
+cat("originale", 29.2*0.4 + 28*0.6, "- update", 29.2*0.4 + 27*0.6,"\n")
+cat("originale", 23.6*0.4 + 28*0.6, "- update", 23.6*0.4 + 27*0.6)
+
+```{r}
+# voto originale vs update
+round(29.2*0.4 + 28*0.6) == round(29.2*0.4 + 27*0.6) # Mor
+round(23.6*0.4 + 28*0.6) == round(23.6*0.4 + 27*0.6) # Morales
+```
+```{r}
+# voto originale vs update
+cat("    Mor: 29.2*0.4 + 28*0.6 =",crayon::red(29.2*0.4 + 28*0.6), "- update 29.2*0.4 + 27*0.6 =",crayon::red(29.2*0.4 + 27*0.6),"-> round 28\n")
+cat("Morales: 23.6*0.4 + 28*0.6 =",crayon::red(23.6*0.4 + 28*0.6), "- update 23.6*0.4 + 27*0.6 =",crayon::red(23.6*0.4 + 27*0.6),"-> round 26\n")
+```
+
+# casino wash shuffling model?
+```{r}
+n=20
+xcoords = rnorm(n)
+ycoords = rnorm(n)
+dist=xcoords^2+ycoords^2
+ord_norm = order(dist,decreasing = F)
+print(ord_norm)
+
+plot(xcoords,ycoords,pch=19)
+text(xcoords[ord_norm]+0.1,ycoords[ord_norm],paste(ord_norm),cex=0.7)
+abline(h=0,col="gray",lty=2)
+abline(v=0,col="gray",lty=2)
+```
+
+```{r}
+# oppure: valutare gli scontri tra le carte quando vengono accostate, quindi una carta può vincere e finire sopra o perdere e finire sotto?
+scontri = rbinom(52,51,1/2)
+ord_binom = order(scontri)
+
+print(ord_norm)
+print(ord_binom)
+```
+
 
 ## plots separeted
 ```{r}
@@ -350,8 +394,7 @@ interest_variables_animated_grid = c("EM_nh3_livestock_mm",
 "LA_lvi",
 "EM_nox_sum",
 "WE_wind_speed_100m_max",
-"WE_tot_precipitation"
-)
+"WE_tot_precipitation")
 
 build_df_cluster_cut = function(time=1,clusters){
 df_cluster_cut = data.frame(

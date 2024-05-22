@@ -1175,6 +1175,133 @@ for (st in 1:105){
 	cl_regions[[mo]] = c(cl_regions[[mo]],st)
 	tssites$cl[st] = mo
 }
+```
+
+#---------test start
+
+```{r}
+graph_str = ""
+scelte = list()
+# scelte =rep(0,105)
+
+for (st in 1:105){
+	neighb = rep(0,105)
+	for(tt in 1:53){
+		idxs = which(salso_out_matrix[tt,]==salso_out_matrix[tt,st])
+		neighb[idxs] = neighb[idxs] +1
+	}
+	neighb[st] = -1
+	scelte[[st]] = which(neighb>=max(neighb)-1)
+	# graph_str = paste0(graph_str," ",st,"-",which(neighb==max(neighb))[1],",")
+	
+	# mo = Mode(salso_out_matrix[,st])
+	# # cat("Station",st,"has mode cluster label equal to",mo,"\n")
+	# cl_regions[[mo]] = c(cl_regions[[mo]],st)
+	# tssites$cl[st] = mo
+}
+scelte
+# graph_str
+```
+
+```{r,warning=F}
+# gg = graph_from_string(graph_str)
+# mst_list = get.edgelist(mst(gg))
+
+labels = rep(0,105)
+labels = 1:105
+id=1
+
+for(i in 1:105){
+	# valori = c(scelte[[i]], which(scelte==i))
+	# for (a in scelte[[i]]){ valori = union(valori,which(scelte==a))
+	# for (b in scelte[[a]]){ valori = union(valori,which(scelte==b))
+	# for (c in scelte[[b]]){ valori = union(valori,which(scelte==c))
+	# for (d in scelte[[c]]){ valori = union(valori,which(scelte==d))
+	# for (e in scelte[[d]]){ valori = union(valori,which(scelte==e))
+	# 		}}}}}
+	# 		}
+	# 	}
+	
+	valori = c(scelte[[i]])
+	for (j in 1:105){
+		if (i %in% scelte[[j]]){
+			valori = union(valori,scelte[[j]])
+		}
+	}
+	# for(a in 1:scelte[[i]]){ valori = union(valori,scelte[[a]])
+	# for(b in 1:scelte[[a]]){ valori = union(valori,scelte[[b]])
+	# for(c in 1:scelte[[b]]){ valori = union(valori,scelte[[c]])
+	# for(d in 1:scelte[[d]]){ valori = union(valori,scelte[[d]])
+	# }
+
+	cat(i,": ",valori,"\n")
+	# cat(i," ")
+	labels[i] = min(valori)
+}
+cat("\n")
+labels
+```
+
+
+```{r}
+for (l in 1:length(unique(labels))){
+	labels[which(labels==unique(labels)[l])]=l
+}
+labels
+```
+
+```{r}
+cl_regions = list()
+for (i in 1:max(labels)){
+	cl_regions[[i]] = which(labels==i)
+}
+
+tssites = sites_plt
+tssites$cl = rep(0,105)
+
+for(st in 1:105){
+	tssites$cl[st] = labels[st]
+}
+
+non_null_clregions_indexes = 0
+medie = rep(100,max(labels))
+for (i in 1:max(labels)){
+	if(lenght(cl_regions[[i]])>0){
+		non_null_clregions_indexes = non_null_clregions_indexes + 1
+		medie[i] = mean(apply(y[cl_regions[[i]],2:54],2,mean))
+	}
+}
+non_null_clregions_indexes
+medie = medie[1:non_null_clregions_indexes]
+ord = order(medie,decreasing = T)
+
+medie
+ord
+
+cols = colora(12,"div",0)[-2]
+
+cols = colora(non_null_clregions_indexes,111,1)
+cols_new = cols
+for (i in 1:non_null_clregions_indexes){
+	cols_new[ord[i]] = cols[i]
+}
+cols = cols_new
+
+df_cluster_cut = data.frame(
+	Longitude = sites$longitude,
+	Latitude = sites$latitude,
+	clusters = tssites$cl,
+	Time = 1
+)
+cols_gr = cols[1:length(unique(tssites$cl))]
+PP1 = get_graph_plot(df_cluster_cut,titolo = "Mode clusters",cols=cols_gr,verbose=0,legenda=0)
+PP1
+```
+
+#---------test end
+
+
+```{r}
 cl_regions
 ```
 
@@ -1209,6 +1336,13 @@ ord = order(medie,decreasing = T)
 medie
 ord
 
+```
+```{r}
+xx = seq(20,30,by=0.1)
+yy = round((xx*0.4 + 28*0.6))
+yyr = round((xx*0.4 + 28.5*0.6))
+plot(xx,yy,pch=19,cex=0.5)
+points(xx,yyr+0.1,col="red")
 ```
 
 
